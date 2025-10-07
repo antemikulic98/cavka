@@ -1,10 +1,8 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 
-// Load environment variables if not in production
-if (process.env.NODE_ENV !== 'production') {
-  dotenv.config({ path: '.env.local' });
-}
+// Load environment variables
+dotenv.config({ path: '.env.local' });
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
