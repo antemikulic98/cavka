@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   MapPin,
   ChevronDown,
@@ -10,7 +10,6 @@ import {
   Plus,
   X,
   Calendar,
-  Clock,
   UserCheck,
 } from 'lucide-react';
 import MobileSearchModal from './MobileSearchModal';
@@ -71,7 +70,7 @@ export default function Hero() {
   const generateTimes = () => {
     const times = [];
     for (let hour = 0; hour < 24; hour++) {
-      for (let minute of ['00', '30']) {
+      for (const minute of ['00', '30']) {
         const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
         const period = hour >= 12 ? 'PM' : 'AM';
         const display = `${hour12}:${minute} ${period}`;
@@ -771,7 +770,7 @@ export default function Hero() {
       {/* Powerful Hero Title - Bottom Positioned */}
       <div className='absolute bottom-16 left-1/2 transform -translate-x-1/2 z-30 text-center w-full px-4'>
         <h1 className='text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-4 tracking-tight'>
-          DON'T JUST RENT A CAR.
+          DON&apos;T JUST RENT A CAR.
         </h1>
         <h2 className='text-3xl md:text-5xl lg:text-6xl font-bold text-amber-400 tracking-tight'>
           RENT THE EXPERIENCE.

@@ -1,17 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import {
-  MapPin,
-  X,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Calendar,
-  Plus,
-  Car,
-  UserCheck,
-} from 'lucide-react';
+import { MapPin, X, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 
 interface MobileSearchModalProps {
   isOpen: boolean;
@@ -39,7 +29,7 @@ export default function MobileSearchModal({
   locations,
 }: MobileSearchModalProps) {
   const [step, setStep] = useState<ModalStep>('pickup-location');
-  const [vehicleType, setVehicleType] = useState(initialVehicleType);
+  const [vehicleType] = useState(initialVehicleType);
   const [pickupLocation, setPickupLocation] = useState('');
   const [returnLocation, setReturnLocation] = useState('');
   const [showReturnLocation, setShowReturnLocation] = useState(false);
@@ -77,7 +67,7 @@ export default function MobileSearchModal({
   const generateTimes = () => {
     const times = [];
     for (let hour = 0; hour < 24; hour++) {
-      for (let minute of ['00', '30']) {
+      for (const minute of ['00', '30']) {
         const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
         const period = hour >= 12 ? 'PM' : 'AM';
         const display = `${hour12}:${minute} ${period}`;
