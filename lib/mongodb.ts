@@ -1,14 +1,12 @@
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
 
-// Load environment variables
-dotenv.config({ path: '.env.local' });
-
+// Environment variables are automatically loaded by Next.js in production
+// No need for dotenv.config() in production builds
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
   throw new Error(
-    'Please define the MONGODB_URI environment variable inside .env.local'
+    'Please define the MONGODB_URI environment variable in your deployment environment'
   );
 }
 
