@@ -44,12 +44,24 @@ export default function CarCards() {
         const response = await fetch(
           `/api/vehicles?${searchParams.toString()}`
         );
+
+        if (!response.ok) {
+          console.error(
+            'API response not ok:',
+            response.status,
+            response.statusText
+          );
+          setError(`Failed to load vehicles (${response.status})`);
+          return;
+        }
+
         const data = await response.json();
 
         if (data.success) {
           setVehicles(data.vehicles);
         } else {
-          setError('Failed to load vehicles');
+          console.error('API returned error:', data);
+          setError(data.error || 'Failed to load vehicles');
         }
       } catch (error) {
         console.error('Error fetching vehicles:', error);
@@ -140,12 +152,30 @@ export default function CarCards() {
         {error && !loading && (
           <div className='text-center py-20'>
             <div className='text-red-500 mb-4'>⚠️ {error}</div>
-            <button
-              onClick={() => window.location.reload()}
-              className='bg-green-800 hover:bg-green-900 text-white font-bold px-6 py-2 rounded-lg'
-            >
-              Try Again
-            </button>
+            <p className='text-gray-600 mb-6 text-sm'>
+              {error.includes('500') ||
+              error.includes('Failed to load vehicles')
+                ? 'This might be a server configuration issue. Check the console for details.'
+                : 'There was an error loading the vehicle data.'}
+            </p>
+            <div className='flex flex-col sm:flex-row gap-4 justify-center'>
+              <button
+                onClick={() => window.location.reload()}
+                className='bg-green-800 hover:bg-green-900 text-white font-bold px-6 py-2 rounded-lg'
+              >
+                Try Again
+              </button>
+              {(error.includes('500') ||
+                error.includes('Failed to load vehicles')) && (
+                <a
+                  href='/api/test-env'
+                  target='_blank'
+                  className='bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2 rounded-lg'
+                >
+                  Check Configuration
+                </a>
+              )}
+            </div>
           </div>
         )}
 
