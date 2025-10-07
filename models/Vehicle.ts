@@ -245,7 +245,9 @@ VehicleSchema.index({ make: 1, vehicleModel: 1, year: 1 });
 
 // Virtual for full vehicle name
 VehicleSchema.virtual('fullName').get(function (this: IVehicle & Document) {
-  return `${this.year} ${this.make} ${this.vehicleModel}`;
+  return `${
+    this.year
+  } ${this.make} ${(this as any).vehicleModel || (this as any).model}`;
 });
 
 // Virtual for daily rate formatted

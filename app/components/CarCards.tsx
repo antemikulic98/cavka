@@ -198,7 +198,10 @@ export default function CarCards() {
                         {/* Car Name */}
                         <h3 className='text-xl font-bold mb-1'>
                           {vehicle.make.toUpperCase()}{' '}
-                          {(vehicle as any).vehicleModel.toUpperCase()}{' '}
+                          {(
+                            (vehicle as any).vehicleModel ||
+                            (vehicle as any).model
+                          )?.toUpperCase()}{' '}
                           <span className='font-normal text-base'>
                             or similar
                           </span>
