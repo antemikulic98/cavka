@@ -5,12 +5,12 @@ import Booking from '@/models/Booking';
 // GET - Retrieve bookings for a specific vehicle
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectMongoDB();
 
-    const { id } = params;
+    const { id } = await params;
 
     // Find all confirmed bookings for this vehicle
     const bookings = await Booking.find({

@@ -140,7 +140,7 @@ export default function Hero() {
   };
 
   // Get calendar days for a specific month
-  const getCalendarDays = (year, month) => {
+  const getCalendarDays = (year: number, month: number) => {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const firstDayOfWeek = firstDay.getDay();
@@ -162,7 +162,7 @@ export default function Hero() {
   };
 
   // Format date for display
-  const formatDate = (date) => {
+  const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -170,7 +170,7 @@ export default function Hero() {
   };
 
   // Handle date selection from calendar
-  const handleCalendarDateSelect = (date) => {
+  const handleCalendarDateSelect = (date: Date) => {
     if (selectingPickup) {
       setPickupDate(date);
       if (date >= returnDate) {
@@ -188,7 +188,7 @@ export default function Hero() {
   };
 
   // Navigate months
-  const navigateMonth = (direction) => {
+  const navigateMonth = (direction: 'prev' | 'next') => {
     if (direction === 'prev') {
       if (currentMonth === 0) {
         setCurrentMonth(11);
@@ -206,15 +206,22 @@ export default function Hero() {
     }
   };
 
-  const handleTimeSelect = (value, setter, dropdownSetter) => {
+  const handleTimeSelect = (
+    value: string,
+    setter: (val: string) => void,
+    dropdownSetter: (val: boolean) => void
+  ) => {
     setter(value);
     dropdownSetter(false);
   };
 
   // Close dropdowns when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (!event.target.closest('.dropdown-container')) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        !event.target ||
+        !(event.target as Element).closest('.dropdown-container')
+      ) {
         setShowCalendar(false);
         setShowPickupTimeDropdown(false);
         setShowReturnTimeDropdown(false);
@@ -623,13 +630,15 @@ export default function Hero() {
                                 date && handleCalendarDateSelect(date)
                               }
                               disabled={
-                                !date || date < new Date().setHours(0, 0, 0, 0)
+                                !date ||
+                                date < new Date(new Date().setHours(0, 0, 0, 0))
                               }
                               className={`
                               p-3 text-sm rounded-lg transition-all duration-200 
                               ${!date ? 'invisible' : ''}
                               ${
-                                date && date < new Date().setHours(0, 0, 0, 0)
+                                date &&
+                                date < new Date(new Date().setHours(0, 0, 0, 0))
                                   ? 'text-gray-300 cursor-not-allowed'
                                   : ''
                               }
@@ -654,7 +663,8 @@ export default function Hero() {
                               }
                               ${
                                 date &&
-                                date >= new Date().setHours(0, 0, 0, 0) &&
+                                date >=
+                                  new Date(new Date().setHours(0, 0, 0, 0)) &&
                                 date.toDateString() !==
                                   pickupDate.toDateString() &&
                                 date.toDateString() !==
@@ -704,13 +714,15 @@ export default function Hero() {
                               date && handleCalendarDateSelect(date)
                             }
                             disabled={
-                              !date || date < new Date().setHours(0, 0, 0, 0)
+                              !date ||
+                              date < new Date(new Date().setHours(0, 0, 0, 0))
                             }
                             className={`
                               p-3 text-sm rounded-lg transition-all duration-200 
                               ${!date ? 'invisible' : ''}
                               ${
-                                date && date < new Date().setHours(0, 0, 0, 0)
+                                date &&
+                                date < new Date(new Date().setHours(0, 0, 0, 0))
                                   ? 'text-gray-300 cursor-not-allowed'
                                   : ''
                               }
@@ -735,7 +747,8 @@ export default function Hero() {
                               }
                               ${
                                 date &&
-                                date >= new Date().setHours(0, 0, 0, 0) &&
+                                date >=
+                                  new Date(new Date().setHours(0, 0, 0, 0)) &&
                                 date.toDateString() !==
                                   pickupDate.toDateString() &&
                                 date.toDateString() !==

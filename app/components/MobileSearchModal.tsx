@@ -446,13 +446,15 @@ export default function MobileSearchModal({
                         key={index}
                         onClick={() => date && handleCalendarDateSelect(date)}
                         disabled={
-                          !date || date < new Date().setHours(0, 0, 0, 0)
+                          !date ||
+                          date < new Date(new Date().setHours(0, 0, 0, 0))
                         }
                         className={`
                         p-3 text-sm rounded-lg transition-all duration-200 
                         ${!date ? 'invisible' : ''}
                         ${
-                          date && date < new Date().setHours(0, 0, 0, 0)
+                          date &&
+                          date < new Date(new Date().setHours(0, 0, 0, 0))
                             ? 'text-gray-300 cursor-not-allowed'
                             : ''
                         }
@@ -475,7 +477,7 @@ export default function MobileSearchModal({
                         }
                         ${
                           date &&
-                          date >= new Date().setHours(0, 0, 0, 0) &&
+                          date >= new Date(new Date().setHours(0, 0, 0, 0)) &&
                           date.toDateString() !== pickupDate.toDateString() &&
                           date.toDateString() !== returnDate.toDateString()
                             ? 'hover:bg-gray-50'

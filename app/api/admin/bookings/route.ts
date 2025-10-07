@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit');
     const offset = searchParams.get('offset');
 
-    let query: any = {};
+    const query: Record<string, any> = {};
 
     // Optional status filter
     if (status && status !== 'all') {

@@ -5,12 +5,12 @@ import Booking from '@/models/Booking';
 // GET - Retrieve specific booking by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectMongoDB();
 
-    const { id } = params;
+    const { id } = await params;
 
     const booking = await Booking.findById(id).populate(
       'vehicleId',
@@ -55,12 +55,12 @@ export async function GET(
 // PUT - Update booking status or details
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectMongoDB();
 
-    const { id } = params;
+    const { id } = await params;
     const updateData = await request.json();
 
     // Only allow certain fields to be updated
@@ -118,12 +118,12 @@ export async function PUT(
 // DELETE - Cancel booking
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectMongoDB();
 
-    const { id } = params;
+    const { id } = await params;
 
     const booking = await Booking.findById(id);
 

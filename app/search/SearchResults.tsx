@@ -332,7 +332,7 @@ export default function SearchResults() {
                         {/* Car Name */}
                         <h3 className='text-xl font-bold mb-1'>
                           {vehicle.make.toUpperCase()}{' '}
-                          {vehicle.model.toUpperCase()}{' '}
+                          {(vehicle as any).vehicleModel.toUpperCase()}{' '}
                           <span className='font-normal text-base'>
                             or similar
                           </span>
@@ -361,7 +361,7 @@ export default function SearchResults() {
                               <path d='M17 6V4H7v2H2v11h3.18A3 3 0 0 0 8 19h8a3 3 0 0 0 2.82-4H22V6h-5zm-8 11a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm6 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2z' />
                             </svg>
                             <span className='text-sm font-semibold'>
-                              {vehicle.bigSuitcases || 2}
+                              {(vehicle as any).bigSuitcases || 2}
                             </span>
                           </div>
                           <div className='bg-black/40 backdrop-blur-sm rounded-full px-4 py-2 flex items-center space-x-2 group-hover:bg-black/50 transition-colors'>

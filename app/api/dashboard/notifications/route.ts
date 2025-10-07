@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
 
     const allVehicles = await Vehicle.find({ status: 'active' });
     let idleVehicles = 0;
-    let idleVehicleNames = [];
+    const idleVehicleNames = [];
 
     for (const vehicle of allVehicles) {
       const recentBookings = await Booking.countDocuments({

@@ -217,12 +217,15 @@ export default function BookingManagement() {
 
     // Sorting
     filtered.sort((a, b) => {
-      let aValue: any = a[sortField];
-      let bValue: any = b[sortField];
+      let aValue: any;
+      let bValue: any;
 
       if (sortField === 'totalCost') {
         aValue = a.pricing.totalCost;
         bValue = b.pricing.totalCost;
+      } else {
+        aValue = a[sortField as keyof typeof a];
+        bValue = b[sortField as keyof typeof b];
       }
 
       if (sortField === 'createdAt' || sortField === 'pickupDate') {

@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     ];
 
     for (const field of requiredFields) {
-      if (!body[field] && body[field] !== 0) {
+      if (!(body as any)[field] && (body as any)[field] !== 0) {
         return NextResponse.json(
           { error: `${field} is required` },
           { status: 400 }
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       success: true,
       vehicle: {
         id: vehicle._id,
-        fullName: vehicle.fullName,
+        fullName: `${vehicle.make} ${vehicle.vehicleModel}`,
         category: vehicle.category,
         dailyRate: vehicle.dailyRate,
         currency: vehicle.currency,

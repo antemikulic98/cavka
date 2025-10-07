@@ -9,7 +9,7 @@ dotenv.config({ path: '.env.local' });
 const sampleVehicles = [
   {
     make: 'Toyota',
-    model: 'Camry',
+    vehicleModel: 'Camry',
     year: 2023,
     color: 'Silver',
     licensePlate: 'ZG-1001-TC',
@@ -36,7 +36,7 @@ const sampleVehicles = [
   },
   {
     make: 'Volkswagen',
-    model: 'Golf',
+    vehicleModel: 'Golf',
     year: 2022,
     color: 'White',
     licensePlate: 'ZG-1002-VG',
@@ -56,7 +56,7 @@ const sampleVehicles = [
   },
   {
     make: 'BMW',
-    model: 'X3',
+    vehicleModel: 'X3',
     year: 2023,
     color: 'Black',
     licensePlate: 'ZG-1003-BX',
@@ -83,7 +83,7 @@ const sampleVehicles = [
   },
   {
     make: 'Opel',
-    model: 'Corsa',
+    vehicleModel: 'Corsa',
     year: 2022,
     color: 'Blue',
     licensePlate: 'ZG-1004-OC',
@@ -103,7 +103,7 @@ const sampleVehicles = [
   },
   {
     make: 'Mercedes-Benz',
-    model: 'E-Class',
+    vehicleModel: 'E-Class',
     year: 2023,
     color: 'Gray',
     licensePlate: 'ZG-1005-ME',
@@ -166,7 +166,7 @@ async function createSampleCars() {
 
       if (existingVehicle) {
         console.log(
-          `✓ Vehicle already exists: ${vehicleData.make} ${vehicleData.model} (${vehicleData.licensePlate})`
+          `✓ Vehicle already exists: ${vehicleData.make} ${vehicleData.vehicleModel} (${vehicleData.licensePlate})`
         );
         continue;
       }
@@ -176,10 +176,10 @@ async function createSampleCars() {
         ...vehicleData,
         acrissCode: generateAcrissCode(vehicleData),
         images: [
-          `/api/placeholder-${vehicleData.make.toLowerCase()}-${vehicleData.model.toLowerCase()}-1.jpg`,
-          `/api/placeholder-${vehicleData.make.toLowerCase()}-${vehicleData.model.toLowerCase()}-2.jpg`,
+          `/api/placeholder-${vehicleData.make.toLowerCase()}-${vehicleData.vehicleModel.toLowerCase()}-1.jpg`,
+          `/api/placeholder-${vehicleData.make.toLowerCase()}-${vehicleData.vehicleModel.toLowerCase()}-2.jpg`,
         ],
-        mainImage: `/api/placeholder-${vehicleData.make.toLowerCase()}-${vehicleData.model.toLowerCase()}-1.jpg`,
+        mainImage: `/api/placeholder-${vehicleData.make.toLowerCase()}-${vehicleData.vehicleModel.toLowerCase()}-1.jpg`,
         addedBy: user._id,
       };
 
@@ -188,10 +188,10 @@ async function createSampleCars() {
       await vehicle.save();
 
       console.log('✓ Vehicle created successfully:');
-      console.log(`  ${vehicle.fullName}`);
+      console.log(`  ${vehicle.year} ${vehicle.make} ${vehicle.vehicleModel}`);
       console.log(`  Category: ${vehicle.category}`);
       console.log(`  ACRISS: ${vehicle.acrissCode}`);
-      console.log(`  Rate: ${vehicle.formattedDailyRate}/day`);
+      console.log(`  Rate: ${vehicle.dailyRate} ${vehicle.currency}/day`);
       console.log(`  License: ${vehicle.licensePlate}`);
       console.log(`  ID: ${vehicle._id}`);
       console.log('');

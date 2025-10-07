@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       const vehicle = booking.vehicleId;
       const customerName = `${booking.clientInfo.firstName} ${booking.clientInfo.lastName}`;
 
-      let activity = {
+      const activity = {
         id: `booking-${booking._id}`,
         type: 'booking',
         title: '',

@@ -995,7 +995,7 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
                 </div>
               )}
 
-              {pricing.breakdown.addOnsCost > 0 && (
+              {(pricing.breakdown.addOnsCost || 0) > 0 && (
                 <div className='flex justify-between text-sm'>
                   <span className='text-gray-600'>
                     Add-ons ({rentalDays} days)

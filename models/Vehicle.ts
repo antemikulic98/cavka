@@ -1,9 +1,9 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
-export interface IVehicle extends Document {
+export interface IVehicle {
   // Basic Information
   make: string;
-  model: string;
+  vehicleModel: string;
   year: number;
   color: string;
   licensePlate: string;
@@ -59,7 +59,7 @@ export interface IVehicle extends Document {
   addedBy: mongoose.Types.ObjectId; // Reference to User who added the car
 }
 
-const VehicleSchema = new Schema<IVehicle>(
+const VehicleSchema = new Schema<IVehicle & Document>(
   {
     // Basic Information
     make: {
@@ -67,7 +67,7 @@ const VehicleSchema = new Schema<IVehicle>(
       required: [true, 'Make is required'],
       trim: true,
     },
-    model: {
+    vehicleModel: {
       type: String,
       required: [true, 'Model is required'],
       trim: true,
@@ -241,15 +241,17 @@ const VehicleSchema = new Schema<IVehicle>(
 // Indexes for better performance
 VehicleSchema.index({ status: 1, location: 1 });
 VehicleSchema.index({ category: 1, dailyRate: 1 });
-VehicleSchema.index({ make: 1, model: 1, year: 1 });
+VehicleSchema.index({ make: 1, vehicleModel: 1, year: 1 });
 
 // Virtual for full vehicle name
-VehicleSchema.virtual('fullName').get(function (this: IVehicle) {
-  return `${this.year} ${this.make} ${this.model}`;
+VehicleSchema.virtual('fullName').get(function (this: IVehicle & Document) {
+  return `${this.year} ${this.make} ${this.vehicleModel}`;
 });
 
 // Virtual for daily rate formatted
-VehicleSchema.virtual('formattedDailyRate').get(function (this: IVehicle) {
+VehicleSchema.virtual('formattedDailyRate').get(function (
+  this: IVehicle & Document
+) {
   return `${this.dailyRate} ${this.currency}`;
 });
 
@@ -258,7 +260,8 @@ VehicleSchema.set('toJSON', {
   virtuals: true,
 });
 
-const Vehicle: Model<IVehicle> =
-  mongoose.models.Vehicle || mongoose.model<IVehicle>('Vehicle', VehicleSchema);
+const Vehicle: Model<IVehicle & Document> =
+  mongoose.models.Vehicle ||
+  mongoose.model<IVehicle & Document>('Vehicle', VehicleSchema);
 
 export default Vehicle;
