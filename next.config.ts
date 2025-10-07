@@ -10,10 +10,8 @@ const nextConfig: NextConfig = {
     DO_SPACES_SECRET: process.env.DO_SPACES_SECRET,
     DO_SPACES_BUCKET: process.env.DO_SPACES_BUCKET,
   },
-  // Enable experimental features for better performance
-  experimental: {
-    serverComponentsExternalPackages: ['mongoose'],
-  },
+  // Enable server external packages for better performance
+  serverExternalPackages: ['mongoose'],
   // Add webpack config for handling mongoose in production
   webpack: (config) => {
     config.externals.push({
