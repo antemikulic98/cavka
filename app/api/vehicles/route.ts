@@ -93,9 +93,7 @@ export async function POST(request: NextRequest) {
       success: true,
       vehicle: {
         id: vehicle._id,
-        fullName: `${vehicle.make} ${
-          (vehicle as any).vehicleModel || (vehicle as any).model
-        }`,
+        fullName: `${vehicle.make} ${vehicle.vehicleModel}`,
         category: vehicle.category,
         dailyRate: vehicle.dailyRate,
         currency: vehicle.currency,

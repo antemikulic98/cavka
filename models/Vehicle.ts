@@ -243,11 +243,14 @@ VehicleSchema.index({ status: 1, location: 1 });
 VehicleSchema.index({ category: 1, dailyRate: 1 });
 VehicleSchema.index({ make: 1, vehicleModel: 1, year: 1 });
 
+// Virtual for backward compatibility - map 'model' to 'vehicleModel'
+VehicleSchema.virtual('model').get(function (this: IVehicle & Document) {
+  return this.vehicleModel;
+});
+
 // Virtual for full vehicle name
 VehicleSchema.virtual('fullName').get(function (this: IVehicle & Document) {
-  return `${
-    this.year
-  } ${this.make} ${(this as any).vehicleModel || (this as any).model}`;
+  return `${this.year} ${this.make} ${this.vehicleModel}`;
 });
 
 // Virtual for daily rate formatted
