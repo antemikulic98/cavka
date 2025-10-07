@@ -2,13 +2,7 @@ import mongoose from 'mongoose';
 
 // Environment variables are automatically loaded by Next.js in production
 // No need for dotenv.config() in production builds
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error(
-    'Please define the MONGODB_URI environment variable in your deployment environment'
-  );
-}
+// NOTE: Don't check environment variables at module load time - it crashes the app!
 
 interface MongooseCache {
   conn: typeof mongoose | null;
@@ -35,12 +29,20 @@ async function connectMongoDB(): Promise<typeof mongoose> {
     return cached.conn;
   }
 
+  // Check environment variable here, not at module load time
+  const MONGODB_URI = process.env.MONGODB_URI;
+  if (!MONGODB_URI) {
+    throw new Error(
+      'Please define the MONGODB_URI environment variable in your deployment environment'
+    );
+  }
+
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
       return mongoose;
     });
   }

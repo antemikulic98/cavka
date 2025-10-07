@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server';
-import { connectMongoDB } from '@/lib/mongodb';
-import mongoose from 'mongoose';
 
 export async function GET() {
   try {
@@ -24,14 +22,18 @@ export async function GET() {
     );
     console.log('🔗 Attempting MongoDB connection...');
 
+    // Dynamically import to avoid startup crashes
+    const { connectMongoDB } = await import('@/lib/mongodb');
+    const mongoose = await import('mongoose');
+
     // Test connection
     await connectMongoDB();
 
     console.log('✅ MongoDB connected successfully');
 
     // Test a simple query
-    const connectionState = mongoose.connection.readyState;
-    const dbName = mongoose.connection.db?.databaseName;
+    const connectionState = mongoose.default.connection.readyState;
+    const dbName = mongoose.default.connection.db?.databaseName;
 
     return NextResponse.json({
       success: true,
@@ -39,7 +41,7 @@ export async function GET() {
       details: {
         connectionState: connectionState === 1 ? 'connected' : 'disconnected',
         databaseName: dbName,
-        mongooseVersion: mongoose.version,
+        mongooseVersion: mongoose.default.version,
         timestamp: new Date().toISOString(),
       },
     });
