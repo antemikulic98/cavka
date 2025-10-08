@@ -50,13 +50,13 @@ export default function Fleet() {
       <div className='container mx-auto px-6 lg:px-8'>
         {/* Section Header */}
         <div className='text-center mb-16'>
-          <h2 className='text-4xl md:text-5xl font-light text-gray-900 mb-6'>
+          <h2 className='font-poppins text-4xl md:text-5xl font-light text-gray-900 mb-6'>
             Vehicle
             <span className='font-semibold text-blue-900 block'>
               Categories
             </span>
           </h2>
-          <p className='text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed'>
+          <p className='font-poppins text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed'>
             Our premium fleet features carefully selected vehicles from
             industry-leading manufacturers, maintained to exceptional standards.
           </p>
@@ -71,7 +71,7 @@ export default function Fleet() {
                 {/* Popular Badge */}
                 {category.popular && (
                   <div className='absolute -top-3 right-4 z-10'>
-                    <span className='bg-blue-900 text-white px-3 py-1 rounded-sm text-xs font-medium uppercase tracking-wider'>
+                    <span className='font-poppins bg-blue-900 text-white px-3 py-1 rounded-sm text-xs font-medium uppercase tracking-wider'>
                       Popular
                     </span>
                   </div>
@@ -90,17 +90,17 @@ export default function Fleet() {
                   </div>
 
                   {/* Category Name */}
-                  <h3 className='text-xl font-semibold text-gray-900 mb-3'>
+                  <h3 className='font-poppins text-xl font-semibold text-gray-900 mb-3'>
                     {category.name}
                   </h3>
 
                   {/* Description */}
-                  <p className='text-gray-600 mb-4 text-sm leading-relaxed'>
+                  <p className='font-poppins text-gray-600 mb-4 text-sm leading-relaxed'>
                     {category.description}
                   </p>
 
                   {/* Vehicle Examples */}
-                  <p className='text-xs text-gray-500 mb-6 leading-relaxed'>
+                  <p className='font-poppins text-xs text-gray-500 mb-6 leading-relaxed'>
                     {category.vehicles}
                   </p>
 
@@ -110,7 +110,7 @@ export default function Fleet() {
                       {category.features.map((feature, featureIndex) => (
                         <li
                           key={featureIndex}
-                          className='flex items-center text-xs text-gray-600'
+                          className='font-poppins flex items-center text-xs text-gray-600'
                         >
                           <span className='w-1.5 h-1.5 bg-blue-900 rounded-full mr-3 flex-shrink-0'></span>
                           {feature}
@@ -121,14 +121,14 @@ export default function Fleet() {
 
                   {/* Price */}
                   <div className='mb-6'>
-                    <span className='text-2xl font-semibold text-gray-900'>
+                    <span className='font-poppins text-2xl font-semibold text-gray-900'>
                       {category.price}
                     </span>
                   </div>
 
                   {/* CTA Button */}
                   <button
-                    className={`w-full py-3 px-6 rounded-sm font-medium transition-colors duration-200 ${
+                    className={`font-poppins w-full py-3 px-6 rounded-sm font-medium transition-colors duration-200 ${
                       category.popular
                         ? 'bg-blue-900 hover:bg-blue-800 text-white'
                         : 'border border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-900'
@@ -145,19 +145,19 @@ export default function Fleet() {
         {/* Bottom Section */}
         <div className='mt-20 bg-gray-50 p-12 rounded-sm border border-gray-200'>
           <div className='text-center'>
-            <h3 className='text-2xl font-semibold text-gray-900 mb-4'>
+            <h3 className='font-poppins text-2xl font-semibold text-gray-900 mb-4'>
               Custom Fleet Solutions
             </h3>
-            <p className='text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed'>
+            <p className='font-poppins text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed'>
               Need specialized vehicles or have specific requirements? Our fleet
               management team can arrange custom solutions for corporate clients
               and special events.
             </p>
             <div className='flex flex-col sm:flex-row gap-4 justify-center'>
-              <button className='bg-blue-900 hover:bg-blue-800 text-white font-medium py-3 px-8 rounded-sm transition-colors duration-200'>
+              <button className='font-poppins bg-blue-900 hover:bg-blue-800 text-white font-medium py-3 px-8 rounded-sm transition-colors duration-200'>
                 Contact Fleet Manager
               </button>
-              <button className='border border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-900 font-medium py-3 px-8 rounded-sm transition-colors duration-200'>
+              <button className='font-poppins border border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-900 font-medium py-3 px-8 rounded-sm transition-colors duration-200'>
                 View All Vehicles
               </button>
             </div>

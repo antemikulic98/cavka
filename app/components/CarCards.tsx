@@ -131,11 +131,11 @@ export default function CarCards() {
       <div className='container mx-auto px-6 lg:px-8'>
         {/* Section Header */}
         <div className='text-center mb-16'>
-          <h2 className='text-5xl md:text-6xl font-bold text-gray-900 mb-6 tracking-tight'>
+          <h2 className='font-poppins text-5xl md:text-6xl font-bold text-gray-900 mb-6 tracking-tight'>
             PREMIUM
             <span className='text-green-800 block'>VEHICLE FLEET</span>
           </h2>
-          <p className='text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed'>
+          <p className='font-poppins text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed'>
             Luxury vehicles. Professional service. Unforgettable journeys.
           </p>
         </div>
@@ -144,15 +144,15 @@ export default function CarCards() {
         {loading && (
           <div className='flex justify-center items-center py-20'>
             <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-green-800'></div>
-            <span className='ml-3 text-gray-700'>Loading vehicles...</span>
+            <span className='font-poppins ml-3 text-gray-700'>Loading vehicles...</span>
           </div>
         )}
 
         {/* Error State */}
         {error && !loading && (
           <div className='text-center py-20'>
-            <div className='text-red-500 mb-4'>⚠️ {error}</div>
-            <p className='text-gray-600 mb-6 text-sm'>
+            <div className='font-poppins text-red-500 mb-4'>⚠️ {error}</div>
+            <p className='font-poppins text-gray-600 mb-6 text-sm'>
               {error.includes('500') ||
               error.includes('Failed to load vehicles')
                 ? 'This might be a server configuration issue. Check the console for details.'
@@ -161,7 +161,7 @@ export default function CarCards() {
             <div className='flex flex-col sm:flex-row gap-4 justify-center'>
               <button
                 onClick={() => window.location.reload()}
-                className='bg-green-800 hover:bg-green-900 text-white font-bold px-6 py-2 rounded-lg'
+                className='font-poppins bg-green-800 hover:bg-green-900 text-white font-bold px-6 py-2 rounded-lg'
               >
                 Try Again
               </button>
@@ -170,7 +170,7 @@ export default function CarCards() {
                 <a
                   href='/api/test-env'
                   target='_blank'
-                  className='bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2 rounded-lg'
+                  className='font-poppins bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2 rounded-lg'
                 >
                   Check Configuration
                 </a>
@@ -182,10 +182,10 @@ export default function CarCards() {
         {/* No Results */}
         {!loading && !error && vehicles.length === 0 && (
           <div className='text-center py-20'>
-            <div className='text-gray-700 mb-4'>
+            <div className='font-poppins text-gray-700 mb-4'>
               No vehicles available at the moment.
             </div>
-            <p className='text-gray-500'>
+            <p className='font-poppins text-gray-500'>
               Please check back later or contact us for assistance.
             </p>
           </div>
@@ -226,7 +226,7 @@ export default function CarCards() {
                     <div className='absolute top-0 left-0 right-0 bg-gradient-to-b from-black/80 via-black/40 to-transparent p-6'>
                       <div className='text-white'>
                         {/* Car Name */}
-                        <h3 className='text-xl font-bold mb-1'>
+                        <h3 className='font-poppins text-xl font-bold mb-1'>
                           {vehicle.make.toUpperCase()}{' '}
                           {(
                             (vehicle as any).vehicleModel ||
@@ -238,7 +238,7 @@ export default function CarCards() {
                         </h3>
 
                         {/* Category & Transmission */}
-                        <p className='text-base opacity-90 mb-4'>
+                        <p className='font-poppins text-base opacity-90 mb-4'>
                           {getCategoryDisplayName(vehicle.category)}{' '}
                           {vehicle.transmission}
                         </p>
@@ -247,7 +247,7 @@ export default function CarCards() {
                         <div className='flex items-center space-x-3'>
                           <div className='bg-black/40 backdrop-blur-sm rounded-full px-4 py-2 flex items-center space-x-2 group-hover:bg-black/50 transition-colors'>
                             <Users className='h-4 w-4' />
-                            <span className='text-sm font-semibold'>
+                            <span className='font-poppins text-sm font-semibold'>
                               {vehicle.passengerCapacity}
                             </span>
                           </div>
@@ -259,11 +259,11 @@ export default function CarCards() {
                             >
                               <path d='M17 6V4H7v2H2v11h3.18A3 3 0 0 0 8 19h8a3 3 0 0 0 2.82-4H22V6h-5zm-8 11a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm6 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2z' />
                             </svg>
-                            <span className='text-sm font-semibold'>2</span>
+                            <span className='font-poppins text-sm font-semibold'>2</span>
                           </div>
                           <div className='bg-black/40 backdrop-blur-sm rounded-full px-4 py-2 flex items-center space-x-2 group-hover:bg-black/50 transition-colors'>
                             <Settings className='h-4 w-4' />
-                            <span className='text-sm font-semibold'>
+                            <span className='font-poppins text-sm font-semibold'>
                               {vehicle.transmission}
                             </span>
                           </div>
@@ -277,7 +277,7 @@ export default function CarCards() {
                         {/* Benefits */}
                         <div className='flex items-center mb-4'>
                           <span className='text-green-600 text-lg mr-2'>✓</span>
-                          <span className='text-sm'>
+                          <span className='font-poppins text-sm'>
                             Unlimited kilometers included
                           </span>
                         </div>

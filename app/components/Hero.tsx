@@ -780,14 +780,39 @@ export default function Hero() {
         locations={locations}
       />
 
-      {/* Powerful Hero Title - Bottom Positioned */}
-      <div className='absolute bottom-16 left-1/2 transform -translate-x-1/2 z-30 text-center w-full px-4'>
-        <h1 className='text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-4 tracking-tight'>
-          DON&apos;T JUST RENT A CAR.
-        </h1>
-        <h2 className='text-3xl md:text-5xl lg:text-6xl font-bold text-amber-400 tracking-tight'>
-          RENT THE EXPERIENCE.
-        </h2>
+      {/* Powerful Hero Title - Bottom Positioned to Avoid Car */}
+      <div className='absolute bottom-8 left-1/2 transform -translate-x-1/2 z-30 text-center w-full px-2'>
+        <div className='animate-fade-in-up relative'>
+          {/* Background with glass morphism effect */}
+          <div className='absolute -inset-8 bg-black/40 backdrop-blur-md rounded-3xl border border-white/20 shadow-2xl'></div>
+
+          <div className='relative z-10 py-6 px-4'>
+            {/* Supporting tagline */}
+            <p className='font-poppins text-sm md:text-sm lg:text-base text-gray-200 font-medium mb-2 opacity-90 tracking-wide uppercase animate-fade-in-delayed'>
+              Premium Car Rental Experience
+            </p>
+
+            {/* Main headline with enhanced styling - Bigger single line on mobile */}
+            <h1 className='font-poppins text-3xl sm:text-4xl md:text-4xl lg:text-5xl xl:text-6xl font-black text-white mb-1 tracking-tight leading-none'>
+              <span className='block drop-shadow-2xl text-shadow-lg hover:scale-105 transition-transform duration-300 whitespace-nowrap'>
+                DON&apos;T JUST RENT A CAR.
+              </span>
+            </h1>
+
+            {/* Emphasized second line with gradient */}
+            <h2 className='font-poppins text-3xl sm:text-4xl md:text-4xl lg:text-5xl xl:text-6xl font-black tracking-tight leading-none'>
+              <span className='block bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 bg-clip-text text-transparent drop-shadow-2xl hover:scale-105 transition-all duration-500 hover:from-amber-200 hover:via-yellow-300 hover:to-amber-400 whitespace-nowrap'>
+                RENT THE EXPERIENCE.
+              </span>
+            </h2>
+          </div>
+
+          {/* Animated background elements */}
+          <div className='absolute inset-0 -z-10'>
+            <div className='absolute -top-12 left-1/4 w-40 h-40 bg-gradient-to-r from-amber-400/20 to-yellow-500/20 rounded-full blur-3xl animate-pulse'></div>
+            <div className='absolute -bottom-12 right-1/4 w-32 h-32 bg-gradient-to-r from-orange-400/20 to-amber-500/20 rounded-full blur-3xl animate-pulse delay-1000'></div>
+          </div>
+        </div>
       </div>
     </section>
   );
