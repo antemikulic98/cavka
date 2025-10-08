@@ -144,7 +144,9 @@ export default function CarCards() {
         {loading && (
           <div className='flex justify-center items-center py-20'>
             <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-green-800'></div>
-            <span className='font-poppins ml-3 text-gray-700'>Loading vehicles...</span>
+            <span className='font-poppins ml-3 text-gray-700'>
+              Loading vehicles...
+            </span>
           </div>
         )}
 
@@ -215,7 +217,7 @@ export default function CarCards() {
                       <div className='w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center'>
                         <div className='text-center text-gray-500'>
                           <div className='text-6xl mb-2'>🚗</div>
-                          <div className='text-sm font-medium'>
+                          <div className='font-poppins text-sm font-medium'>
                             {vehicle.make}
                           </div>
                         </div>
@@ -259,7 +261,9 @@ export default function CarCards() {
                             >
                               <path d='M17 6V4H7v2H2v11h3.18A3 3 0 0 0 8 19h8a3 3 0 0 0 2.82-4H22V6h-5zm-8 11a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm6 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2z' />
                             </svg>
-                            <span className='font-poppins text-sm font-semibold'>2</span>
+                            <span className='font-poppins text-sm font-semibold'>
+                              2
+                            </span>
                           </div>
                           <div className='bg-black/40 backdrop-blur-sm rounded-full px-4 py-2 flex items-center space-x-2 group-hover:bg-black/50 transition-colors'>
                             <Settings className='h-4 w-4' />
@@ -286,18 +290,18 @@ export default function CarCards() {
                         <div className='flex items-end justify-between'>
                           <div className='flex items-baseline space-x-2'>
                             <div className='flex items-baseline'>
-                              <span className='text-sm mr-1'>
+                              <span className='font-poppins text-sm mr-1'>
                                 {vehicle.currency === 'EUR'
                                   ? '€'
                                   : vehicle.currency === 'USD'
                                   ? '$'
                                   : vehicle.currency}
                               </span>
-                              <span className='text-4xl font-bold'>
+                              <span className='font-poppins text-4xl font-bold'>
                                 {Math.floor(vehicle.dailyRate)}
                               </span>
                               {vehicle.dailyRate % 1 > 0 && (
-                                <span className='text-xl font-semibold'>
+                                <span className='font-poppins text-xl font-semibold'>
                                   .
                                   {Math.round((vehicle.dailyRate % 1) * 100)
                                     .toString()
@@ -305,10 +309,12 @@ export default function CarCards() {
                                 </span>
                               )}
                             </div>
-                            <span className='text-base opacity-90'>/day</span>
+                            <span className='font-poppins text-base opacity-90'>
+                              /day
+                            </span>
                           </div>
                           <div className='text-right'>
-                            <button className='bg-green-800 hover:bg-green-900 text-white font-bold py-2 px-4 rounded-xl text-sm transition-colors duration-200'>
+                            <button className='font-poppins bg-green-800 hover:bg-green-900 text-white font-bold py-2 px-4 rounded-xl text-sm transition-colors duration-200'>
                               Reserve Now
                             </button>
                           </div>
@@ -325,15 +331,15 @@ export default function CarCards() {
         {/* Bottom CTA */}
         <div className='text-center mt-16'>
           <div className='bg-gray-100 rounded-2xl p-8 shadow-sm border border-gray-200'>
-            <h3 className='text-xl font-semibold text-gray-900 mb-4'>
+            <h3 className='font-poppins text-xl font-semibold text-gray-900 mb-4'>
               Need a Custom Vehicle Solution?
             </h3>
-            <p className='text-gray-600 mb-6 max-w-2xl mx-auto'>
+            <p className='font-poppins text-gray-600 mb-6 max-w-2xl mx-auto'>
               Our fleet specialists can arrange specialized vehicles or create
               custom packages for your specific business requirements.
             </p>
             <div className='flex flex-col sm:flex-row gap-4 justify-center'>
-              <button className='bg-green-800 hover:bg-green-900 text-white font-bold py-3 px-6 rounded-2xl transition-colors duration-200'>
+              <button className='font-poppins bg-green-800 hover:bg-green-900 text-white font-bold py-3 px-6 rounded-2xl transition-colors duration-200'>
                 Contact Fleet Manager
               </button>
               <button
@@ -341,7 +347,7 @@ export default function CarCards() {
                   (window.location.href =
                     '/search?pickupLocation=Zagreb Downtown&vehicleType=car')
                 }
-                className='border border-gray-400 hover:border-gray-500 text-gray-700 hover:text-gray-900 font-medium py-3 px-6 rounded-2xl transition-colors duration-200'
+                className='font-poppins border border-gray-400 hover:border-gray-500 text-gray-700 hover:text-gray-900 font-medium py-3 px-6 rounded-2xl transition-colors duration-200'
               >
                 View All Vehicles
               </button>

@@ -237,17 +237,17 @@ export default function Hero() {
   }, []);
 
   return (
-    <section className='relative text-gray-900 min-h-screen'>
+    <section className='relative text-gray-900 min-h-screen overflow-hidden rounded-b-2xl'>
       {/* Hero Background Image */}
       <div
-        className='absolute inset-0 bg-cover bg-center bg-no-repeat'
+        className='absolute inset-0 bg-cover bg-center bg-no-repeat rounded-b-2xl'
         style={{
           backgroundImage: 'url(/img/hero.png)',
         }}
       ></div>
 
-      <div className='container mx-auto px-4 lg:px-6 relative z-20 pt-24'>
-        <div className='max-w-screen-2xl mx-auto'>
+      <div className='container mx-auto px-4 lg:px-6 relative z-20 pt-24 overflow-x-hidden'>
+        <div className='max-w-screen-2xl mx-auto overflow-x-hidden'>
           {/* Booking Widget - Desktop and Mobile Responsive */}
           <div className='rounded-2xl shadow-2xl p-6 border border-gray-200 backdrop-blur-md bg-white/98'>
             {/* Vehicle Type Tabs */}
