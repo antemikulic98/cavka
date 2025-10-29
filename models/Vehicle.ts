@@ -1,12 +1,15 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IVehicle {
+  // Vehicle Type
+  type: 'rental' | 'transfer'; // rental = rent a car, transfer = transfer service
+
   // Basic Information
   make: string;
   vehicleModel: string;
   year: number;
   color: string;
-  licensePlate: string;
+  licensePlate?: string; // Optional for transfer vehicles
 
   // ACRISS Classification (new schema)
   acrissCode: string;
@@ -61,6 +64,14 @@ export interface IVehicle {
 
 const VehicleSchema = new Schema<IVehicle & Document>(
   {
+    // Vehicle Type
+    type: {
+      type: String,
+      enum: ['rental', 'transfer'],
+      default: 'rental',
+      required: [true, 'Vehicle type is required'],
+    },
+
     // Basic Information
     make: {
       type: String,
@@ -85,8 +96,11 @@ const VehicleSchema = new Schema<IVehicle & Document>(
     },
     licensePlate: {
       type: String,
-      required: [true, 'License plate is required'],
+      required: function(this: IVehicle & Document) {
+        return this.type === 'rental'; // Only required for rental vehicles
+      },
       unique: true,
+      sparse: true, // Allow multiple null/undefined values
       uppercase: true,
       trim: true,
     },
@@ -239,7 +253,9 @@ const VehicleSchema = new Schema<IVehicle & Document>(
 );
 
 // Indexes for better performance
+VehicleSchema.index({ type: 1 }); // Index for filtering by vehicle type
 VehicleSchema.index({ status: 1, location: 1 });
+VehicleSchema.index({ type: 1, status: 1, location: 1 }); // Composite index for common queries
 VehicleSchema.index({ category: 1, dailyRate: 1 });
 VehicleSchema.index({ make: 1, vehicleModel: 1, year: 1 });
 

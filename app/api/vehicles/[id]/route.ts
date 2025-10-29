@@ -23,9 +23,15 @@ export async function GET(
       return NextResponse.json({ error: 'Vehicle not found' }, { status: 404 });
     }
 
+    // Map vehicleModel to model for frontend compatibility
+    const vehicleWithModel = {
+      ...vehicle,
+      model: vehicle.vehicleModel,
+    };
+
     return NextResponse.json({
       success: true,
-      vehicle,
+      vehicle: vehicleWithModel,
     });
   } catch (error) {
     console.error('Error fetching vehicle:', error);
@@ -52,9 +58,15 @@ export async function PUT(
 
     const body = await request.json();
 
+    // Map model to vehicleModel if present
+    const updateData = { ...body, updatedAt: new Date() };
+    if (body.model) {
+      updateData.vehicleModel = body.model;
+    }
+
     const vehicle = await Vehicle.findByIdAndUpdate(
       resolvedParams.id,
-      { ...body, updatedAt: new Date() },
+      updateData,
       { new: true, runValidators: true }
     );
 
@@ -62,9 +74,13 @@ export async function PUT(
       return NextResponse.json({ error: 'Vehicle not found' }, { status: 404 });
     }
 
+    // Map vehicleModel to model for frontend compatibility
+    const vehicleResponse = vehicle.toJSON();
+    vehicleResponse.model = vehicle.vehicleModel;
+
     return NextResponse.json({
       success: true,
-      vehicle,
+      vehicle: vehicleResponse,
     });
   } catch (error) {
     console.error('Error updating vehicle:', error);

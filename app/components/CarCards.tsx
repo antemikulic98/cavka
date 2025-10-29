@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Users, Fuel, Settings, Star, MapPin } from 'lucide-react';
+import ContactManagerModal from './ContactManagerModal';
 
 interface Vehicle {
   _id: string;
@@ -28,6 +29,7 @@ export default function CarCards() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showContactModal, setShowContactModal] = useState(false);
 
   // Fetch vehicles for home page preview
   useEffect(() => {
@@ -199,10 +201,7 @@ export default function CarCards() {
             {vehicles.map((vehicle) => (
               <div
                 key={vehicle._id}
-                className='border-4 border-transparent hover:border-green-800 rounded-3xl p-1 transition-all duration-300 group cursor-pointer'
-                onClick={() => {
-                  window.location.href = `/vehicles/${vehicle._id}`;
-                }}
+                className='border-4 border-transparent hover:border-green-800 rounded-3xl p-1 transition-all duration-300 group'
               >
                 <div className='bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300'>
                   {/* Image Container with Overlay */}
@@ -313,8 +312,24 @@ export default function CarCards() {
                               /day
                             </span>
                           </div>
-                          <div className='text-right'>
-                            <button className='font-poppins bg-green-800 hover:bg-green-900 text-white font-bold py-2 px-4 rounded-xl text-sm transition-colors duration-200'>
+                          <div className='flex gap-2'>
+                            <button
+                              onClick={() => {
+                                window.location.href = `/vehicles/${vehicle._id}`;
+                              }}
+                              className='font-poppins bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-3 rounded-xl text-sm transition-colors duration-200'>
+                              Details
+                            </button>
+                            <button
+                              onClick={() => {
+                                const today = new Date();
+                                const tomorrow = new Date(today);
+                                tomorrow.setDate(tomorrow.getDate() + 1);
+                                const pickupDate = today.toISOString().split('T')[0];
+                                const returnDate = tomorrow.toISOString().split('T')[0];
+                                window.location.href = `/search?pickupLocation=${encodeURIComponent(vehicle.location)}&returnLocation=${encodeURIComponent(vehicle.location)}&pickupDate=${pickupDate}&returnDate=${returnDate}&vehicleType=car&vehicleId=${vehicle._id}&expandSearch=true`;
+                              }}
+                              className='font-poppins bg-green-800 hover:bg-green-900 text-white font-bold py-2 px-4 rounded-xl text-sm transition-colors duration-200'>
                               Reserve Now
                             </button>
                           </div>
@@ -339,14 +354,21 @@ export default function CarCards() {
               custom packages for your specific business requirements.
             </p>
             <div className='flex flex-col sm:flex-row gap-4 justify-center'>
-              <button className='font-poppins bg-green-800 hover:bg-green-900 text-white font-bold py-3 px-6 rounded-2xl transition-colors duration-200'>
+              <button
+                onClick={() => setShowContactModal(true)}
+                className='font-poppins bg-green-800 hover:bg-green-900 text-white font-bold py-3 px-6 rounded-2xl transition-colors duration-200'
+              >
                 Contact Fleet Manager
               </button>
               <button
-                onClick={() =>
-                  (window.location.href =
-                    '/search?pickupLocation=Zagreb Downtown&vehicleType=car')
-                }
+                onClick={() => {
+                  const today = new Date();
+                  const tomorrow = new Date(today);
+                  tomorrow.setDate(tomorrow.getDate() + 1);
+                  const pickupDate = today.toISOString().split('T')[0];
+                  const returnDate = tomorrow.toISOString().split('T')[0];
+                  window.location.href = `/search?pickupLocation=Zagreb Downtown&returnLocation=Zagreb Downtown&pickupDate=${pickupDate}&returnDate=${returnDate}&vehicleType=car`;
+                }}
                 className='font-poppins border border-gray-400 hover:border-gray-500 text-gray-700 hover:text-gray-900 font-medium py-3 px-6 rounded-2xl transition-colors duration-200'
               >
                 View All Vehicles
@@ -355,6 +377,12 @@ export default function CarCards() {
           </div>
         </div>
       </div>
+
+      {/* Contact Manager Modal */}
+      <ContactManagerModal
+        isOpen={showContactModal}
+        onClose={() => setShowContactModal(false)}
+      />
     </section>
   );
 }

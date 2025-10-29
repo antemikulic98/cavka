@@ -10,6 +10,7 @@ import VehicleCalendar from './VehicleCalendar';
 import PriceEditModal from './PriceEditModal';
 import DateInfoPanel from './DateInfoPanel';
 import EditVehicleModal from './EditVehicleModal';
+import DeleteConfirmModal from './DeleteConfirmModal';
 
 interface DayPricing {
   date: string;
@@ -40,6 +41,7 @@ interface Vehicle {
   licensePlate: string;
   color: string;
   mainImage?: string;
+  acrissCode?: string;
   passengerCapacity: number;
   doorCount: number;
   bigSuitcases?: number;
@@ -75,6 +77,8 @@ export default function VehicleView({ vehicleId, onBack }: VehicleViewProps) {
   const [editingDate, setEditingDate] = useState<Date | null>(null);
   const [newPrice, setNewPrice] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Fetch vehicle details
   const fetchVehicleDetails = useCallback(async () => {
@@ -268,6 +272,31 @@ export default function VehicleView({ vehicleId, onBack }: VehicleViewProps) {
     }
   };
 
+  const handleDeleteVehicle = async () => {
+    try {
+      setDeleting(true);
+
+      const response = await fetch(`/api/vehicles/${vehicleId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        // Success - go back to browse cars
+        setShowDeleteModal(false);
+        onBack();
+      } else {
+        const error = await response.json();
+        alert(`Error deleting vehicle: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error deleting vehicle:', error);
+      alert('Failed to delete vehicle. Please try again.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const navigateMonth = (direction: 'prev' | 'next') => {
     setCurrentDate((prev) => {
       const newDate = new Date(prev);
@@ -350,12 +379,7 @@ export default function VehicleView({ vehicleId, onBack }: VehicleViewProps) {
       <VehicleHeader
         onBack={onBack}
         onEdit={() => setShowEditModal(true)}
-        onDelete={() => {
-          // TODO: Implement delete functionality
-          if (confirm('Are you sure you want to delete this vehicle?')) {
-            console.log('Delete vehicle:', vehicle?._id);
-          }
-        }}
+        onDelete={() => setShowDeleteModal(true)}
       />
 
       <div className='space-y-8'>
@@ -416,6 +440,16 @@ export default function VehicleView({ vehicleId, onBack }: VehicleViewProps) {
           vehicle={vehicle}
         />
       )}
+
+      {/* Delete Confirm Modal */}
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteVehicle}
+        title='Delete Vehicle'
+        message={`Are you sure you want to delete ${vehicle?.year} ${vehicle?.make} ${vehicle?.model}? This action cannot be undone and will remove all associated bookings and pricing data.`}
+        loading={deleting}
+      />
     </div>
   );
 }

@@ -19,6 +19,7 @@ interface Vehicle {
   model: string;
   year: number;
   category: string;
+  acrissCode?: string;
   passengerCapacity: number;
   transmission: string;
   fuelAirCon?: string;
@@ -73,6 +74,10 @@ export default function BookingModal({
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [isBookingLoading, setIsBookingLoading] = useState(false);
   const countryDropdownRef = useRef<HTMLDivElement>(null);
+  const [insurancePricing, setInsurancePricing] = useState<{
+    dailyPrice: number;
+    fullCoveragePrice: number;
+  } | null>(null);
   const [clientInfo, setClientInfo] = useState({
     firstName: '',
     lastName: '',
@@ -84,6 +89,61 @@ export default function BookingModal({
     flightNumber: '',
     promoCode: '',
   });
+
+  // Fetch insurance pricing based on vehicle's ACRISS code
+  useEffect(() => {
+    const fetchInsurancePricing = async () => {
+      console.log('Vehicle ACRISS Code:', vehicle?.acrissCode);
+
+      if (!vehicle || !vehicle.acrissCode) {
+        console.log('No ACRISS code found, using default pricing');
+        // If no ACRISS code, use default pricing
+        setInsurancePricing({ dailyPrice: 0, fullCoveragePrice: 15 });
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/settings/insurance');
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('All insurance pricing:', data.pricing);
+
+          const pricing = data.pricing.find(
+            (p: any) => p.acrissCode === vehicle.acrissCode
+          );
+
+          console.log('Matched pricing for', vehicle.acrissCode, ':', pricing);
+
+          if (pricing) {
+            setInsurancePricing({
+              dailyPrice: pricing.dailyPrice || 0,
+              fullCoveragePrice: pricing.fullCoveragePrice || 15,
+            });
+            console.log('Set insurance pricing:', {
+              dailyPrice: pricing.dailyPrice || 0,
+              fullCoveragePrice: pricing.fullCoveragePrice || 15,
+            });
+          } else {
+            console.log('No pricing found for this ACRISS code, using defaults');
+            // No pricing found for this ACRISS code, use defaults
+            setInsurancePricing({ dailyPrice: 0, fullCoveragePrice: 15 });
+          }
+        } else {
+          console.error('Failed to fetch insurance pricing, status:', response.status);
+          setInsurancePricing({ dailyPrice: 0, fullCoveragePrice: 15 });
+        }
+      } catch (error) {
+        console.error('Error fetching insurance pricing:', error);
+        // Fallback to default pricing
+        setInsurancePricing({ dailyPrice: 0, fullCoveragePrice: 15 });
+      }
+    };
+
+    if (isOpen && vehicle) {
+      fetchInsurancePricing();
+    }
+  }, [isOpen, vehicle]);
 
   // Close country dropdown when clicking outside
   useEffect(() => {
@@ -222,7 +282,10 @@ export default function BookingModal({
   };
 
   const getCdwCost = () => {
-    return cdwCoverage === 'full' ? 15 : 0;
+    if (cdwCoverage === 'full' && insurancePricing) {
+      return insurancePricing.fullCoveragePrice;
+    }
+    return 0;
   };
 
   const getTotalDailyRate = () => {
@@ -503,7 +566,7 @@ export default function BookingModal({
                   </div>
                 </div>
                 <span className='bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold'>
-                  +€15/day
+                  +€{insurancePricing?.fullCoveragePrice || 15}/day
                 </span>
               </div>
               <p className='text-sm text-gray-600 ml-7'>
@@ -1430,7 +1493,7 @@ export default function BookingModal({
                         >
                           {cdwCoverage === 'basic'
                             ? 'Included'
-                            : `€${(15 * rentalDays).toFixed(2)}`}
+                            : `€${((insurancePricing?.fullCoveragePrice || 15) * rentalDays).toFixed(2)}`}
                         </span>
                       </div>
                     )}

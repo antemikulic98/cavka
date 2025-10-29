@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
     const vehicleId = searchParams.get('vehicleId');
     const pickupDate = searchParams.get('pickupDate');
     const returnDate = searchParams.get('returnDate');
+    const type = searchParams.get('type'); // Optional: filter by vehicle type (rental/transfer)
 
     if (!pickupDate || !returnDate) {
       return NextResponse.json(
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     let query: any = {
-      status: 'available',
+      status: { $in: ['Available', 'Booked'] }, // Show both available and booked vehicles
     };
 
     // If specific vehicle requested, add to query
@@ -40,21 +41,26 @@ export async function GET(request: NextRequest) {
       query._id = vehicleId;
     }
 
-    // Find available vehicles
+    // Filter by vehicle type if provided (rental or transfer)
+    if (type && ['rental', 'transfer'].includes(type)) {
+      query.type = type;
+    }
+
+    // Find vehicles (both available and potentially overbooked)
     const vehicles = await Vehicle.find(query);
 
     if (vehicles.length === 0) {
       return NextResponse.json({
         success: true,
-        availableVehicles: [],
+        vehicles: [],
         message: vehicleId
-          ? 'Vehicle not found or not available'
-          : 'No vehicles available',
+          ? 'Vehicle not found'
+          : 'No vehicles found',
       });
     }
 
-    // Check each vehicle for booking conflicts
-    const availableVehicles = [];
+    // Check each vehicle for booking conflicts and return ALL vehicles with availability status
+    const vehiclesWithAvailability = [];
 
     for (const vehicle of vehicles) {
       const conflictingBookings = await Booking.find({
@@ -79,28 +85,44 @@ export async function GET(request: NextRequest) {
         ],
       });
 
-      if (conflictingBookings.length === 0) {
-        availableVehicles.push({
-          _id: vehicle._id,
-          make: vehicle.make,
-          model: vehicle.model,
-          category: vehicle.category,
-          dailyRate: vehicle.dailyRate,
-          currency: vehicle.currency,
-          location: vehicle.location,
-          mainImage: vehicle.mainImage,
-          passengerCapacity: vehicle.passengerCapacity,
-          transmission: vehicle.transmission,
-          features: vehicle.features,
-          available: true,
-        });
-      }
+      const isAvailable = conflictingBookings.length === 0;
+      const wouldBeOverbooking = !isAvailable;
+
+      vehiclesWithAvailability.push({
+        _id: vehicle._id,
+        make: vehicle.make,
+        model: vehicle.vehicleModel, // Use vehicleModel from schema
+        category: vehicle.category,
+        acrissCode: vehicle.acrissCode, // Include ACRISS code for insurance pricing
+        dailyRate: vehicle.dailyRate,
+        currency: vehicle.currency,
+        location: vehicle.location,
+        mainImage: vehicle.mainImage,
+        passengerCapacity: vehicle.passengerCapacity,
+        transmission: vehicle.transmission,
+        features: vehicle.features,
+        available: isAvailable,
+        wouldBeOverbooking,
+        conflictingBookingsCount: conflictingBookings.length,
+      });
     }
+
+    // Sort: available vehicles first, then overbooked ones
+    vehiclesWithAvailability.sort((a, b) => {
+      if (a.available && !b.available) return -1;
+      if (!a.available && b.available) return 1;
+      return 0;
+    });
+
+    const availableCount = vehiclesWithAvailability.filter(v => v.available).length;
+    const overbookingCount = vehiclesWithAvailability.filter(v => v.wouldBeOverbooking).length;
 
     return NextResponse.json({
       success: true,
-      availableVehicles,
-      totalAvailable: availableVehicles.length,
+      vehicles: vehiclesWithAvailability,
+      totalVehicles: vehiclesWithAvailability.length,
+      availableCount,
+      overbookingCount,
       requestedPeriod: {
         pickupDate: pickup.toISOString(),
         returnDate: returnD.toISOString(),

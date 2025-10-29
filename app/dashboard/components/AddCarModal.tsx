@@ -22,6 +22,9 @@ interface AddCarModalProps {
 }
 
 interface CarFormData {
+  // Vehicle Type
+  type: 'rental' | 'transfer';
+
   // Basic Information
   make: string;
   model: string;
@@ -89,32 +92,51 @@ const ACRISS_FUEL_AIRCON = [
 
 // Convert arrays to select options format
 const makeOptions = [
+  'Acura',
+  'Alfa Romeo',
   'Audi',
   'BMW',
-  'Mercedes-Benz',
-  'Volkswagen',
-  'Toyota',
-  'Honda',
-  'Nissan',
-  'Ford',
+  'Buick',
+  'Cadillac',
   'Chevrolet',
-  'Hyundai',
-  'Kia',
-  'Mazda',
-  'Subaru',
-  'Volvo',
-  'Peugeot',
-  'Renault',
-  'Opel',
-  'Skoda',
-  'Seat',
+  'Chrysler',
+  'Citroën',
+  'Dacia',
+  'Dodge',
+  'DS',
   'Fiat',
-  'Alfa Romeo',
-  'Jeep',
-  'Land Rover',
+  'Ford',
+  'Genesis',
+  'GMC',
+  'Honda',
+  'Hyundai',
+  'Infiniti',
   'Jaguar',
+  'Jeep',
+  'Kia',
+  'Land Rover',
+  'Lexus',
+  'Lincoln',
+  'Mazda',
+  'Mercedes-Benz',
+  'MG',
+  'Mini',
+  'Mitsubishi',
+  'Nissan',
+  'Opel',
+  'Peugeot',
   'Porsche',
+  'Ram',
+  'Renault',
+  'Seat',
+  'Skoda',
+  'Smart',
+  'Subaru',
+  'Suzuki',
   'Tesla',
+  'Toyota',
+  'Volkswagen',
+  'Volvo',
   'Other',
 ].map((make) => ({ value: make, label: make }));
 
@@ -192,6 +214,7 @@ export default function AddCarModal({
   const [uploadingImages, setUploadingImages] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [formData, setFormData] = useState<CarFormData>({
+    type: 'rental', // Default to rental
     make: '',
     model: '',
     year: 0,
@@ -203,8 +226,8 @@ export default function AddCarModal({
     fuelAirCon: 'R', // Air Conditioning
     passengerCapacity: 5,
     doorCount: 4,
-    bigSuitcases: 2,
-    smallSuitcases: 2,
+    bigSuitcases: 0,
+    smallSuitcases: 0,
     features: [],
     dailyRate: 50,
     currency: 'EUR',
@@ -260,7 +283,10 @@ export default function AddCarModal({
         if (!formData.model) errors.push('Model is required');
         if (!formData.year) errors.push('Year is required');
         if (!formData.color) errors.push('Color is required');
-        if (!formData.licensePlate) errors.push('License plate is required');
+        // License plate is only required for rental vehicles
+        if (formData.type === 'rental' && !formData.licensePlate) {
+          errors.push('License plate is required for rental vehicles');
+        }
         break;
 
       case 2:
@@ -439,6 +465,7 @@ export default function AddCarModal({
 
       const vehicleData = {
         ...formData,
+        vehicleModel: formData.model, // Map model to vehicleModel for backend
         acrissCode: generateAcrissCode(),
         images: imageUrls,
         mainImage: imageUrls[0] || '',
@@ -461,6 +488,7 @@ export default function AddCarModal({
         // Reset form
         setCurrentStep(1);
         setFormData({
+          type: 'rental',
           make: '',
           model: '',
           year: 0,
@@ -472,8 +500,8 @@ export default function AddCarModal({
           fuelAirCon: 'R', // Air Conditioning
           passengerCapacity: 5,
           doorCount: 4,
-          bigSuitcases: 2,
-          smallSuitcases: 2,
+          bigSuitcases: 0,
+          smallSuitcases: 0,
           features: [],
           dailyRate: 50,
           currency: 'EUR',
@@ -610,6 +638,7 @@ export default function AddCarModal({
 
       const vehicleData = {
         ...formData,
+        vehicleModel: formData.model, // Map model to vehicleModel for backend
         acrissCode: generateAcrissCode(),
         images: imageUrls,
         mainImage: imageUrls[0] || '',
@@ -629,6 +658,7 @@ export default function AddCarModal({
         // Reset form
         setCurrentStep(1);
         setFormData({
+          type: 'rental',
           make: '',
           model: '',
           year: 0,
@@ -640,8 +670,8 @@ export default function AddCarModal({
           fuelAirCon: 'R', // Air Conditioning
           passengerCapacity: 5,
           doorCount: 4,
-          bigSuitcases: 2,
-          smallSuitcases: 2,
+          bigSuitcases: 0,
+          smallSuitcases: 0,
           features: [],
           dailyRate: 50,
           currency: 'EUR',
@@ -683,6 +713,51 @@ export default function AddCarModal({
               <h3 className='text-lg font-semibold text-gray-900'>
                 Basic Information
               </h3>
+            </div>
+
+            {/* Vehicle Type Selection */}
+            <div className='mb-6 p-4 bg-emerald-50 rounded-lg border-2 border-emerald-200'>
+              <label className='block text-sm font-bold text-emerald-900 mb-3'>
+                Vehicle Type *
+              </label>
+              <div className='grid grid-cols-2 gap-4'>
+                <button
+                  type='button'
+                  onClick={() => setFormData({ ...formData, type: 'rental' })}
+                  className={`
+                    flex items-center justify-center p-4 rounded-lg border-2 transition-all
+                    ${
+                      formData.type === 'rental'
+                        ? 'border-emerald-600 bg-emerald-100 text-emerald-900 shadow-md'
+                        : 'border-gray-300 bg-white text-gray-700 hover:border-emerald-400'
+                    }
+                  `}
+                >
+                  <Car className='h-5 w-5 mr-2' />
+                  <div className='text-left'>
+                    <div className='font-semibold'>Rent a Car</div>
+                    <div className='text-xs opacity-75'>Requires license plate</div>
+                  </div>
+                </button>
+                <button
+                  type='button'
+                  onClick={() => setFormData({ ...formData, type: 'transfer' })}
+                  className={`
+                    flex items-center justify-center p-4 rounded-lg border-2 transition-all
+                    ${
+                      formData.type === 'transfer'
+                        ? 'border-emerald-600 bg-emerald-100 text-emerald-900 shadow-md'
+                        : 'border-gray-300 bg-white text-gray-700 hover:border-emerald-400'
+                    }
+                  `}
+                >
+                  <MapPin className='h-5 w-5 mr-2' />
+                  <div className='text-left'>
+                    <div className='font-semibold'>Transfer</div>
+                    <div className='text-xs opacity-75'>No license plate needed</div>
+                  </div>
+                </button>
+              </div>
             </div>
 
             <div className='grid grid-cols-2 gap-4'>
@@ -736,19 +811,33 @@ export default function AddCarModal({
                 />
               </div>
 
-              <div className='col-span-2'>
-                <label className='block text-sm font-semibold text-gray-900 mb-2'>
-                  License Plate
-                </label>
-                <input
-                  type='text'
-                  name='licensePlate'
-                  value={formData.licensePlate}
-                  onChange={handleInputChange}
-                  className='w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 placeholder-gray-500 bg-white uppercase font-medium'
-                  placeholder='e.g., ZG-1234-AA'
-                />
-              </div>
+              {/* License Plate - Only for Rental vehicles */}
+              {formData.type === 'rental' && (
+                <div className='col-span-2'>
+                  <label className='block text-sm font-semibold text-gray-900 mb-2'>
+                    License Plate *
+                  </label>
+                  <input
+                    type='text'
+                    name='licensePlate'
+                    value={formData.licensePlate}
+                    onChange={handleInputChange}
+                    className='w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 placeholder-gray-500 bg-white uppercase font-medium'
+                    placeholder='e.g., ZG-1234-AA'
+                    required
+                  />
+                </div>
+              )}
+
+              {/* Info message for Transfer vehicles */}
+              {formData.type === 'transfer' && (
+                <div className='col-span-2 p-3 bg-blue-50 border border-blue-200 rounded-lg'>
+                  <p className='text-sm text-blue-800'>
+                    <Info className='h-4 w-4 inline mr-2' />
+                    Transfer vehicles don't require a license plate number
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         );
@@ -861,7 +950,7 @@ export default function AddCarModal({
                   onChange={handleInputChange}
                   min='1'
                   max='9'
-                  className='w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 placeholder-gray-500 bg-white'
+                  className='w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 placeholder-gray-500 bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
                 />
               </div>
 
@@ -876,7 +965,7 @@ export default function AddCarModal({
                   onChange={handleInputChange}
                   min='2'
                   max='5'
-                  className='w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 placeholder-gray-500 bg-white'
+                  className='w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 placeholder-gray-500 bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
                 />
               </div>
             </div>
@@ -897,11 +986,17 @@ export default function AddCarModal({
                   <input
                     type='number'
                     name='bigSuitcases'
-                    value={formData.bigSuitcases}
+                    value={formData.bigSuitcases === 0 ? '' : formData.bigSuitcases}
                     onChange={handleInputChange}
+                    onBlur={(e) => {
+                      if (e.target.value === '') {
+                        setFormData((prev) => ({ ...prev, bigSuitcases: 0 }));
+                      }
+                    }}
                     min='0'
                     max='6'
-                    className='w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 placeholder-gray-500 bg-white'
+                    className='w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 placeholder-gray-500 bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
+                    placeholder='0'
                   />
                   <p className='text-xs text-gray-500 mt-1'>
                     Large checked bags
@@ -918,11 +1013,17 @@ export default function AddCarModal({
                   <input
                     type='number'
                     name='smallSuitcases'
-                    value={formData.smallSuitcases}
+                    value={formData.smallSuitcases === 0 ? '' : formData.smallSuitcases}
                     onChange={handleInputChange}
+                    onBlur={(e) => {
+                      if (e.target.value === '') {
+                        setFormData((prev) => ({ ...prev, smallSuitcases: 0 }));
+                      }
+                    }}
                     min='0'
                     max='8'
-                    className='w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 placeholder-gray-500 bg-white'
+                    className='w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 placeholder-gray-500 bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
+                    placeholder='0'
                   />
                   <p className='text-xs text-gray-500 mt-1'>
                     Carry-on & small bags

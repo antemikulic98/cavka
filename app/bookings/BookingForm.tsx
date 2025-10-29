@@ -220,7 +220,9 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
       const data = await response.json();
 
       if (data.success) {
-        setVehicles(data.availableVehicles);
+        // Filter only available vehicles (not overbooked ones)
+        const availableVehicles = (data.vehicles || []).filter((v: any) => v.available);
+        setVehicles(availableVehicles);
       } else {
         setVehicles([]);
       }

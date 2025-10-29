@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
       if (recentBookings === 0) {
         idleVehicles++;
         if (idleVehicleNames.length < 2) {
-          idleVehicleNames.push(`${vehicle.make} ${vehicle.model}`);
+          idleVehicleNames.push(`${vehicle.make} ${vehicle.vehicleModel}`);
         }
       }
     }

@@ -11,6 +11,7 @@ interface Vehicle {
   licensePlate: string;
   color: string;
   mainImage?: string;
+  acrissCode?: string;
   passengerCapacity: number;
   doorCount: number;
   bigSuitcases?: number;
@@ -128,9 +129,11 @@ export default function VehicleDetails({
                 <MapPin className='w-4 h-4 mr-1' />
                 {vehicle.location}
               </span>
-              <span className='bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-medium border border-blue-200'>
-                {getCategoryLabel(vehicle.category)} Category
-              </span>
+              {vehicle.acrissCode && (
+                <span className='bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-sm font-medium border border-emerald-200'>
+                  ACRISS: {vehicle.acrissCode}
+                </span>
+              )}
             </div>
           </div>
 

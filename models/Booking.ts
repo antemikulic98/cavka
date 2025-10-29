@@ -73,6 +73,22 @@ const BookingSchema = new mongoose.Schema({
     default: 'confirmed',
   },
 
+  // Overbooking Information
+  isOverbooking: {
+    type: Boolean,
+    default: false,
+    index: true,
+  },
+  overbookingStatus: {
+    type: String,
+    enum: ['none', 'pending', 'arranged', 'confirmed'],
+    default: 'none',
+  },
+  externalSourceId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ExternalCarSource',
+  },
+
   // Metadata
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },

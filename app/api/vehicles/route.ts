@@ -4,11 +4,12 @@ import Vehicle from '@/models/Vehicle';
 import { getCurrentUser } from '@/lib/auth';
 
 interface CreateVehicleRequest {
+  type: 'rental' | 'transfer';
   make: string;
   model: string;
   year: number;
   color: string;
-  licensePlate: string;
+  licensePlate?: string; // Optional for transfer vehicles
   acrissCode: string;
   category: string;
   bodyType: string;
@@ -41,11 +42,11 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     const requiredFields = [
+      'type',
       'make',
       'model',
       'year',
       'color',
-      'licensePlate',
       'category',
       'bodyType',
       'transmission',
@@ -68,24 +69,49 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check if license plate already exists
-    const existingVehicle = await Vehicle.findOne({
-      licensePlate: body.licensePlate.toUpperCase(),
-    });
-
-    if (existingVehicle) {
+    // Validate type
+    if (!['rental', 'transfer'].includes(body.type)) {
       return NextResponse.json(
-        { error: 'Vehicle with this license plate already exists' },
+        { error: 'Invalid vehicle type. Must be "rental" or "transfer"' },
         { status: 400 }
       );
     }
 
+    // License plate is required for rental vehicles
+    if (body.type === 'rental' && !body.licensePlate) {
+      return NextResponse.json(
+        { error: 'License plate is required for rental vehicles' },
+        { status: 400 }
+      );
+    }
+
+    // Check if license plate already exists (only for rental vehicles)
+    if (body.type === 'rental' && body.licensePlate) {
+      const existingVehicle = await Vehicle.findOne({
+        licensePlate: body.licensePlate.toUpperCase(),
+      });
+
+      if (existingVehicle) {
+        return NextResponse.json(
+          { error: 'Vehicle with this license plate already exists' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Create new vehicle
-    const vehicle = new Vehicle({
+    const vehicleData: any = {
       ...body,
-      licensePlate: body.licensePlate.toUpperCase(),
+      vehicleModel: body.model, // Map model to vehicleModel for MongoDB schema
       addedBy: user.id,
-    });
+    };
+
+    // Only set licensePlate if it exists (for rental vehicles)
+    if (body.licensePlate) {
+      vehicleData.licensePlate = body.licensePlate.toUpperCase();
+    }
+
+    const vehicle = new Vehicle(vehicleData);
 
     await vehicle.save();
 
@@ -151,11 +177,17 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .lean();
 
+    // Map vehicleModel to model for frontend compatibility
+    const vehiclesWithModel = vehicles.map((vehicle: any) => ({
+      ...vehicle,
+      model: vehicle.vehicleModel,
+    }));
+
     const total = await Vehicle.countDocuments(query);
 
     return NextResponse.json({
       success: true,
-      vehicles,
+      vehicles: vehiclesWithModel,
       pagination: {
         page,
         limit,

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import BookingModal from './BookingModal';
+import SearchBar from './SearchBar';
 
 interface Vehicle {
   _id: string;
@@ -22,6 +23,7 @@ interface Vehicle {
   model: string;
   year: number;
   category: string;
+  acrissCode?: string;
   passengerCapacity: number;
   transmission: string;
   fuelAirCon?: string;
@@ -54,6 +56,8 @@ export default function SearchResults() {
   const pickupTime = searchParams.get('pickupTime') || '';
   const returnTime = searchParams.get('returnTime') || '';
   const vehicleType = searchParams.get('vehicleType') || 'car';
+  const vehicleId = searchParams.get('vehicleId') || '';
+  const expandSearch = searchParams.get('expandSearch') === 'true';
 
   // Fetch vehicles based on search criteria
   useEffect(() => {
@@ -64,20 +68,39 @@ export default function SearchResults() {
 
         const apiSearchParams = new URLSearchParams();
 
-        if (pickupLocation) {
-          apiSearchParams.set('location', pickupLocation);
+        // Add pickup and return dates for availability check
+        if (pickupDate) {
+          apiSearchParams.set('pickupDate', pickupDate);
+        }
+        if (returnDate) {
+          apiSearchParams.set('returnDate', returnDate);
         }
 
-        apiSearchParams.set('status', 'Available');
-        apiSearchParams.set('limit', '20');
+        // Add vehicle type filter (rental or transfer)
+        if (vehicleType) {
+          const type = vehicleType === 'car' ? 'rental' : 'transfer';
+          apiSearchParams.set('type', type);
+        }
 
+        // Use availability endpoint to check vehicle availability
         const response = await fetch(
-          `/api/vehicles?${apiSearchParams.toString()}`
+          `/api/vehicles/availability?${apiSearchParams.toString()}`
         );
         const data = await response.json();
 
         if (data.success) {
-          setVehicles(data.vehicles);
+          let vehiclesList = data.vehicles || [];
+
+          // If a specific vehicle ID is provided, sort to show it first
+          if (vehicleId) {
+            vehiclesList = vehiclesList.sort((a: Vehicle, b: Vehicle) => {
+              if (a._id === vehicleId) return -1;
+              if (b._id === vehicleId) return 1;
+              return 0;
+            });
+          }
+
+          setVehicles(vehiclesList);
         } else {
           setError('Failed to load vehicles');
         }
@@ -90,7 +113,7 @@ export default function SearchResults() {
     };
 
     fetchVehicles();
-  }, [pickupLocation]);
+  }, [pickupLocation, pickupDate, returnDate, vehicleType, vehicleId]);
 
   const getCategoryDisplayName = (category: string) => {
     const categoryMap: { [key: string]: string } = {
@@ -199,53 +222,35 @@ export default function SearchResults() {
 
   return (
     <div className='min-h-screen bg-gray-50'>
-      {/* Header */}
-      <div className='bg-white border-b border-gray-200 sticky top-0 z-40'>
-        <div className='container mx-auto px-4 lg:px-6 py-4'>
-          <div className='flex items-center justify-between'>
-            <div className='flex items-center space-x-4'>
-              <Link
-                href='/'
-                className='flex items-center text-gray-600 hover:text-gray-900'
-              >
-                <ArrowLeft className='h-5 w-5 mr-2' />
-                Back to search
-              </Link>
-            </div>
-
-            <div className='hidden md:flex items-center space-x-6 text-sm text-gray-600'>
-              {pickupLocation && (
-                <div className='flex items-center'>
-                  <MapPin className='h-4 w-4 mr-1' />
-                  <span>{pickupLocation}</span>
-                </div>
-              )}
-              {pickupDate && (
-                <div className='flex items-center'>
-                  <Calendar className='h-4 w-4 mr-1' />
-                  <span>
-                    {formatDate(pickupDate)} - {formatDate(returnDate)}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <button className='flex items-center text-green-800 hover:text-green-900 font-medium'>
-              <Filter className='h-4 w-4 mr-2' />
-              Filters
-            </button>
-          </div>
-        </div>
-      </div>
+      {/* Search Bar */}
+      <SearchBar
+        initialPickupLocation={pickupLocation}
+        initialReturnLocation={returnLocation}
+        initialPickupDate={pickupDate}
+        initialReturnDate={returnDate}
+        initialPickupTime={pickupTime}
+        initialReturnTime={returnTime}
+        initialVehicleType={vehicleType}
+        initialExpanded={expandSearch}
+      />
 
       {/* Results */}
       <div className='container mx-auto px-4 lg:px-6 py-8'>
         {/* Results Header */}
         <div className='mb-8'>
-          <h1 className='text-3xl font-light text-gray-900 mb-2'>
-            Available{' '}
-            <span className='font-semibold text-green-800'>Vehicles</span>
-          </h1>
+          <div className='flex items-center justify-between mb-2'>
+            <h1 className='text-3xl font-light text-gray-900'>
+              Available{' '}
+              <span className='font-semibold text-green-800'>Vehicles</span>
+            </h1>
+            <Link
+              href='/'
+              className='flex items-center text-gray-600 hover:text-gray-900 text-sm'
+            >
+              <ArrowLeft className='h-4 w-4 mr-1' />
+              Back to Home
+            </Link>
+          </div>
           <p className='text-gray-600'>
             {loading ? 'Searching...' : `${vehicles.length} vehicles found`}
             {pickupLocation && ` in ${pickupLocation}`}

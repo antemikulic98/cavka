@@ -63,7 +63,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-emerald-900 via-emerald-800 to-green-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8'>
+    <div className='min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8' style={{ backgroundColor: '#0E1A0D' }}>
       <div className='max-w-md w-full space-y-8'>
         {/* Login Card */}
         <div className='bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-white/10'>

@@ -79,21 +79,16 @@ export async function POST(request: NextRequest) {
       'pickupDate returnDate bookingReference clientInfo.firstName clientInfo.lastName'
     );
 
-    if (conflictingBookings.length > 0) {
-      const conflictDetails = conflictingBookings.map((booking) => ({
+    // Check if this is an overbooking situation
+    const isOverbooking = conflictingBookings.length > 0;
+    let conflictDetails = null;
+
+    if (isOverbooking) {
+      conflictDetails = conflictingBookings.map((booking) => ({
         bookingReference: booking.bookingReference,
         dates: `${booking.pickupDate.toDateString()} - ${booking.returnDate.toDateString()}`,
         customer: `${booking.clientInfo.firstName} ${booking.clientInfo.lastName}`,
       }));
-
-      return NextResponse.json(
-        {
-          error: 'Vehicle is not available for the selected dates',
-          conflicts: conflictDetails,
-          message: `This vehicle has ${conflictingBookings.length} conflicting booking(s) during your requested period.`,
-        },
-        { status: 409 }
-      );
     }
 
     // Calculate pricing
@@ -138,7 +133,7 @@ export async function POST(request: NextRequest) {
       vehicleId: bookingData.vehicleId,
       vehicleInfo: {
         make: vehicle.make,
-        model: vehicle.model,
+        model: vehicle.vehicleModel, // Use vehicleModel from schema
         category: vehicle.category,
         dailyRate: vehicle.dailyRate,
         currency: vehicle.currency,
@@ -156,6 +151,9 @@ export async function POST(request: NextRequest) {
         totalDailyRate,
         totalCost,
       },
+      // Overbooking fields
+      isOverbooking,
+      overbookingStatus: isOverbooking ? 'pending' : 'none',
     });
 
     const savedBooking = await booking.save();
@@ -163,6 +161,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
+        isOverbooking,
+        conflicts: conflictDetails,
+        message: isOverbooking
+          ? `This booking has been created as an overbooking. ${conflictingBookings.length} conflicting booking(s) detected. Please arrange an external car source.`
+          : 'Booking created successfully',
         booking: {
           id: savedBooking._id,
           bookingReference: savedBooking.bookingReference,
@@ -174,6 +177,8 @@ export async function POST(request: NextRequest) {
           rentalDays: savedBooking.rentalDays,
           pricing: savedBooking.pricing,
           status: savedBooking.status,
+          isOverbooking: savedBooking.isOverbooking,
+          overbookingStatus: savedBooking.overbookingStatus,
         },
       },
       { status: 201 }
@@ -228,6 +233,9 @@ export async function GET(request: NextRequest) {
       addOns: booking.addOns,
       pricing: booking.pricing,
       status: booking.status,
+      isOverbooking: booking.isOverbooking,
+      overbookingStatus: booking.overbookingStatus,
+      externalSourceId: booking.externalSourceId,
       createdAt: booking.createdAt,
     }));
 

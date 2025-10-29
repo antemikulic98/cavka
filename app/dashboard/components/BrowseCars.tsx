@@ -13,7 +13,9 @@ import {
   ChevronDown,
   CheckCircle,
   Filter,
+  Plus,
 } from 'lucide-react';
+import AddCarModal from './AddCarModal';
 
 interface Vehicle {
   _id: string;
@@ -98,6 +100,7 @@ export default function BrowseCars({
     total: 0,
     pages: 1,
   });
+  const [showAddCarModal, setShowAddCarModal] = useState(false);
 
   // Custom dropdown states
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
@@ -311,11 +314,11 @@ export default function BrowseCars({
           </p>
         </div>
         <button
-          onClick={fetchVehicles}
-          className='inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-emerald-600 border border-transparent rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500'
+          onClick={() => setShowAddCarModal(true)}
+          className='inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-emerald-600 border border-transparent rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-md hover:shadow-lg transition-all duration-200'
         >
-          <Car className='w-4 h-4 mr-2' />
-          Refresh
+          <Plus className='w-4 h-4 mr-2' />
+          Add New Vehicle
         </button>
       </div>
 
@@ -586,7 +589,7 @@ export default function BrowseCars({
                 <div className='mb-3'>
                   <h3 className='text-lg font-semibold text-gray-900 mb-1'>
                     {vehicle.fullName ||
-                      `${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+                      `${vehicle.make} ${vehicle.model}`}
                   </h3>
                   <p className='text-sm text-gray-600 font-medium'>
                     {vehicle.licensePlate}
@@ -677,6 +680,16 @@ export default function BrowseCars({
           </div>
         </div>
       )}
+
+      {/* Add Car Modal */}
+      <AddCarModal
+        isOpen={showAddCarModal}
+        onClose={() => setShowAddCarModal(false)}
+        onCarAdded={() => {
+          setShowAddCarModal(false);
+          fetchVehicles(); // Refresh the vehicle list
+        }}
+      />
     </div>
   );
 }

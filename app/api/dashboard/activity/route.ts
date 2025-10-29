@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const recentBookings = await Booking.find({
       createdAt: { $gte: thirtyDaysAgo },
     })
-      .populate('vehicleId', 'make model category images mainImage')
+      .populate('vehicleId', 'make vehicleModel category images mainImage')
       .sort({ createdAt: -1 })
       .limit(10);
 
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
         vehicle: vehicle
           ? {
               make: vehicle.make,
-              model: vehicle.model,
+              model: vehicle.vehicleModel,
               image: vehicle.mainImage || vehicle.images?.[0],
             }
           : null,
@@ -58,14 +58,14 @@ export async function GET(request: NextRequest) {
       if (booking.status === 'cancelled') {
         activity.type = 'cancellation';
         activity.title = `Booking Cancelled`;
-        activity.description = `${customerName} cancelled ${vehicle?.make} ${vehicle?.model}`;
+        activity.description = `${customerName} cancelled ${vehicle?.make} ${vehicle?.vehicleModel}`;
         activity.icon = 'x-circle';
         activity.color = 'red';
       } else if (booking.status === 'completed') {
         activity.type = 'checkout';
         activity.title = `Vehicle Returned`;
         activity.description = `${customerName} returned ${vehicle?.make} ${
-          vehicle?.model
+          vehicle?.vehicleModel
         } - €${booking.pricing?.totalCost?.toFixed(2)} earned`;
         activity.icon = 'check-circle';
         activity.color = 'green';
@@ -75,13 +75,13 @@ export async function GET(request: NextRequest) {
       ) {
         activity.type = 'checkin';
         activity.title = `Vehicle Picked Up`;
-        activity.description = `${customerName} picked up ${vehicle?.make} ${vehicle?.model}`;
+        activity.description = `${customerName} picked up ${vehicle?.make} ${vehicle?.vehicleModel}`;
         activity.icon = 'car';
         activity.color = 'blue';
       } else if (booking.status === 'confirmed') {
         activity.type = 'booking';
         activity.title = `New Booking`;
-        activity.description = `${customerName} booked ${vehicle?.make} ${vehicle?.model} for ${booking.rentalDays} days`;
+        activity.description = `${customerName} booked ${vehicle?.make} ${vehicle?.vehicleModel} for ${booking.rentalDays} days`;
         activity.icon = 'calendar-plus';
         activity.color = 'emerald';
       }
@@ -95,13 +95,13 @@ export async function GET(request: NextRequest) {
         id: `vehicle-${vehicle._id}`,
         type: 'vehicle_added',
         title: 'New Vehicle Added',
-        description: `${vehicle.make} ${vehicle.model} added to fleet`,
+        description: `${vehicle.make} ${vehicle.vehicleModel} added to fleet`,
         timestamp: vehicle.createdAt,
         icon: 'plus-circle',
         color: 'purple',
         vehicle: {
           make: vehicle.make,
-          model: vehicle.model,
+          model: vehicle.vehicleModel,
           image: vehicle.mainImage || vehicle.images?.[0],
         },
         amount: 0,
