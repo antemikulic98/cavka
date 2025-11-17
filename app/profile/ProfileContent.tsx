@@ -188,7 +188,7 @@ export default function ProfileContent({ user }: ProfileContentProps) {
                     <div className='flex items-center space-x-2 text-gray-900 bg-gray-50 px-4 py-2 rounded-lg'>
                       <Calendar className='h-4 w-4 text-gray-400' />
                       <span>
-                        {new Date(user.createdAt || Date.now()).toLocaleDateString('en-US', {
+                        {new Date().toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric',
@@ -243,7 +243,7 @@ export default function ProfileContent({ user }: ProfileContentProps) {
                 </div>
               </div>
               <div className='bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2'>
-                <p className='text-emerald-800 font-semibold capitalize'>{user.role || 'Admin'}</p>
+                <p className='text-emerald-800 font-semibold capitalize'>Admin</p>
               </div>
             </div>
 

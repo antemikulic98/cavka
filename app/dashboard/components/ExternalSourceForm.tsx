@@ -125,7 +125,7 @@ export default function ExternalSourceForm({
   if (!isOpen) return null;
 
   return (
-    <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4'>
+    <div className='fixed inset-0 backdrop-blur-md flex items-center justify-center z-50 p-4'>
       <div className='bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto'>
         {/* Header */}
         <div className='sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between'>
@@ -222,7 +222,7 @@ export default function ExternalSourceForm({
               required
               value={formData.supplierName}
               onChange={(e) => setFormData({ ...formData, supplierName: e.target.value })}
-              className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent'
+              className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900'
               placeholder={
                 formData.supplierType === 'company' ? 'Company name' : 'Person name'
               }
@@ -242,7 +242,7 @@ export default function ExternalSourceForm({
                 required
                 value={formData.supplierContact}
                 onChange={(e) => setFormData({ ...formData, supplierContact: e.target.value })}
-                className='w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent'
+                className='w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900'
                 placeholder='Phone number or email'
               />
             </div>
@@ -270,7 +270,7 @@ export default function ExternalSourceForm({
                     onChange={(e) =>
                       setFormData({ ...formData, costFromSupplier: parseFloat(e.target.value) || 0 })
                     }
-                    className='w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent'
+                    className='w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900'
                   />
                 </div>
               </div>
@@ -292,7 +292,7 @@ export default function ExternalSourceForm({
                     onChange={(e) =>
                       setFormData({ ...formData, sellingPrice: parseFloat(e.target.value) || 0 })
                     }
-                    className='w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent'
+                    className='w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900'
                   />
                 </div>
               </div>
@@ -328,7 +328,7 @@ export default function ExternalSourceForm({
               id='status'
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent'
+              className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900'
             >
               <option value='arranged'>Arranged</option>
               <option value='confirmed'>Confirmed</option>
@@ -347,7 +347,7 @@ export default function ExternalSourceForm({
                 rows={3}
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className='w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent'
+                className='w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900'
                 placeholder='Add any additional notes about this arrangement...'
               />
             </div>

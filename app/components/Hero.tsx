@@ -15,10 +15,10 @@ import {
 import MobileSearchModal from './MobileSearchModal';
 
 export default function Hero() {
-  const [showReturnLocation, setShowReturnLocation] = useState(false);
-
   // Vehicle type state
   const [selectedVehicleType, setSelectedVehicleType] = useState('car'); // 'car' or 'transfers'
+  const isTransfer = selectedVehicleType === 'transfers';
+  const [showReturnLocation, setShowReturnLocation] = useState(false);
 
   // Location state
   const [pickupLocation, setPickupLocation] = useState('Zagreb Downtown');
@@ -81,6 +81,16 @@ export default function Hero() {
   };
 
   const timeOptions = generateTimes();
+
+  // Auto-show return location for transfers, hide for rent a car
+  useEffect(() => {
+    if (isTransfer) {
+      setShowReturnLocation(true);
+    } else {
+      setShowReturnLocation(false);
+      setReturnLocationValue('');
+    }
+  }, [isTransfer]);
 
   // Available locations
   const locations = [
@@ -171,6 +181,14 @@ export default function Hero() {
 
   // Handle date selection from calendar
   const handleCalendarDateSelect = (date: Date) => {
+    // For transfers, just set the date and close calendar
+    if (isTransfer) {
+      setPickupDate(date);
+      setShowCalendar(false);
+      return;
+    }
+
+    // For rent a car, handle pickup and return dates
     if (selectingPickup) {
       setPickupDate(date);
       if (date >= returnDate) {
@@ -237,7 +255,7 @@ export default function Hero() {
   }, []);
 
   return (
-    <section className='relative text-gray-900 min-h-screen overflow-hidden rounded-b-2xl'>
+    <section className='relative text-gray-900 min-h-screen rounded-b-2xl'>
       {/* Hero Background Image */}
       <div
         className='absolute inset-0 bg-cover bg-center bg-no-repeat rounded-b-2xl'
@@ -246,10 +264,10 @@ export default function Hero() {
         }}
       ></div>
 
-      <div className='container mx-auto px-4 lg:px-6 relative z-20 pt-24 overflow-x-hidden'>
-        <div className='max-w-screen-2xl mx-auto overflow-x-hidden'>
+      <div className={`container mx-auto px-4 lg:px-6 relative pt-24 ${showCalendar ? 'z-[100]' : 'z-20'}`}>
+        <div className='max-w-screen-2xl mx-auto'>
           {/* Booking Widget - Desktop and Mobile Responsive */}
-          <div className='rounded-2xl shadow-2xl p-6 border border-gray-200 backdrop-blur-md bg-white/98'>
+          <div className='rounded-2xl shadow-2xl p-6 border border-gray-200 backdrop-blur-md bg-white/98 overflow-visible'>
             {/* Vehicle Type Tabs */}
             <div className='flex mb-8'>
               <button
@@ -298,13 +316,13 @@ export default function Hero() {
             </div>
 
             {/* Desktop Layout - Full Search Form */}
-            <div className='hidden lg:block space-y-6 dropdown-container'>
+            <div className='hidden lg:block space-y-6 dropdown-container overflow-visible'>
               {/* Main Selector Row */}
               <div className='flex flex-col xl:flex-row gap-4 items-end'>
-                {/* Pickup Location */}
+                {/* Pickup Location / From */}
                 <div className='flex-1 min-w-0'>
                   <label className='block text-sm font-bold text-gray-800 mb-2'>
-                    Pickup Location
+                    {isTransfer ? 'From' : 'Pickup Location'}
                   </label>
                   <div className='relative'>
                     <div className='absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10'>
@@ -349,11 +367,11 @@ export default function Hero() {
                   </div>
                 </div>
 
-                {/* Return Location - Optional */}
+                {/* Return Location / To */}
                 {showReturnLocation ? (
                   <div className='flex-1 min-w-0'>
                     <label className='block text-sm font-bold text-gray-800 mb-2'>
-                      Return Location
+                      {isTransfer ? 'To' : 'Return Location'}
                     </label>
                     <div className='relative'>
                       <div className='absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10'>
@@ -378,16 +396,18 @@ export default function Hero() {
                           }`}
                         />
                       </div>
-                      <button
-                        onClick={() => {
-                          setShowReturnLocation(false);
-                          setReturnLocationValue('');
-                          setShowReturnDropdown(false);
-                        }}
-                        className='absolute inset-y-0 right-0 pr-4 flex items-center hover:bg-gray-50 rounded-r-xl transition-colors z-20'
-                      >
-                        <X className='h-5 w-5 text-gray-400 hover:text-red-500' />
-                      </button>
+                      {!isTransfer && (
+                        <button
+                          onClick={() => {
+                            setShowReturnLocation(false);
+                            setReturnLocationValue('');
+                            setShowReturnDropdown(false);
+                          }}
+                          className='absolute inset-y-0 right-0 pr-4 flex items-center hover:bg-gray-50 rounded-r-xl transition-colors z-20'
+                        >
+                          <X className='h-5 w-5 text-gray-400 hover:text-red-500' />
+                        </button>
+                      )}
 
                       {showReturnDropdown && (
                         <div className='absolute top-full left-0 right-0 mt-1 bg-white border-2 border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto z-50'>
@@ -407,7 +427,7 @@ export default function Hero() {
                       )}
                     </div>
                   </div>
-                ) : (
+                ) : !isTransfer ? (
                   <div className='flex-1 min-w-0'>
                     <label className='block text-sm font-bold text-gray-800 mb-2'>
                       &nbsp;
@@ -420,12 +440,12 @@ export default function Hero() {
                       Add different return location
                     </button>
                   </div>
-                )}
+                ) : null}
 
-                {/* Pick-up Date & Time Combined */}
+                {/* Pick-up Date & Time Combined / Date for Transfers */}
                 <div className='relative'>
                   <label className='block text-sm font-bold text-gray-800 mb-2'>
-                    Pick-up Date
+                    {isTransfer ? 'Date' : 'Pick-up Date'}
                   </label>
                   <div className='flex'>
                     {/* Date Button - Left Side */}
@@ -485,11 +505,12 @@ export default function Hero() {
                   )}
                 </div>
 
-                {/* Return Date & Time Combined */}
-                <div className='relative'>
-                  <label className='block text-sm font-bold text-gray-800 mb-2'>
-                    Return Date
-                  </label>
+                {/* Return Date & Time Combined - Only for Rent a Car */}
+                {!isTransfer && (
+                  <div className='relative'>
+                    <label className='block text-sm font-bold text-gray-800 mb-2'>
+                      Return Date
+                    </label>
                   <div className='flex'>
                     {/* Date Button - Left Side */}
                     <button
@@ -546,7 +567,8 @@ export default function Hero() {
                       ))}
                     </div>
                   )}
-                </div>
+                  </div>
+                )}
 
                 {/* Search Button */}
                 <button
@@ -561,30 +583,39 @@ export default function Hero() {
 
               {/* Calendar Overlay */}
               {showCalendar && (
-                <div className='absolute top-full left-0 right-0 mt-2 bg-white border-2 border-gray-200 rounded-2xl shadow-2xl z-50 p-6'>
-                  {/* Calendar Header */}
-                  <div className='flex justify-between items-center mb-6'>
-                    <div className='flex space-x-4'>
-                      <div
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          selectingPickup
-                            ? 'bg-green-100 text-green-800'
-                            : 'text-gray-600'
-                        }`}
-                      >
-                        Pick-up date
-                      </div>
-                      <div
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          !selectingPickup
-                            ? 'bg-green-100 text-green-800'
-                            : 'text-gray-600'
-                        }`}
-                      >
-                        Return date
+                <div className='absolute top-full left-0 right-0 mt-2 bg-white border-2 border-gray-200 rounded-2xl shadow-2xl z-[9999] p-6'>
+                  {/* Calendar Header - Only show tabs for rent a car */}
+                  {!isTransfer && (
+                    <div className='flex justify-between items-center mb-6'>
+                      <div className='flex space-x-4'>
+                        <div
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            selectingPickup
+                              ? 'bg-green-100 text-green-800'
+                              : 'text-gray-600'
+                          }`}
+                        >
+                          Pick-up date
+                        </div>
+                        <div
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            !selectingPickup
+                              ? 'bg-green-100 text-green-800'
+                              : 'text-gray-600'
+                          }`}
+                        >
+                          Return date
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
+
+                  {/* For transfers, show simple header */}
+                  {isTransfer && (
+                    <div className='flex justify-between items-center mb-6'>
+                      <h3 className='text-lg font-semibold text-gray-900'>Select Date</h3>
+                    </div>
+                  )}
 
                   {/* Calendar Grid */}
                   <div className='grid grid-cols-2 gap-8'>
@@ -634,7 +665,7 @@ export default function Hero() {
                                 date < new Date(new Date().setHours(0, 0, 0, 0))
                               }
                               className={`
-                              p-3 text-sm rounded-lg transition-all duration-200 
+                              p-3 text-sm rounded-lg transition-all duration-200
                               ${!date ? 'invisible' : ''}
                               ${
                                 date &&
@@ -650,6 +681,7 @@ export default function Hero() {
                                   : ''
                               }
                               ${
+                                !isTransfer &&
                                 date &&
                                 date.toDateString() ===
                                   returnDate.toDateString()
@@ -657,6 +689,7 @@ export default function Hero() {
                                   : ''
                               }
                               ${
+                                !isTransfer &&
                                 date && date > pickupDate && date < returnDate
                                   ? 'bg-gray-100'
                                   : ''
@@ -667,8 +700,8 @@ export default function Hero() {
                                   new Date(new Date().setHours(0, 0, 0, 0)) &&
                                 date.toDateString() !==
                                   pickupDate.toDateString() &&
-                                date.toDateString() !==
-                                  returnDate.toDateString()
+                                (!isTransfer && date.toDateString() !==
+                                  returnDate.toDateString())
                                   ? 'hover:bg-gray-50'
                                   : ''
                               }
@@ -718,7 +751,7 @@ export default function Hero() {
                               date < new Date(new Date().setHours(0, 0, 0, 0))
                             }
                             className={`
-                              p-3 text-sm rounded-lg transition-all duration-200 
+                              p-3 text-sm rounded-lg transition-all duration-200
                               ${!date ? 'invisible' : ''}
                               ${
                                 date &&
@@ -734,6 +767,7 @@ export default function Hero() {
                                   : ''
                               }
                               ${
+                                !isTransfer &&
                                 date &&
                                 date.toDateString() ===
                                   returnDate.toDateString()
@@ -741,6 +775,7 @@ export default function Hero() {
                                   : ''
                               }
                               ${
+                                !isTransfer &&
                                 date && date > pickupDate && date < returnDate
                                   ? 'bg-gray-100'
                                   : ''
@@ -751,8 +786,8 @@ export default function Hero() {
                                   new Date(new Date().setHours(0, 0, 0, 0)) &&
                                 date.toDateString() !==
                                   pickupDate.toDateString() &&
-                                date.toDateString() !==
-                                  returnDate.toDateString()
+                                (!isTransfer && date.toDateString() !==
+                                  returnDate.toDateString())
                                   ? 'hover:bg-gray-50'
                                   : ''
                               }

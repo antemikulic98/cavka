@@ -26,6 +26,13 @@ interface CreateVehicleRequest {
   currency: string;
   location: string;
   description?: string;
+  trips?: {
+    from: string;
+    to: string;
+    price: number;
+    duration?: string;
+    distance?: string;
+  }[];
 }
 
 export async function POST(request: NextRequest) {
@@ -39,6 +46,15 @@ export async function POST(request: NextRequest) {
     }
 
     const body: CreateVehicleRequest = await request.json();
+
+    // Debug logging
+    console.log('🚗 Creating vehicle with data:', {
+      type: body.type,
+      make: body.make,
+      model: body.model,
+      trips: body.trips,
+      tripsCount: body.trips?.length || 0,
+    });
 
     // Validate required fields
     const requiredFields = [

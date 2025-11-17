@@ -2522,6 +2522,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@stripe/stripe-js@npm:^8.3.0":
+  version: 8.3.0
+  resolution: "@stripe/stripe-js@npm:8.3.0"
+  checksum: 10/035eb71d2e6cf6cd2debe3968d4b4d73602d64b3939454e2599b360da02693a6d5d9e57c873a43e9675c3ab512ff0b4837f72c70c733d1241dfb74bc516c5416
+  languageName: node
+  linkType: hard
+
 "@swc/helpers@npm:0.5.15":
   version: 0.5.15
   resolution: "@swc/helpers@npm:0.5.15"
@@ -3545,6 +3552,7 @@ __metadata:
     "@aws-sdk/s3-request-presigner": "npm:^3.894.0"
     "@eslint/eslintrc": "npm:^3"
     "@headlessui/react": "npm:^2.2.8"
+    "@stripe/stripe-js": "npm:^8.3.0"
     "@tailwindcss/postcss": "npm:^4"
     "@types/bcryptjs": "npm:^3.0.0"
     "@types/js-cookie": "npm:^3.0.6"
@@ -3565,6 +3573,7 @@ __metadata:
     next: "npm:15.5.3"
     react: "npm:19.1.0"
     react-dom: "npm:19.1.0"
+    stripe: "npm:^19.2.1"
     tailwindcss: "npm:^4"
     tsx: "npm:^4.20.5"
     typescript: "npm:^5"
@@ -6286,6 +6295,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"qs@npm:^6.11.0":
+  version: 6.14.0
+  resolution: "qs@npm:6.14.0"
+  dependencies:
+    side-channel: "npm:^1.1.0"
+  checksum: 10/a60e49bbd51c935a8a4759e7505677b122e23bf392d6535b8fc31c1e447acba2c901235ecb192764013cd2781723dc1f61978b5fdd93cc31d7043d31cdc01974
+  languageName: node
+  linkType: hard
+
 "queue-microtask@npm:^1.2.2":
   version: 1.2.3
   resolution: "queue-microtask@npm:1.2.3"
@@ -6940,6 +6958,20 @@ __metadata:
   version: 3.1.1
   resolution: "strip-json-comments@npm:3.1.1"
   checksum: 10/492f73e27268f9b1c122733f28ecb0e7e8d8a531a6662efbd08e22cccb3f9475e90a1b82cab06a392f6afae6d2de636f977e231296400d0ec5304ba70f166443
+  languageName: node
+  linkType: hard
+
+"stripe@npm:^19.2.1":
+  version: 19.2.1
+  resolution: "stripe@npm:19.2.1"
+  dependencies:
+    qs: "npm:^6.11.0"
+  peerDependencies:
+    "@types/node": ">=16"
+  peerDependenciesMeta:
+    "@types/node":
+      optional: true
+  checksum: 10/b5514ee75fb2e0dc92660762ee1b622b08622f81d03a0d711ad14d19397a3b42d4563720b40e5a7887b264ac1853894572ce16e80f3c36d14ad9889de5b94f27
   languageName: node
   linkType: hard
 

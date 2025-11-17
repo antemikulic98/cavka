@@ -312,27 +312,18 @@ export default function CarCards() {
                               /day
                             </span>
                           </div>
-                          <div className='flex gap-2'>
-                            <button
-                              onClick={() => {
-                                window.location.href = `/vehicles/${vehicle._id}`;
-                              }}
-                              className='font-poppins bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-3 rounded-xl text-sm transition-colors duration-200'>
-                              Details
-                            </button>
-                            <button
-                              onClick={() => {
-                                const today = new Date();
-                                const tomorrow = new Date(today);
-                                tomorrow.setDate(tomorrow.getDate() + 1);
-                                const pickupDate = today.toISOString().split('T')[0];
-                                const returnDate = tomorrow.toISOString().split('T')[0];
-                                window.location.href = `/search?pickupLocation=${encodeURIComponent(vehicle.location)}&returnLocation=${encodeURIComponent(vehicle.location)}&pickupDate=${pickupDate}&returnDate=${returnDate}&vehicleType=car&vehicleId=${vehicle._id}&expandSearch=true`;
-                              }}
-                              className='font-poppins bg-green-800 hover:bg-green-900 text-white font-bold py-2 px-4 rounded-xl text-sm transition-colors duration-200'>
-                              Reserve Now
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => {
+                              const today = new Date();
+                              const tomorrow = new Date(today);
+                              tomorrow.setDate(tomorrow.getDate() + 1);
+                              const pickupDate = today.toISOString().split('T')[0];
+                              const returnDate = tomorrow.toISOString().split('T')[0];
+                              window.location.href = `/search?pickupLocation=${encodeURIComponent(vehicle.location)}&returnLocation=${encodeURIComponent(vehicle.location)}&pickupDate=${pickupDate}&returnDate=${returnDate}&vehicleType=car&vehicleId=${vehicle._id}&expandSearch=true`;
+                            }}
+                            className='font-poppins bg-green-800 hover:bg-green-900 text-white font-bold py-3 px-6 rounded-xl text-sm transition-colors duration-200 shadow-lg hover:shadow-xl'>
+                            Reserve Now
+                          </button>
                         </div>
                       </div>
                     </div>

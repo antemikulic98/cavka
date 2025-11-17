@@ -38,8 +38,17 @@ export interface IVehicle {
   mainImage: string; // Primary image URL
 
   // Pricing
-  dailyRate: number;
+  dailyRate: number; // Used for rental vehicles
   currency: string;
+
+  // Transfer-specific: Trip-based pricing
+  trips?: {
+    from: string;
+    to: string;
+    price: number;
+    duration?: string; // e.g., "2 hours"
+    distance?: string; // e.g., "150 km"
+  }[];
 
   // Availability & Status
   status: 'Available' | 'Booked' | 'Maintenance' | 'Inactive';
@@ -190,7 +199,9 @@ const VehicleSchema = new Schema<IVehicle & Document>(
     // Pricing
     dailyRate: {
       type: Number,
-      required: [true, 'Daily rate is required'],
+      required: function(this: IVehicle & Document) {
+        return this.type === 'rental'; // Only required for rental vehicles
+      },
       min: 0,
     },
     currency: {
@@ -198,6 +209,35 @@ const VehicleSchema = new Schema<IVehicle & Document>(
       default: 'EUR',
       enum: ['EUR', 'USD', 'GBP', 'HRK'],
     },
+
+    // Transfer-specific: Trip-based pricing
+    trips: [
+      {
+        from: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        to: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        price: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+        duration: {
+          type: String,
+          trim: true,
+        },
+        distance: {
+          type: String,
+          trim: true,
+        },
+      },
+    ],
 
     // Availability & Status
     status: {

@@ -38,6 +38,7 @@ const BookingSchema = new mongoose.Schema({
   pickupDate: { type: Date, required: true },
   returnDate: { type: Date, required: true },
   pickupLocation: { type: String, required: true },
+  returnLocation: { type: String },
   rentalDays: { type: Number, required: true },
 
   // Coverage & Add-ons
@@ -64,7 +65,23 @@ const BookingSchema = new mongoose.Schema({
     addOnsCost: { type: Number, default: 0 },
     totalDailyRate: { type: Number, required: true },
     totalCost: { type: Number, required: true },
+    discount: { type: Number, default: 0 },
+    originalAmount: { type: Number },
   },
+
+  // Payment Information
+  paymentStatus: {
+    type: String,
+    enum: ['pending', 'paid', 'failed', 'refunded'],
+    default: 'pending',
+  },
+  paymentMethod: {
+    type: String,
+    enum: ['stripe', 'cash', 'bank_transfer', 'pay_later'],
+    default: 'pay_later',
+  },
+  stripeSessionId: { type: String },
+  stripePaymentIntentId: { type: String },
 
   // Booking Status
   status: {

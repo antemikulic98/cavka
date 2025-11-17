@@ -6,12 +6,13 @@ import ExternalCarSource from '@/models/ExternalCarSource';
 // GET - Get a specific overbooking with external source details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectMongoDB();
+    const { id } = await params;
 
-    const booking = await Booking.findById(params.id)
+    const booking = await Booking.findById(id)
       .populate('vehicleId')
       .populate('externalSourceId');
 
@@ -61,15 +62,16 @@ export async function GET(
 // PATCH - Update external car source for an overbooking
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectMongoDB();
+    const { id } = await params;
 
     const data = await request.json();
 
     // Find the booking
-    const booking = await Booking.findById(params.id);
+    const booking = await Booking.findById(id);
     if (!booking) {
       return NextResponse.json(
         { error: 'Booking not found' },

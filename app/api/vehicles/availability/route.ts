@@ -88,19 +88,25 @@ export async function GET(request: NextRequest) {
       const isAvailable = conflictingBookings.length === 0;
       const wouldBeOverbooking = !isAvailable;
 
+      const vehicleData: any = vehicle;
       vehiclesWithAvailability.push({
         _id: vehicle._id,
+        fullName: vehicleData.fullName,
         make: vehicle.make,
         model: vehicle.vehicleModel, // Use vehicleModel from schema
+        year: vehicleData.year,
         category: vehicle.category,
-        acrissCode: vehicle.acrissCode, // Include ACRISS code for insurance pricing
+        acrissCode: vehicleData.acrissCode, // Include ACRISS code for insurance pricing
+        type: vehicleData.type, // Include vehicle type (rental/transfer)
         dailyRate: vehicle.dailyRate,
         currency: vehicle.currency,
         location: vehicle.location,
         mainImage: vehicle.mainImage,
         passengerCapacity: vehicle.passengerCapacity,
+        bigSuitcases: vehicleData.bigSuitcases,
         transmission: vehicle.transmission,
         features: vehicle.features,
+        trips: vehicleData.trips, // Include trips array for transfer pricing
         available: isAvailable,
         wouldBeOverbooking,
         conflictingBookingsCount: conflictingBookings.length,

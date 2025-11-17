@@ -22,7 +22,7 @@ interface Vehicle {
   model: string;
   year: number;
   color: string;
-  licensePlate: string;
+  licensePlate?: string;
   category: string;
   bodyType?: string;
   transmission: string;
@@ -53,7 +53,7 @@ interface CarFormData {
   model: string;
   year: number;
   color: string;
-  licensePlate: string;
+  licensePlate?: string;
 
   // ACRISS Classification
   category: string;
@@ -249,7 +249,7 @@ export default function EditVehicleModal({
         model: vehicle.model,
         year: vehicle.year,
         color: vehicle.color,
-        licensePlate: vehicle.licensePlate,
+        licensePlate: vehicle.licensePlate || '',
         category: vehicle.category,
         bodyType: vehicle.bodyType || 'D',
         transmission: vehicle.transmission,

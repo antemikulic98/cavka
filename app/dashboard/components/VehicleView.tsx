@@ -38,10 +38,11 @@ interface Vehicle {
   make: string;
   model: string;
   fullName?: string;
-  licensePlate: string;
+  licensePlate?: string;
   color: string;
   mainImage?: string;
   acrissCode?: string;
+  type?: 'rental' | 'transfer';
   passengerCapacity: number;
   doorCount: number;
   bigSuitcases?: number;
@@ -57,6 +58,13 @@ interface Vehicle {
   features: string[];
   createdAt: string;
   customPricing?: DayPricing[];
+  trips?: {
+    from: string;
+    to: string;
+    price: number;
+    duration?: string;
+    distance?: string;
+  }[];
 }
 
 interface VehicleViewProps {

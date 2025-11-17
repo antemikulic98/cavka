@@ -23,6 +23,14 @@ export async function GET(
       return NextResponse.json({ error: 'Vehicle not found' }, { status: 404 });
     }
 
+    // Debug logging
+    console.log('📦 Fetching vehicle:', {
+      id: resolvedParams.id,
+      type: (vehicle as any).type,
+      trips: (vehicle as any).trips,
+      tripsCount: (vehicle as any).trips?.length || 0,
+    });
+
     // Map vehicleModel to model for frontend compatibility
     const vehicleWithModel = {
       ...vehicle,
@@ -75,7 +83,56 @@ export async function PUT(
     }
 
     // Map vehicleModel to model for frontend compatibility
-    const vehicleResponse = vehicle.toJSON();
+    const vehicleResponse: any = vehicle.toJSON();
+    vehicleResponse.model = vehicle.vehicleModel;
+
+    return NextResponse.json({
+      success: true,
+      vehicle: vehicleResponse,
+    });
+  } catch (error) {
+    console.error('Error updating vehicle:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const resolvedParams = await params;
+    await connectMongoDB();
+
+    // Check if user is authenticated
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+
+    // Map model to vehicleModel if present
+    const updateData = { ...body, updatedAt: new Date() };
+    if (body.model) {
+      updateData.vehicleModel = body.model;
+    }
+
+    const vehicle = await Vehicle.findByIdAndUpdate(
+      resolvedParams.id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!vehicle) {
+      return NextResponse.json({ error: 'Vehicle not found' }, { status: 404 });
+    }
+
+    // Map vehicleModel to model for frontend compatibility
+    const vehicleResponse: any = vehicle.toJSON();
     vehicleResponse.model = vehicle.vehicleModel;
 
     return NextResponse.json({

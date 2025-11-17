@@ -15,6 +15,9 @@ export async function DELETE(request: NextRequest) {
 
     // Drop the collection to clear old schema
     try {
+      if (!mongoose.connection.db) {
+        throw new Error('Database connection not established');
+      }
       await mongoose.connection.db.dropCollection('insurancepricings');
       console.log('Cleared InsurancePricing collection');
     } catch (error: any) {

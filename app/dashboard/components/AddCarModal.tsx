@@ -11,6 +11,7 @@ import {
   Settings,
   Image as ImageIcon,
   Check,
+  Plus,
 } from 'lucide-react';
 import CustomSelect from '@/app/components/CustomSelect';
 import ColorSelect from '@/app/components/ColorSelect';
@@ -48,6 +49,15 @@ interface CarFormData {
   // Pricing
   dailyRate: number;
   currency: string;
+
+  // Transfer-specific: Trip-based pricing
+  trips: {
+    from: string;
+    to: string;
+    price: number;
+    duration: string;
+    distance: string;
+  }[];
 
   // Location & Description
   location: string;
@@ -231,6 +241,7 @@ export default function AddCarModal({
     features: [],
     dailyRate: 50,
     currency: 'EUR',
+    trips: [],
     location: 'Zagreb Downtown',
     description: '',
   });
@@ -357,7 +368,10 @@ export default function AddCarModal({
     if (!formData.model) errors.push('Model is required');
     if (!formData.year) errors.push('Year is required');
     if (!formData.color) errors.push('Color is required');
-    if (!formData.licensePlate) errors.push('License plate is required');
+    // License plate is only required for rental vehicles
+    if (formData.type === 'rental' && !formData.licensePlate) {
+      errors.push('License plate is required for rental vehicles');
+    }
 
     // ACRISS Classification validation
     if (!formData.category) errors.push('Category is required');
@@ -371,7 +385,19 @@ export default function AddCarModal({
     if (!formData.doorCount) errors.push('Door count is required');
 
     // Pricing validation
-    if (!formData.dailyRate) errors.push('Daily rate is required');
+    if (formData.type === 'rental' && !formData.dailyRate) {
+      errors.push('Daily rate is required for rental vehicles');
+    }
+    if (formData.type === 'transfer' && formData.trips.length === 0) {
+      errors.push('At least one transfer route is required');
+    }
+    if (formData.type === 'transfer') {
+      formData.trips.forEach((trip, index) => {
+        if (!trip.from) errors.push(`Route #${index + 1}: From location is required`);
+        if (!trip.to) errors.push(`Route #${index + 1}: To location is required`);
+        if (!trip.price || trip.price <= 0) errors.push(`Route #${index + 1}: Price is required`);
+      });
+    }
     if (!formData.location) errors.push('Location is required');
 
     return errors;
@@ -471,7 +497,14 @@ export default function AddCarModal({
         mainImage: imageUrls[0] || '',
       };
 
-      console.log('📤 Sending vehicle data to API...', vehicleData);
+      console.log('📤 Sending vehicle data to API...', {
+        type: vehicleData.type,
+        make: vehicleData.make,
+        model: vehicleData.model,
+        trips: vehicleData.trips,
+        tripsCount: vehicleData.trips?.length || 0,
+        fullData: vehicleData,
+      });
 
       const response = await fetch('/api/vehicles', {
         method: 'POST',
@@ -505,6 +538,7 @@ export default function AddCarModal({
           features: [],
           dailyRate: 50,
           currency: 'EUR',
+          trips: [],
           location: 'Zagreb Downtown',
           description: '',
         });
@@ -675,6 +709,7 @@ export default function AddCarModal({
           features: [],
           dailyRate: 50,
           currency: 'EUR',
+          trips: [],
           location: 'Zagreb Downtown',
           description: '',
         });
@@ -783,7 +818,7 @@ export default function AddCarModal({
                   name='model'
                   value={formData.model}
                   onChange={handleInputChange}
-                  className='w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 placeholder-gray-500 bg-white'
+                  className='w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 placeholder-gray-500 bg-white shadow-sm hover:border-emerald-400 hover:shadow-md transition-all duration-200 ease-out font-medium'
                   placeholder='e.g., Camry'
                 />
               </div>
@@ -1147,12 +1182,24 @@ export default function AddCarModal({
                       {selectedImages.map((file, index) => (
                         <li
                           key={index}
-                          className='flex items-center justify-between p-2 bg-gray-50 rounded'
+                          className='flex items-center justify-between p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors'
                         >
-                          <span className='truncate'>{file.name}</span>
-                          <span className='text-gray-500 ml-2'>
+                          <span className='truncate flex-1'>{file.name}</span>
+                          <span className='text-gray-500 ml-2 mr-2'>
                             {(file.size / 1024 / 1024).toFixed(1)}MB
                           </span>
+                          <button
+                            type='button'
+                            onClick={() => {
+                              setSelectedImages((prev) =>
+                                prev.filter((_, i) => i !== index)
+                              );
+                            }}
+                            className='flex-shrink-0 p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors'
+                            title='Remove image'
+                          >
+                            <X className='h-3 w-3' />
+                          </button>
                         </li>
                       ))}
                     </ul>
@@ -1161,55 +1208,209 @@ export default function AddCarModal({
               )}
             </div>
 
-            <div className='grid grid-cols-2 gap-4'>
-              <div>
-                <label className='block text-sm font-semibold text-gray-900 mb-2'>
-                  Daily Rate
-                </label>
-                <div className='relative'>
-                  <div className='absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none'>
-                    <span className='text-gray-600 text-lg font-semibold'>
-                      €
-                    </span>
-                  </div>
-                  <input
-                    type='number'
-                    name='dailyRate'
-                    value={formData.dailyRate === 0 ? '' : formData.dailyRate}
-                    onChange={handleInputChange}
-                    onFocus={(e) => {
-                      if (e.target.value === '0') {
-                        e.target.value = '';
-                      }
-                    }}
-                    onBlur={(e) => {
-                      if (e.target.value === '') {
-                        setFormData((prev) => ({ ...prev, dailyRate: 0 }));
-                      }
-                    }}
-                    min='0'
-                    step='0.01'
-                    className='w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-xl shadow-sm transition-all duration-200 ease-out focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 hover:border-emerald-400 hover:shadow-md text-gray-900 placeholder-gray-500 bg-white font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
-                    placeholder='0.00'
-                  />
-                  <div className='absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none'>
-                    <span className='text-gray-500 text-sm'>per day</span>
+            {/* Pricing: Daily Rate for Rentals, Trips for Transfers */}
+            {formData.type === 'rental' ? (
+              <div className='grid grid-cols-2 gap-4'>
+                <div>
+                  <label className='block text-sm font-semibold text-gray-900 mb-2'>
+                    Daily Rate
+                  </label>
+                  <div className='relative'>
+                    <div className='absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none'>
+                      <span className='text-gray-600 text-lg font-semibold'>
+                        €
+                      </span>
+                    </div>
+                    <input
+                      type='number'
+                      name='dailyRate'
+                      value={formData.dailyRate === 0 ? '' : formData.dailyRate}
+                      onChange={handleInputChange}
+                      onFocus={(e) => {
+                        if (e.target.value === '0') {
+                          e.target.value = '';
+                        }
+                      }}
+                      onBlur={(e) => {
+                        if (e.target.value === '') {
+                          setFormData((prev) => ({ ...prev, dailyRate: 0 }));
+                        }
+                      }}
+                      min='0'
+                      step='0.01'
+                      className='w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-xl shadow-sm transition-all duration-200 ease-out focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 hover:border-emerald-400 hover:shadow-md text-gray-900 placeholder-gray-500 bg-white font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
+                      placeholder='0.00'
+                    />
+                    <div className='absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none'>
+                      <span className='text-gray-500 text-sm'>per day</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div>
-                <label className='block text-sm font-semibold text-gray-900 mb-2'>
-                  Currency
-                </label>
-                <CustomSelect
-                  options={currencyOptions}
-                  value={formData.currency}
-                  onChange={handleSelectChange('currency')}
-                  placeholder='Select Currency'
-                />
+                <div>
+                  <label className='block text-sm font-semibold text-gray-900 mb-2'>
+                    Currency
+                  </label>
+                  <CustomSelect
+                    options={currencyOptions}
+                    value={formData.currency}
+                    onChange={handleSelectChange('currency')}
+                    placeholder='Select Currency'
+                  />
+                </div>
               </div>
-            </div>
+            ) : (
+              <div>
+                <div className='flex items-center justify-between mb-3'>
+                  <label className='block text-sm font-semibold text-gray-900'>
+                    Transfer Routes & Pricing
+                  </label>
+                  <button
+                    type='button'
+                    onClick={() => {
+                      const newTrips = [
+                        ...formData.trips,
+                        { from: '', to: '', price: 0, duration: '', distance: '' },
+                      ];
+                      console.log('➕ Adding route, new trips array:', newTrips);
+                      setFormData((prev) => ({
+                        ...prev,
+                        trips: newTrips,
+                      }));
+                    }}
+                    className='flex items-center px-3 py-1 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm'
+                  >
+                    <Plus className='h-4 w-4 mr-1' />
+                    Add Route
+                  </button>
+                </div>
+
+                {formData.trips.length === 0 ? (
+                  <div className='border-2 border-dashed border-gray-300 rounded-lg p-6 text-center'>
+                    <p className='text-gray-500 text-sm'>
+                      No routes added yet. Click "Add Route" to define transfer routes and prices.
+                    </p>
+                  </div>
+                ) : (
+                  <div className='space-y-3'>
+                    {formData.trips.map((trip, index) => (
+                      <div
+                        key={index}
+                        className='border border-gray-300 rounded-lg p-4 bg-gray-50'
+                      >
+                        <div className='flex items-start justify-between mb-3'>
+                          <span className='text-sm font-medium text-gray-700'>
+                            Route #{index + 1}
+                          </span>
+                          <button
+                            type='button'
+                            onClick={() => {
+                              setFormData((prev) => ({
+                                ...prev,
+                                trips: prev.trips.filter((_, i) => i !== index),
+                              }));
+                            }}
+                            className='text-red-600 hover:text-red-700'
+                          >
+                            <X className='h-4 w-4' />
+                          </button>
+                        </div>
+
+                        <div className='grid grid-cols-2 gap-3'>
+                          <div>
+                            <label className='block text-xs font-medium text-gray-600 mb-1'>
+                              From *
+                            </label>
+                            <CustomSelect
+                              options={locationOptions}
+                              value={trip.from}
+                              onChange={(value) => {
+                                const newTrips = [...formData.trips];
+                                newTrips[index].from = String(value);
+                                setFormData((prev) => ({ ...prev, trips: newTrips }));
+                              }}
+                              placeholder='Select location'
+                              searchable={true}
+                            />
+                          </div>
+
+                          <div>
+                            <label className='block text-xs font-medium text-gray-600 mb-1'>
+                              To *
+                            </label>
+                            <CustomSelect
+                              options={locationOptions}
+                              value={trip.to}
+                              onChange={(value) => {
+                                const newTrips = [...formData.trips];
+                                newTrips[index].to = String(value);
+                                setFormData((prev) => ({ ...prev, trips: newTrips }));
+                              }}
+                              placeholder='Select location'
+                              searchable={true}
+                            />
+                          </div>
+
+                          <div>
+                            <label className='block text-xs font-medium text-gray-600 mb-1'>
+                              Price (€) *
+                            </label>
+                            <input
+                              type='number'
+                              value={trip.price === 0 ? '' : trip.price}
+                              onChange={(e) => {
+                                const newTrips = [...formData.trips];
+                                newTrips[index].price = parseFloat(e.target.value) || 0;
+                                console.log('💰 Updated trip price:', { index, newTrips, allTrips: formData.trips });
+                                setFormData((prev) => ({ ...prev, trips: newTrips }));
+                              }}
+                              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
+                              placeholder='150'
+                              min='0'
+                              step='0.01'
+                            />
+                          </div>
+
+                          <div>
+                            <label className='block text-xs font-medium text-gray-600 mb-1'>
+                              Duration
+                            </label>
+                            <input
+                              type='text'
+                              value={trip.duration}
+                              onChange={(e) => {
+                                const newTrips = [...formData.trips];
+                                newTrips[index].duration = e.target.value;
+                                setFormData((prev) => ({ ...prev, trips: newTrips }));
+                              }}
+                              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 text-sm'
+                              placeholder='2 hours'
+                            />
+                          </div>
+
+                          <div className='col-span-2'>
+                            <label className='block text-xs font-medium text-gray-600 mb-1'>
+                              Distance
+                            </label>
+                            <input
+                              type='text'
+                              value={trip.distance}
+                              onChange={(e) => {
+                                const newTrips = [...formData.trips];
+                                newTrips[index].distance = e.target.value;
+                                setFormData((prev) => ({ ...prev, trips: newTrips }));
+                              }}
+                              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 text-sm'
+                              placeholder='150 km'
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div>
               <label className='block text-sm font-semibold text-gray-900 mb-2'>

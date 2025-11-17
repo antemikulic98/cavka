@@ -26,9 +26,10 @@ export default function SearchBar({
   initialExpanded = false,
 }: SearchBarProps) {
   const router = useRouter();
+  const isTransfer = initialVehicleType === 'transfer' || initialVehicleType === 'transfers';
   const [pickupLocation, setPickupLocation] = useState(initialPickupLocation);
   const [returnLocation, setReturnLocation] = useState(initialReturnLocation);
-  const [showReturnLocation, setShowReturnLocation] = useState(!!initialReturnLocation);
+  const [showReturnLocation, setShowReturnLocation] = useState(isTransfer || !!initialReturnLocation);
   const [pickupDate, setPickupDate] = useState(initialPickupDate);
   const [returnDate, setReturnDate] = useState(initialReturnDate);
   const [pickupTime, setPickupTime] = useState(initialPickupTime);
@@ -107,7 +108,7 @@ export default function SearchBar({
                 <span className='font-semibold text-gray-900'>
                   {pickupLocation}
                 </span>
-                {showReturnLocation && returnLocation && (
+                {returnLocation && (
                   <>
                     <span className='mx-2 text-gray-400'>→</span>
                     <span className='font-semibold text-gray-900'>
@@ -119,7 +120,7 @@ export default function SearchBar({
               <div className='hidden md:flex items-center'>
                 <Calendar className='h-4 w-4 text-emerald-600 mr-2' />
                 <span className='text-gray-700'>
-                  {formatDate(pickupDate)} - {formatDate(returnDate)}
+                  {isTransfer ? formatDate(pickupDate) : `${formatDate(pickupDate)} - ${formatDate(returnDate)}`}
                 </span>
               </div>
             </div>
@@ -147,11 +148,11 @@ export default function SearchBar({
               </button>
             </div>
 
-            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
-              {/* Pickup Location */}
+            <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${isTransfer ? 'lg:grid-cols-3' : 'lg:grid-cols-4'}`}>
+              {/* Pickup Location / From */}
               <div className='relative' ref={pickupDropdownRef}>
                 <label className='block text-sm font-bold text-gray-800 mb-2'>
-                  Pickup Location
+                  {isTransfer ? 'From' : 'Pickup Location'}
                 </label>
                 <button
                   onClick={() => {
@@ -191,12 +192,12 @@ export default function SearchBar({
                 )}
               </div>
 
-              {/* Return Location */}
+              {/* Return Location / To */}
               <div className='relative' ref={returnDropdownRef}>
                 <label className='block text-sm font-bold text-gray-800 mb-2'>
-                  {showReturnLocation ? 'Return Location' : '\u00A0'}
+                  {isTransfer ? 'To' : (showReturnLocation ? 'Return Location' : '\u00A0')}
                 </label>
-                {!showReturnLocation ? (
+                {!showReturnLocation && !isTransfer ? (
                   <button
                     onClick={() => setShowReturnLocation(true)}
                     className='w-full flex items-center justify-center px-4 py-4 border-2 border-dashed border-gray-300 rounded-xl text-green-800 hover:text-green-900 hover:border-gray-400 font-semibold transition-all duration-200 text-sm bg-white'
@@ -216,20 +217,22 @@ export default function SearchBar({
                       <div className='flex items-center'>
                         <MapPin className='h-5 w-5 text-green-600 mr-3' />
                         <span className='text-sm font-medium text-gray-900'>
-                          {returnLocation || 'Same as pickup'}
+                          {returnLocation || (isTransfer ? 'Select destination' : 'Same as pickup')}
                         </span>
                       </div>
                       <div className='flex items-center space-x-2'>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowReturnLocation(false);
-                            setReturnLocation('');
-                          }}
-                          className='text-gray-400 hover:text-gray-600'
-                        >
-                          <X className='h-4 w-4' />
-                        </button>
+                        {!isTransfer && (
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowReturnLocation(false);
+                              setReturnLocation('');
+                            }}
+                            className='text-gray-400 hover:text-gray-600 cursor-pointer'
+                          >
+                            <X className='h-4 w-4' />
+                          </div>
+                        )}
                         <ChevronDown
                           className={`h-4 w-4 text-green-600 transition-transform duration-200 ${
                             showReturnDropdown ? 'rotate-180' : ''
@@ -240,15 +243,17 @@ export default function SearchBar({
 
                     {showReturnDropdown && (
                       <div className='absolute top-full left-0 right-0 mt-1 bg-white border-2 border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto z-50'>
-                        <button
-                          onClick={() => {
-                            setReturnLocation('');
-                            setShowReturnDropdown(false);
-                          }}
-                          className='w-full px-4 py-3 text-left hover:bg-green-50 hover:text-green-800 transition-colors duration-150 text-sm font-medium first:rounded-t-xl'
-                        >
-                          Same as pickup
-                        </button>
+                        {!isTransfer && (
+                          <button
+                            onClick={() => {
+                              setReturnLocation('');
+                              setShowReturnDropdown(false);
+                            }}
+                            className='w-full px-4 py-3 text-left hover:bg-green-50 hover:text-green-800 transition-colors duration-150 text-sm font-medium first:rounded-t-xl'
+                          >
+                            Same as pickup
+                          </button>
+                        )}
                         {locations.map((location) => (
                           <button
                             key={location}
@@ -267,10 +272,10 @@ export default function SearchBar({
                 )}
               </div>
 
-              {/* Pickup Date */}
+              {/* Pickup Date / Date */}
               <div>
                 <label className='block text-sm font-bold text-gray-800 mb-2'>
-                  Pickup Date
+                  {isTransfer ? 'Date' : 'Pickup Date'}
                 </label>
                 <div className='flex items-center px-4 py-4 border-2 border-gray-200 rounded-xl hover:border-gray-300 transition-all duration-200 bg-white shadow-sm'>
                   <Calendar className='h-5 w-5 text-green-600 mr-3' />
@@ -283,21 +288,23 @@ export default function SearchBar({
                 </div>
               </div>
 
-              {/* Return Date */}
-              <div>
-                <label className='block text-sm font-bold text-gray-800 mb-2'>
-                  Return Date
-                </label>
-                <div className='flex items-center px-4 py-4 border-2 border-gray-200 rounded-xl hover:border-gray-300 transition-all duration-200 bg-white shadow-sm'>
-                  <Calendar className='h-5 w-5 text-green-600 mr-3' />
-                  <input
-                    type='date'
-                    value={returnDate}
-                    onChange={(e) => setReturnDate(e.target.value)}
-                    className='flex-1 text-sm font-medium text-gray-900 outline-none'
-                  />
+              {/* Return Date - Only for Rent a Car */}
+              {!isTransfer && (
+                <div>
+                  <label className='block text-sm font-bold text-gray-800 mb-2'>
+                    Return Date
+                  </label>
+                  <div className='flex items-center px-4 py-4 border-2 border-gray-200 rounded-xl hover:border-gray-300 transition-all duration-200 bg-white shadow-sm'>
+                    <Calendar className='h-5 w-5 text-green-600 mr-3' />
+                    <input
+                      type='date'
+                      value={returnDate}
+                      onChange={(e) => setReturnDate(e.target.value)}
+                      className='flex-1 text-sm font-medium text-gray-900 outline-none'
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Search Button */}

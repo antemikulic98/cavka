@@ -24,6 +24,7 @@ interface Vehicle {
   year: number;
   category: string;
   acrissCode?: string;
+  type?: 'rental' | 'transfer';
   passengerCapacity: number;
   transmission: string;
   fuelAirCon?: string;
@@ -36,6 +37,13 @@ interface Vehicle {
   mainImage?: string;
   images: string[];
   description?: string;
+  trips?: {
+    from: string;
+    to: string;
+    price: number;
+    duration?: string;
+    distance?: string;
+  }[];
 }
 
 export default function SearchResults() {
@@ -206,17 +214,47 @@ export default function SearchResults() {
     setSelectedVehicle(null);
   };
 
-  // Calculate total price for the rental period
-  const calculateTotalPrice = (dailyRate: number, currency: string) => {
-    const days = calculateRentalDays();
-    const total = dailyRate * days;
-    const symbol =
-      currency === 'EUR' ? '€' : currency === 'USD' ? '$' : currency;
+  // Get matching trip price for transfer vehicles
+  const getMatchingTrip = (vehicle: Vehicle) => {
+    if (vehicle.type !== 'transfer' || !vehicle.trips || vehicle.trips.length === 0) {
+      return null;
+    }
 
+    // Find a trip that matches the pickup and return locations
+    const matchingTrip = vehicle.trips.find(
+      (trip) =>
+        trip.from.toLowerCase() === pickupLocation.toLowerCase() &&
+        trip.to.toLowerCase() === returnLocation.toLowerCase()
+    );
+
+    return matchingTrip || vehicle.trips[0]; // Return first trip if no match
+  };
+
+  // Calculate total price for the rental period or trip
+  const calculateTotalPrice = (vehicle: Vehicle) => {
+    const symbol =
+      vehicle.currency === 'EUR' ? '€' : vehicle.currency === 'USD' ? '$' : vehicle.currency;
+
+    // For transfers, show trip price
+    if (vehicle.type === 'transfer') {
+      const trip = getMatchingTrip(vehicle);
+      const total = trip ? trip.price : vehicle.dailyRate;
+      return {
+        days: 1,
+        total,
+        formatted: `${symbol}${total.toLocaleString()}`,
+        isTrip: true,
+      };
+    }
+
+    // For rentals, calculate based on days
+    const days = calculateRentalDays();
+    const total = vehicle.dailyRate * days;
     return {
       days,
       total,
       formatted: `${symbol}${total.toLocaleString()}`,
+      isTrip: false,
     };
   };
 
@@ -400,7 +438,9 @@ export default function SearchResults() {
                               <span className='text-sm mr-1'>
                                 {
                                   formatPriceWithCents(
-                                    vehicle.dailyRate,
+                                    vehicle.type === 'transfer'
+                                      ? (getMatchingTrip(vehicle)?.price || vehicle.dailyRate)
+                                      : vehicle.dailyRate,
                                     vehicle.currency
                                   ).symbol
                                 }
@@ -408,19 +448,25 @@ export default function SearchResults() {
                               <span className='text-4xl font-bold'>
                                 {
                                   formatPriceWithCents(
-                                    vehicle.dailyRate,
+                                    vehicle.type === 'transfer'
+                                      ? (getMatchingTrip(vehicle)?.price || vehicle.dailyRate)
+                                      : vehicle.dailyRate,
                                     vehicle.currency
                                   ).whole
                                 }
                               </span>
                               {formatPriceWithCents(
-                                vehicle.dailyRate,
+                                vehicle.type === 'transfer'
+                                  ? (getMatchingTrip(vehicle)?.price || vehicle.dailyRate)
+                                  : vehicle.dailyRate,
                                 vehicle.currency
                               ).hasDecimals && (
                                 <span className='text-xl font-semibold'>
                                   .
                                   {formatPriceWithCents(
-                                    vehicle.dailyRate,
+                                    vehicle.type === 'transfer'
+                                      ? (getMatchingTrip(vehicle)?.price || vehicle.dailyRate)
+                                      : vehicle.dailyRate,
                                     vehicle.currency
                                   )
                                     .cents.toString()
@@ -428,17 +474,13 @@ export default function SearchResults() {
                                 </span>
                               )}
                             </div>
-                            <span className='text-base opacity-90'>/day</span>
+                            <span className='text-base opacity-90'>
+                              {vehicle.type === 'transfer' ? '/trip' : '/day'}
+                            </span>
                           </div>
                           <div className='text-right'>
                             <div className='text-lg font-medium opacity-75'>
-                              {
-                                calculateTotalPrice(
-                                  vehicle.dailyRate,
-                                  vehicle.currency
-                                ).formatted
-                              }{' '}
-                              total
+                              {calculateTotalPrice(vehicle).formatted} total
                             </div>
                           </div>
                         </div>
@@ -462,10 +504,7 @@ export default function SearchResults() {
           rentalDays={calculateRentalDays()}
           totalPrice={
             selectedVehicle
-              ? calculateTotalPrice(
-                  selectedVehicle.dailyRate,
-                  selectedVehicle.currency
-                ).formatted
+              ? calculateTotalPrice(selectedVehicle).formatted
               : ''
           }
         />
