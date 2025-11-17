@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
       vehicleType,
       customerEmail,
       customerName,
+      customerPhone,
       rentalDays,
     } = body;
 
@@ -83,6 +84,8 @@ export async function POST(request: NextRequest) {
         discountedAmount: discountedAmount.toString(),
         discount: discount.toString(),
         customerName,
+        customerPhone: customerPhone || '',
+        customerEmail,
         rentalDays: rentalDays?.toString() || '1',
       },
     });

@@ -9,83 +9,73 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-10-29.clover',
 });
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
-
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.text();
-    const signature = request.headers.get('stripe-signature');
+    const { sessionId } = await request.json();
 
-    if (!signature) {
+    if (!sessionId) {
       return NextResponse.json(
-        { error: 'Missing stripe-signature header' },
+        { error: 'Session ID is required' },
         { status: 400 }
       );
     }
 
-    let event: Stripe.Event;
+    // Retrieve the session from Stripe
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
 
-    try {
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-    } catch (err) {
-      console.error('Webhook signature verification failed:', err);
+    if (!session) {
       return NextResponse.json(
-        { error: 'Invalid signature' },
+        { error: 'Invalid session' },
+        { status: 404 }
+      );
+    }
+
+    // Check if payment was successful
+    if (session.payment_status !== 'paid') {
+      return NextResponse.json(
+        { error: 'Payment not completed', paymentStatus: session.payment_status },
         { status: 400 }
       );
     }
 
-    // Handle the event
-    switch (event.type) {
-      case 'checkout.session.completed':
-        const session = event.data.object as Stripe.Checkout.Session;
-
-        // Create booking after successful payment
-        await createBookingFromSession(session);
-        break;
-
-      default:
-        console.log(`Unhandled event type: ${event.type}`);
-    }
-
-    return NextResponse.json({ received: true });
-  } catch (error) {
-    console.error('Webhook error:', error);
-    return NextResponse.json(
-      { error: 'Webhook handler failed' },
-      { status: 500 }
-    );
-  }
-}
-
-async function createBookingFromSession(session: Stripe.Checkout.Session) {
-  try {
-    console.log('Creating booking from Stripe session:', session.id);
     await connectMongoDB();
 
-    // Check if booking already exists (to avoid duplicates from success page creation)
+    // Check if booking already exists (to avoid duplicates)
     const existingBooking = await Booking.findOne({
       stripeSessionId: session.id,
     });
 
     if (existingBooking) {
-      console.log('⚠️ Booking already exists from success page, skipping webhook creation:', existingBooking._id);
-      return;
+      console.log('✅ Booking already exists:', existingBooking._id);
+      return NextResponse.json({
+        success: true,
+        booking: {
+          id: existingBooking._id,
+          bookingReference: existingBooking.bookingReference,
+          status: existingBooking.status,
+        },
+        message: 'Booking already exists',
+      });
     }
 
+    // Create booking from session metadata
     const metadata = session.metadata;
     if (!metadata) {
-      console.error('No metadata in session');
-      return;
+      return NextResponse.json(
+        { error: 'No booking data found in session' },
+        { status: 400 }
+      );
     }
 
-    console.log('Session metadata:', metadata);
+    console.log('Creating booking from verified Stripe session:', session.id);
 
     // Fetch vehicle information
     const vehicle = await Vehicle.findById(metadata.vehicleId);
     if (!vehicle) {
-      console.error('Vehicle not found:', metadata.vehicleId);
-      return;
+      return NextResponse.json(
+        { error: 'Vehicle not found' },
+        { status: 404 }
+      );
     }
 
     const discountedAmount = parseFloat(metadata.discountedAmount);
@@ -132,7 +122,7 @@ async function createBookingFromSession(session: Stripe.Checkout.Session) {
         currency: vehicle.currency || 'EUR',
       },
 
-      // Customer Information
+      // Customer Information (from clientInfo in metadata or session)
       customerName: metadata.customerName,
       customerEmail: session.customer_email || session.customer_details?.email || metadata.customerEmail,
       customerPhone: fullPhoneNumber,
@@ -174,14 +164,12 @@ async function createBookingFromSession(session: Stripe.Checkout.Session) {
       status: 'confirmed',
     };
 
-    console.log('Creating booking with data:', bookingData);
-
     const booking = new Booking(bookingData);
     await booking.save();
 
-    console.log('✅ Booking created successfully from Stripe payment:', booking._id);
+    console.log('✅ Booking created successfully:', booking._id);
 
-    // Send confirmation emails to customer and admin
+    // Send confirmation emails
     try {
       const vehicleName = `${vehicle.make} ${vehicle.vehicleModel}`;
       await sendBookingConfirmation({
@@ -208,8 +196,26 @@ async function createBookingFromSession(session: Stripe.Checkout.Session) {
       console.error('⚠️ Booking created but email sending failed:', emailError);
       // Don't throw error - booking is still valid even if email fails
     }
+
+    return NextResponse.json({
+      success: true,
+      booking: {
+        id: booking._id,
+        bookingReference: booking.bookingReference,
+        customerName: bookingData.customerName,
+        vehicleName: `${vehicle.make} ${vehicle.vehicleModel}`,
+        pickupDate: bookingData.pickupDate,
+        returnDate: bookingData.returnDate,
+        totalCost: bookingData.pricing.totalCost,
+        status: bookingData.status,
+      },
+      message: 'Booking created successfully',
+    });
   } catch (error) {
-    console.error('❌ Error creating booking from Stripe session:', error);
-    throw error;
+    console.error('❌ Error verifying payment and creating booking:', error);
+    return NextResponse.json(
+      { error: 'Failed to verify payment' },
+      { status: 500 }
+    );
   }
 }

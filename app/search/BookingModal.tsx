@@ -403,6 +403,7 @@ export default function BookingModal({
           discount: getDiscountAmount(),
           customerEmail: clientInfo.email,
           customerName: `${clientInfo.firstName} ${clientInfo.lastName}`,
+          customerPhone: `${clientInfo.countryCode}${clientInfo.phoneNumber}`,
           rentalDays,
         };
 

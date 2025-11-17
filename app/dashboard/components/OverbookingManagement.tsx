@@ -302,14 +302,14 @@ export default function OverbookingManagement() {
                               <div className='text-right'>
                                 <p className='text-xs text-gray-500'>Cost</p>
                                 <p className='text-sm font-semibold text-red-600'>
-                                  {overbooking.externalSource.costFromSupplier}{' '}
+                                  {overbooking.externalSource.costFromSupplier.toFixed(2)}{' '}
                                   {overbooking.externalSource.currency}
                                 </p>
                               </div>
                               <div className='text-right'>
                                 <p className='text-xs text-gray-500'>Selling</p>
                                 <p className='text-sm font-semibold text-green-600'>
-                                  {overbooking.externalSource.sellingPrice}{' '}
+                                  {overbooking.externalSource.sellingPrice.toFixed(2)}{' '}
                                   {overbooking.externalSource.currency}
                                 </p>
                               </div>
@@ -327,7 +327,7 @@ export default function OverbookingManagement() {
                                   ) : (
                                     <TrendingDown className='h-4 w-4 inline mr-1' />
                                   )}
-                                  {overbooking.externalSource.profitMargin}{' '}
+                                  {overbooking.externalSource.profitMargin.toFixed(2)}{' '}
                                   {overbooking.externalSource.currency}
                                 </p>
                               </div>

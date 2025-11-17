@@ -13,6 +13,7 @@ function PaymentSuccessContent() {
   const [loading, setLoading] = useState(true);
   const [bookingData, setBookingData] = useState<any>(null);
   const [error, setError] = useState('');
+
   useEffect(() => {
     const verifyPayment = async () => {
       console.log('Payment success page loaded with session ID:', sessionId);
@@ -25,10 +26,26 @@ function PaymentSuccessContent() {
       }
 
       try {
-        // Here you could optionally verify the payment with your backend
-        // For now, we'll just show a success message
-        console.log('Payment verified successfully');
-        setLoading(false);
+        // Verify payment with Stripe and create booking
+        const response = await fetch('/api/checkout/verify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ sessionId }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          console.log('✅ Payment verified and booking created:', data.booking);
+          setBookingData(data.booking);
+          setLoading(false);
+        } else {
+          console.error('Payment verification failed:', data.error);
+          setError(data.error || 'Failed to verify payment');
+          setLoading(false);
+        }
       } catch (err) {
         console.error('Error verifying payment:', err);
         setError('Failed to verify payment');
@@ -37,7 +54,7 @@ function PaymentSuccessContent() {
     };
 
     verifyPayment();
-  }, [sessionId, router]);
+  }, [sessionId]);
 
   if (loading) {
     return (
@@ -100,6 +117,13 @@ function PaymentSuccessContent() {
             <p className='text-gray-600 text-lg'>
               Your booking has been confirmed
             </p>
+            {bookingData && (
+              <div className='mt-4 bg-green-50 border border-green-200 rounded-lg px-4 py-3 inline-block'>
+                <p className='text-sm text-green-800 font-medium'>
+                  Booking Reference: <span className='font-bold text-lg'>{bookingData.bookingReference}</span>
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Details Section */}
@@ -181,7 +205,7 @@ function PaymentSuccessContent() {
             {/* Action Buttons */}
             <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
               <Link
-                href='/dashboard/bookings'
+                href='/my-bookings'
                 className='bg-green-800 hover:bg-green-900 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 text-center shadow-lg hover:shadow-xl flex items-center justify-center'
               >
                 <Calendar className='h-5 w-5 mr-2' />

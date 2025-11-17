@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
 import Booking from '@/models/Booking';
 import Vehicle from '@/models/Vehicle';
+import { sendBookingConfirmation } from '@/lib/email';
 
 // POST - Create a new booking
 export async function POST(request: NextRequest) {
@@ -157,6 +158,37 @@ export async function POST(request: NextRequest) {
     });
 
     const savedBooking = await booking.save();
+
+    // Send confirmation emails to customer and admin
+    try {
+      const customerName = `${savedBooking.clientInfo.firstName} ${savedBooking.clientInfo.lastName}`;
+      const vehicleName = `${vehicle.make} ${vehicle.vehicleModel}`;
+      const customerPhone = `${savedBooking.clientInfo.countryCode}${savedBooking.clientInfo.phoneNumber}`;
+
+      await sendBookingConfirmation({
+        bookingId: savedBooking._id.toString(),
+        customerName,
+        customerEmail: savedBooking.clientInfo.email,
+        customerPhone,
+        vehicleName,
+        vehicleType: vehicle.type || 'rent-a-car',
+        pickupDate: savedBooking.pickupDate,
+        returnDate: savedBooking.returnDate,
+        pickupLocation: savedBooking.pickupLocation,
+        returnLocation: savedBooking.pickupLocation, // Using same location as return
+        rentalDays: savedBooking.rentalDays,
+        totalCost: savedBooking.pricing.totalCost,
+        originalAmount: savedBooking.pricing.totalCost,
+        discount: 0, // No discount for pay later
+        paymentStatus: 'pending',
+        paymentMethod: 'pay_later',
+      });
+
+      console.log('✅ Confirmation emails sent successfully for booking:', savedBooking._id);
+    } catch (emailError) {
+      console.error('⚠️ Booking created but email sending failed:', emailError);
+      // Don't throw error - booking is still valid even if email fails
+    }
 
     return NextResponse.json(
       {
