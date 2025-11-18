@@ -707,53 +707,6 @@ export default function BookingModal({
             </div>
           )}
 
-          {/* WiFi Hotspot */}
-          <div className='border border-gray-200 rounded-xl p-4 flex items-center justify-between hover:bg-gray-50 transition-colors'>
-            <div className='flex items-center'>
-              <svg
-                className='h-5 w-5 text-gray-600 mr-3'
-                fill='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <path d='M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm-1 16v-2h2v2h-2zm0-4v-2c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5h2c0-1.66 1.34-3 3-3s3 1.34 3 3-1.34 3-3 3z' />
-              </svg>
-              <div>
-                <h4 className='font-medium text-gray-900'>WiFi Hotspot</h4>
-                <p className='text-sm text-gray-600'>€4.60 / day</p>
-              </div>
-            </div>
-            <div className='flex items-center space-x-3'>
-              <button
-                onClick={() =>
-                  setSelectedDetail(
-                    selectedDetail === 'wifiHotspot' ? null : 'wifiHotspot'
-                  )
-                }
-                className='text-sm text-gray-500 hover:text-gray-700 hover:underline'
-              >
-                Details
-              </button>
-              <label className='relative inline-flex items-center cursor-pointer'>
-                <input
-                  type='checkbox'
-                  checked={addOns.wifiHotspot}
-                  onChange={() => toggleAddOn('wifiHotspot')}
-                  className='sr-only peer'
-                />
-                <div className='w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[""] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600'></div>
-              </label>
-            </div>
-          </div>
-
-          {/* WiFi Hotspot Details */}
-          {selectedDetail === 'wifiHotspot' && (
-            <div className='mx-4 mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg'>
-              <p className='text-sm text-blue-800'>
-                {getAddOnDetails().wifiHotspot.description}
-              </p>
-            </div>
-          )}
-
           {/* Roadside Assistance */}
           <div className='border border-gray-200 rounded-xl p-4 flex items-center justify-between hover:bg-gray-50 transition-colors'>
             <div className='flex items-center'>
@@ -846,57 +799,6 @@ export default function BookingModal({
             <div className='mx-4 mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg'>
               <p className='text-sm text-blue-800'>
                 {getAddOnDetails().tireProtection.description}
-              </p>
-            </div>
-          )}
-
-          {/* Personal Accident Protection */}
-          <div className='border border-gray-200 rounded-xl p-4 flex items-center justify-between hover:bg-gray-50 transition-colors'>
-            <div className='flex items-center'>
-              <svg
-                className='h-5 w-5 text-gray-600 mr-3'
-                fill='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <path d='M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' />
-              </svg>
-              <div>
-                <h4 className='font-medium text-gray-900'>
-                  Personal Accident Protection
-                </h4>
-                <p className='text-sm text-gray-600'>€2.39 / day</p>
-              </div>
-            </div>
-            <div className='flex items-center space-x-3'>
-              <button
-                onClick={() =>
-                  setSelectedDetail(
-                    selectedDetail === 'personalAccident'
-                      ? null
-                      : 'personalAccident'
-                  )
-                }
-                className='text-sm text-gray-500 hover:text-gray-700 hover:underline'
-              >
-                Details
-              </button>
-              <label className='relative inline-flex items-center cursor-pointer'>
-                <input
-                  type='checkbox'
-                  checked={addOns.personalAccident}
-                  onChange={() => toggleAddOn('personalAccident')}
-                  className='sr-only peer'
-                />
-                <div className='w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[""] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600'></div>
-              </label>
-            </div>
-          </div>
-
-          {/* Personal Accident Details */}
-          {selectedDetail === 'personalAccident' && (
-            <div className='mx-4 mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg'>
-              <p className='text-sm text-blue-800'>
-                {getAddOnDetails().personalAccident.description}
               </p>
             </div>
           )}
@@ -1458,47 +1360,96 @@ export default function BookingModal({
     <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-0 sm:p-4'>
       <div className='bg-white rounded-none sm:rounded-2xl w-full h-full sm:max-w-7xl sm:h-[85vh] overflow-hidden shadow-2xl'>
         <div className='flex flex-col sm:flex-row h-full'>
-          {/* Left Side - Car Image as Full Background */}
-          <div className='flex-1 relative overflow-hidden bg-gradient-to-br from-slate-700 to-slate-300 min-h-[40vh] sm:min-h-0'>
-            {/* Car Image - Full Background */}
-            {vehicle.mainImage ? (
-              <div className='absolute inset-0'>
-                <img
-                  src={vehicle.mainImage}
-                  alt={vehicle.fullName}
-                  className='w-full h-full object-cover'
-                />
-                {/* Dark overlay for text readability */}
-                <div className='absolute inset-0 bg-gradient-to-br from-black/30 via-transparent to-black/50'></div>
+          {/* Left Side - Car Image */}
+          <div className='sm:flex-1 relative overflow-hidden'>
+            {/* Mobile Layout - Horizontal */}
+            <div className='sm:hidden flex items-start p-4 gap-3 bg-white border-b border-gray-200'>
+              {/* Car Image - Small Left */}
+              <div className='w-24 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100'>
+                {vehicle.mainImage ? (
+                  <img
+                    src={vehicle.mainImage}
+                    alt={vehicle.fullName}
+                    className='w-full h-full object-cover'
+                  />
+                ) : (
+                  <div className='w-full h-full flex items-center justify-center'>
+                    <Car className='h-10 w-10 text-gray-400' />
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className='absolute inset-0 flex items-center justify-center'>
-                <Car className='h-64 w-64 text-white/30' />
-              </div>
-            )}
 
-            {/* Car Name - Top Left */}
-            <div className='absolute top-8 left-8 text-white z-10'>
-              <h1 className='text-3xl font-bold mb-1'>
-                {vehicle.make.toUpperCase()} {vehicle.model.toUpperCase()}
-                <span className='font-normal text-lg ml-2'>or similar</span>
-              </h1>
-              <p className='text-lg opacity-90'>
-                {getCategoryDisplayName(vehicle.category)}{' '}
-                {vehicle.transmission}
-              </p>
+              {/* Car Info - Right */}
+              <div className='flex-1 min-w-0'>
+                <h1 className='text-base font-bold text-gray-900 mb-0.5 truncate'>
+                  {vehicle.make.toUpperCase()} {vehicle.model.toUpperCase()}
+                </h1>
+                <p className='text-xs text-gray-600 mb-1'>
+                  {getCategoryDisplayName(vehicle.category)} • {vehicle.transmission}
+                </p>
+                <div className='flex items-center gap-3 text-xs text-gray-600'>
+                  <span className='flex items-center'>
+                    <Users className='h-3 w-3 mr-1' />
+                    {vehicle.passengerCapacity}
+                  </span>
+                  <span className='flex items-center'>
+                    <Settings className='h-3 w-3 mr-1' />
+                    {vehicle.transmission === 'A' || vehicle.transmission === 'Automatic' ? 'Auto' : 'Manual'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Close Button */}
+              <button
+                onClick={handleClose}
+                className='text-gray-400 hover:text-gray-600 p-1.5'
+              >
+                <X className='h-6 w-6' />
+              </button>
             </div>
 
-            {/* Close Button */}
-            <button
-              onClick={handleClose}
-              className='absolute top-4 right-4 text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-full transition-all duration-200 z-10'
-            >
-              <X className='h-6 w-6' />
-            </button>
+            {/* Desktop Layout - Full Background (hidden on mobile) */}
+            <div className='hidden sm:block relative h-full bg-gradient-to-br from-slate-700 to-slate-300'>
+              {/* Car Image - Full Background */}
+              {vehicle.mainImage ? (
+                <div className='absolute inset-0'>
+                  <img
+                    src={vehicle.mainImage}
+                    alt={vehicle.fullName}
+                    className='w-full h-full object-cover'
+                  />
+                  {/* Dark overlay for text readability */}
+                  <div className='absolute inset-0 bg-gradient-to-br from-black/30 via-transparent to-black/50'></div>
+                </div>
+              ) : (
+                <div className='absolute inset-0 flex items-center justify-center'>
+                  <Car className='h-64 w-64 text-white/30' />
+                </div>
+              )}
 
-            {/* Car Features - Bottom */}
-            <div className='absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/60 to-transparent'>
+              {/* Car Name - Top Left */}
+              <div className='absolute top-8 left-8 text-white z-10'>
+                <h1 className='text-3xl font-bold mb-1'>
+                  {vehicle.make.toUpperCase()} {vehicle.model.toUpperCase()}
+                  <span className='font-normal text-lg ml-2'>or similar</span>
+                </h1>
+                <p className='text-lg opacity-90'>
+                  {getCategoryDisplayName(vehicle.category)}{' '}
+                  {vehicle.transmission}
+                </p>
+              </div>
+
+              {/* Close Button */}
+              <button
+                onClick={handleClose}
+                className='absolute top-4 right-4 text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-full transition-all duration-200 z-10'
+              >
+                <X className='h-6 w-6' />
+              </button>
+            </div>
+
+            {/* Car Features - Bottom (Desktop Only) */}
+            <div className='hidden sm:block absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/60 to-transparent'>
               <div className='flex items-center justify-center flex-wrap gap-x-8 gap-y-3 text-white mb-4'>
                 <div className='flex items-center'>
                   <Users className='h-4 w-4 mr-2 text-white' />

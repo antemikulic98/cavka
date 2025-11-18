@@ -31,13 +31,15 @@ export default function Footer() {
           {/* Company Info */}
           <div>
             <div className='mb-4'>
-              <Image
-                src='/img/logo.svg'
-                alt='Logo'
-                width={150}
-                height={50}
-                className='h-12 w-auto'
-              />
+              <a href='/' className='inline-block'>
+                <Image
+                  src='/img/logo.svg'
+                  alt='Logo'
+                  width={150}
+                  height={50}
+                  className='h-12 w-auto'
+                />
+              </a>
             </div>
 
             <p className='text-gray-400 leading-relaxed mb-6 text-sm'>

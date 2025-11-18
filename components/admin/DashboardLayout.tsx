@@ -169,11 +169,13 @@ export default function DashboardLayout({ user, children }: DashboardLayoutProps
           {/* Mobile sidebar content */}
           <div className='flex-1 h-0 pt-5 pb-4 overflow-y-auto'>
             <div className='flex-shrink-0 flex items-center px-4'>
-              <img
-                src='/img/logo-black.svg'
-                alt='Logo'
-                className='h-10 w-auto'
-              />
+              <a href='/'>
+                <img
+                  src='/img/logo-black.svg'
+                  alt='Logo'
+                  className='h-10 w-auto'
+                />
+              </a>
             </div>
             <nav className='mt-5 px-2 space-y-1'>
               {navigation.map((item) => (
@@ -214,7 +216,9 @@ export default function DashboardLayout({ user, children }: DashboardLayoutProps
       <div className='hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0'>
         <div className='flex flex-col flex-grow bg-white pt-5 pb-4 overflow-y-auto border-r border-gray-200'>
           <div className='flex items-center flex-shrink-0 px-4'>
-            <img src='/img/logo-black.svg' alt='Logo' className='h-12 w-auto' />
+            <a href='/'>
+              <img src='/img/logo-black.svg' alt='Logo' className='h-12 w-auto' />
+            </a>
           </div>
 
           {/* Welcome message */}

@@ -128,11 +128,13 @@ export default function DashboardLayout({
                 </TransitionChild>
                 <div className='flex-1 h-0 pt-5 pb-4 overflow-y-auto'>
                   <div className='flex-shrink-0 flex items-center px-4'>
-                    <img
-                      src='/img/logo-black.svg'
-                      alt='Logo'
-                      className='h-10 w-auto'
-                    />
+                    <a href='/'>
+                      <img
+                        src='/img/logo-black.svg'
+                        alt='Logo'
+                        className='h-10 w-auto'
+                      />
+                    </a>
                   </div>
                   <nav className='mt-5 px-2 space-y-1'>
                     {navigation.map((item) => (
@@ -169,11 +171,13 @@ export default function DashboardLayout({
           <div className='flex-1 flex flex-col min-h-0 border-r border-gray-200 bg-white'>
             <div className='flex-1 flex flex-col pt-5 pb-4 overflow-y-auto'>
               <div className='flex items-center flex-shrink-0 px-4 mb-8'>
-                <img
-                  src='/img/logo-black.svg'
-                  alt='Logo'
-                  className='h-12 w-auto'
-                />
+                <a href='/'>
+                  <img
+                    src='/img/logo-black.svg'
+                    alt='Logo'
+                    className='h-12 w-auto'
+                  />
+                </a>
               </div>
 
               <div className='mt-5 flex-grow flex flex-col'>

@@ -88,6 +88,39 @@ async function createBookingFromSession(session: Stripe.Checkout.Session) {
       return;
     }
 
+    // Check for overbooking conflicts
+    const pickupDate = new Date(metadata.pickupDate);
+    const returnDate = new Date(metadata.returnDate);
+
+    const conflictingBookings = await Booking.find({
+      vehicleId: metadata.vehicleId,
+      status: { $in: ['confirmed', 'in_progress'] },
+      $or: [
+        // New booking starts during existing booking
+        {
+          pickupDate: { $lte: pickupDate },
+          returnDate: { $gte: pickupDate },
+        },
+        // New booking ends during existing booking
+        {
+          pickupDate: { $lte: returnDate },
+          returnDate: { $gte: returnDate },
+        },
+        // New booking completely contains existing booking
+        {
+          pickupDate: { $gte: pickupDate },
+          returnDate: { $lte: returnDate },
+        },
+      ],
+    }).select('bookingReference clientInfo.firstName clientInfo.lastName pickupDate returnDate');
+
+    const isOverbooking = conflictingBookings.length > 0;
+
+    console.log(`Webhook overbooking check: ${isOverbooking ? 'CONFLICT DETECTED' : 'No conflicts'}`);
+    if (isOverbooking) {
+      console.log('Conflicting bookings:', conflictingBookings.map(b => b.bookingReference));
+    }
+
     const discountedAmount = parseFloat(metadata.discountedAmount);
     const originalAmount = parseFloat(metadata.totalAmount);
     const discount = parseFloat(metadata.discount);
@@ -172,6 +205,10 @@ async function createBookingFromSession(session: Stripe.Checkout.Session) {
 
       // Booking Status
       status: 'confirmed',
+
+      // Overbooking fields
+      isOverbooking,
+      overbookingStatus: isOverbooking ? 'pending' : 'none',
     };
 
     console.log('Creating booking with data:', bookingData);

@@ -69,11 +69,13 @@ export default function LoginPage() {
         <div className='bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-white/10'>
           <div>
             <div className='flex justify-center mb-8'>
-              <img
-                src='/img/logo-black.svg'
-                alt='Logo'
-                className='h-16 w-auto'
-              />
+              <a href='/'>
+                <img
+                  src='/img/logo-black.svg'
+                  alt='Logo'
+                  className='h-16 w-auto'
+                />
+              </a>
             </div>
           </div>
 

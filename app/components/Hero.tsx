@@ -21,7 +21,7 @@ export default function Hero() {
   const [showReturnLocation, setShowReturnLocation] = useState(false);
 
   // Location state
-  const [pickupLocation, setPickupLocation] = useState('Zagreb Downtown');
+  const [pickupLocation, setPickupLocation] = useState('Split Airport');
   const [returnLocationValue, setReturnLocationValue] = useState('');
   const [showPickupDropdown, setShowPickupDropdown] = useState(false);
   const [showReturnDropdown, setShowReturnDropdown] = useState(false);
@@ -255,7 +255,7 @@ export default function Hero() {
   }, []);
 
   return (
-    <section className='relative text-gray-900 min-h-screen rounded-b-2xl'>
+    <section className='relative text-gray-900 min-h-[88vh] lg:min-h-screen rounded-b-2xl pb-0'>
       {/* Hero Background Image */}
       <div
         className='absolute inset-0 bg-cover bg-center bg-no-repeat rounded-b-2xl'
@@ -816,27 +816,27 @@ export default function Hero() {
       />
 
       {/* Powerful Hero Title - Bottom Positioned to Avoid Car */}
-      <div className='absolute bottom-8 left-1/2 transform -translate-x-1/2 z-30 text-center w-full px-2'>
-        <div className='animate-fade-in-up relative'>
+      <div className='absolute bottom-0 left-0 right-0 z-30 text-center'>
+        <div className='animate-fade-in-up relative w-full'>
           {/* Background with glass morphism effect */}
-          <div className='absolute -inset-8 bg-black/40 backdrop-blur-md rounded-3xl border border-white/20 shadow-2xl'></div>
+          <div className='absolute inset-0 bg-black/40 backdrop-blur-md rounded-b-3xl border border-white/20 shadow-2xl'></div>
 
-          <div className='relative z-10 py-6 px-4'>
+          <div className='relative z-10 py-4 md:py-6 px-4'>
             {/* Supporting tagline */}
-            <p className='font-poppins text-sm md:text-sm lg:text-base text-gray-200 font-medium mb-2 opacity-90 tracking-wide uppercase animate-fade-in-delayed'>
+            <p className='font-poppins text-xs md:text-sm lg:text-base text-gray-200 font-medium mb-2 opacity-90 tracking-wide uppercase animate-fade-in-delayed'>
               Beyond driving.
             </p>
 
-            {/* Main headline with enhanced styling - Bigger single line on mobile */}
-            <h1 className='font-poppins text-3xl sm:text-4xl md:text-4xl lg:text-5xl xl:text-6xl font-black text-white mb-1 tracking-tight leading-none'>
-              <span className='block drop-shadow-2xl text-shadow-lg hover:scale-105 transition-transform duration-300 whitespace-nowrap'>
+            {/* Main headline with enhanced styling */}
+            <h1 className='font-poppins text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black text-white mb-1 tracking-tight leading-tight'>
+              <span className='block drop-shadow-2xl text-shadow-lg hover:scale-105 transition-transform duration-300'>
                 DON&apos;T JUST RENT A CAR.
               </span>
             </h1>
 
             {/* Emphasized second line with gradient */}
-            <h2 className='font-poppins text-3xl sm:text-4xl md:text-4xl lg:text-5xl xl:text-6xl font-black tracking-tight leading-none'>
-              <span className='block bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 bg-clip-text text-transparent drop-shadow-2xl hover:scale-105 transition-all duration-500 hover:from-amber-200 hover:via-yellow-300 hover:to-amber-400 whitespace-nowrap'>
+            <h2 className='font-poppins text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black tracking-tight leading-tight'>
+              <span className='block bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 bg-clip-text text-transparent drop-shadow-2xl hover:scale-105 transition-all duration-500 hover:from-amber-200 hover:via-yellow-300 hover:to-amber-400'>
                 RENT THE EXPERIENCE.
               </span>
             </h2>
