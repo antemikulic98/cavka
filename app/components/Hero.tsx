@@ -387,7 +387,7 @@ export default function Hero() {
                         }}
                         className='w-full pl-12 pr-16 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-800 focus:border-green-800 text-gray-900 text-sm font-medium shadow-sm hover:border-gray-300 transition-all duration-200 bg-white text-left'
                       >
-                        {returnLocationValue || 'Select return location'}
+                        {returnLocationValue || (isTransfer ? 'Select destination' : 'Select return location')}
                       </button>
                       <div className='absolute inset-y-0 right-8 pr-2 flex items-center pointer-events-none'>
                         <ChevronDown

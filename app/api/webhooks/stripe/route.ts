@@ -121,11 +121,11 @@ async function createBookingFromSession(session: Stripe.Checkout.Session) {
       console.log('Conflicting bookings:', conflictingBookings.map(b => b.bookingReference));
     }
 
-    const discountedAmount = parseFloat(metadata.discountedAmount);
-    const originalAmount = parseFloat(metadata.totalAmount);
-    const discount = parseFloat(metadata.discount);
+    const discountedAmount = Math.round(parseFloat(metadata.discountedAmount) * 100) / 100;
+    const originalAmount = Math.round(parseFloat(metadata.totalAmount) * 100) / 100;
+    const discount = Math.round(parseFloat(metadata.discount) * 100) / 100;
     const rentalDays = parseInt(metadata.rentalDays || '1');
-    const dailyRate = discountedAmount / rentalDays;
+    const dailyRate = Math.round((discountedAmount / rentalDays) * 100) / 100;
 
     // Generate booking reference
     const generateBookingReference = (): string => {

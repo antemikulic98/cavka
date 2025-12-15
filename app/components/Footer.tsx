@@ -1,13 +1,7 @@
 'use client';
 
 import React from 'react';
-import {
-  Phone,
-  Mail,
-  MapPin,
-  Facebook,
-  Instagram,
-} from 'lucide-react';
+import { Phone, Mail, MapPin, Facebook, Instagram } from 'lucide-react';
 import Image from 'next/image';
 
 export default function Footer() {
@@ -31,10 +25,14 @@ export default function Footer() {
           {/* Company Info */}
           <div>
             <div className='mb-4'>
-              <a href='/' className='inline-block'>
+              <a
+                href='/'
+                className='inline-block'
+                aria-label='HIT Rent a Car - Home'
+              >
                 <Image
                   src='/img/logo.svg'
-                  alt='Logo'
+                  alt='HIT Rent a Car Logo - Car Rental Croatia'
                   width={150}
                   height={50}
                   className='h-12 w-auto'
@@ -43,23 +41,31 @@ export default function Footer() {
             </div>
 
             <p className='text-gray-400 leading-relaxed mb-6 text-sm'>
-              Premium car rental and transfer services across Croatia. Quality
-              vehicles, professional service, competitive prices.
+              HIT Rent a Car - Premium car rental and transfer services across
+              Croatia. Quality vehicles, professional service, competitive
+              prices. Serving Zagreb, Split, Dubrovnik and all major Croatian
+              destinations.
             </p>
 
             {/* Contact Info */}
             <div className='space-y-3'>
-              <div className='flex items-center text-gray-400 text-sm hover:text-emerald-400 transition-colors'>
+              <a
+                href='tel:+385917224138'
+                className='flex items-center text-gray-400 text-sm hover:text-emerald-400 transition-colors'
+              >
                 <Phone className='h-4 w-4 mr-3' />
-                <span>+385 1 234 5678</span>
-              </div>
-              <div className='flex items-center text-gray-400 text-sm hover:text-emerald-400 transition-colors'>
+                <span>+385 91 722 4138</span>
+              </a>
+              <a
+                href='mailto:info@hit-rent.com'
+                className='flex items-center text-gray-400 text-sm hover:text-emerald-400 transition-colors'
+              >
                 <Mail className='h-4 w-4 mr-3' />
-                <span>info@carrental.hr</span>
-              </div>
+                <span>info@hit-rent.com</span>
+              </a>
               <div className='flex items-center text-gray-400 text-sm'>
                 <MapPin className='h-4 w-4 mr-3' />
-                <span>Zagreb, Croatia</span>
+                <span>Zagreb, Split, Dubrovnik, Croatia</span>
               </div>
             </div>
           </div>
@@ -114,7 +120,7 @@ export default function Footer() {
       <div className='border-t border-gray-800 bg-black'>
         <div className='container mx-auto px-6 lg:px-8 py-6'>
           <div className='text-center text-gray-500 text-xs'>
-            © 2024 Car Rental Services. All rights reserved.
+            © 2025 HIT Rent a Car. All rights reserved.
           </div>
         </div>
       </div>

@@ -30,6 +30,7 @@ export default function MobileSearchModal({
 }: MobileSearchModalProps) {
   const [step, setStep] = useState<ModalStep>('pickup-location');
   const [vehicleType] = useState(initialVehicleType);
+  const isTransfer = vehicleType === 'transfers';
   const [pickupLocation, setPickupLocation] = useState('');
   const [returnLocation, setReturnLocation] = useState('');
   const [showReturnLocation, setShowReturnLocation] = useState(false);
@@ -202,7 +203,7 @@ export default function MobileSearchModal({
       case 'pickup-location':
         return 'Pickup Location';
       case 'return-location':
-        return 'Return Location';
+        return isTransfer ? 'Destination' : 'Return Location';
       case 'dates':
         return 'Select Dates';
       default:
@@ -324,9 +325,9 @@ export default function MobileSearchModal({
             <div className='p-4 space-y-4'>
               <div className='text-center mb-6'>
                 <h3 className='text-xl font-semibold text-gray-900 mb-2'>
-                  Where do you want to return?
+                  {isTransfer ? 'Where are you going?' : 'Where do you want to return?'}
                 </h3>
-                <p className='text-gray-600'>Select your return location</p>
+                <p className='text-gray-600'>{isTransfer ? 'Select your destination' : 'Select your return location'}</p>
               </div>
 
               <div className='space-y-2'>

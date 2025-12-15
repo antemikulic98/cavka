@@ -17,8 +17,8 @@ export default function Header() {
         <div className='flex justify-between items-center py-4'>
           {/* Logo */}
           <div className='flex items-center'>
-            <a href='/' className='flex items-center'>
-              <img src='/img/logo.svg' alt='Logo' className='h-12 w-auto' />
+            <a href='/' className='flex items-center' aria-label='HIT Rent a Car - Home'>
+              <img src='/img/logo.svg' alt='HIT Rent a Car - Car Rental Croatia' className='h-12 w-auto' />
             </a>
           </div>
 

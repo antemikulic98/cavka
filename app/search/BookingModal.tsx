@@ -1357,8 +1357,19 @@ export default function BookingModal({
   };
 
   return (
-    <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-0 sm:p-4'>
-      <div className='bg-white rounded-none sm:rounded-2xl w-full h-full sm:max-w-7xl sm:h-[85vh] overflow-hidden shadow-2xl'>
+    <div 
+      className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-0 sm:p-4'
+      onClick={(e) => {
+        // Close modal when clicking on backdrop (not on modal content)
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div 
+        className='bg-white rounded-none sm:rounded-2xl w-full h-full sm:max-w-7xl sm:h-[85vh] overflow-hidden shadow-2xl'
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className='flex flex-col sm:flex-row h-full'>
           {/* Left Side - Car Image */}
           <div className='sm:flex-1 relative overflow-hidden'>
