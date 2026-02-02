@@ -283,9 +283,9 @@ export default function SearchResults() {
             </h1>
             <Link
               href='/'
-              className='flex items-center text-gray-600 hover:text-gray-900 text-sm'
+              className='inline-flex items-center px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-all shadow-md hover:shadow-lg font-medium'
             >
-              <ArrowLeft className='h-4 w-4 mr-1' />
+              <ArrowLeft className='h-4 w-4 mr-2' />
               Back to Home
             </Link>
           </div>

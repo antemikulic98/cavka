@@ -37,9 +37,27 @@ export default function SearchBar({
   const [expanded, setExpanded] = useState(initialExpanded);
   const [showPickupDropdown, setShowPickupDropdown] = useState(false);
   const [showReturnDropdown, setShowReturnDropdown] = useState(false);
+  const [locations, setLocations] = useState<string[]>([]);
 
   const pickupDropdownRef = useRef<HTMLDivElement>(null);
   const returnDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fetch locations on mount
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const serviceType = isTransfer ? 'transfer' : 'rental';
+        const response = await fetch(`/api/settings/locations?activeOnly=true&serviceType=${serviceType}`);
+        const data = await response.json();
+        if (data.success) {
+          setLocations(data.locations.map((loc: any) => loc.name));
+        }
+      } catch (error) {
+        console.error('Error fetching locations:', error);
+      }
+    };
+    fetchLocations();
+  }, [isTransfer]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -61,18 +79,6 @@ export default function SearchBar({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const locations = [
-    'Zagreb Downtown',
-    'Zagreb Airport',
-    'Split Downtown',
-    'Split Airport',
-    'Dubrovnik Downtown',
-    'Dubrovnik Airport',
-    'Rijeka Downtown',
-    'Pula Downtown',
-    'Zadar Downtown',
-  ];
 
   const handleSearch = () => {
     const searchParams = new URLSearchParams();

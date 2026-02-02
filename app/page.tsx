@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import CarCards from './components/CarCards';
+import AboutUs from './components/AboutUs';
 import Footer from './components/Footer';
 
 export const metadata: Metadata = {
@@ -22,6 +23,7 @@ export default function Home() {
       <Header />
       <Hero />
       <CarCards />
+      <AboutUs />
       <Footer />
     </div>
   );

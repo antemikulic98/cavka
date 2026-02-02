@@ -25,6 +25,7 @@ export default function Hero() {
   const [returnLocationValue, setReturnLocationValue] = useState('');
   const [showPickupDropdown, setShowPickupDropdown] = useState(false);
   const [showReturnDropdown, setShowReturnDropdown] = useState(false);
+  const [locations, setLocations] = useState<string[]>([]);
 
   // Mobile modal states
   const [showMobileSearchModal, setShowMobileSearchModal] = useState(false);
@@ -92,18 +93,22 @@ export default function Hero() {
     }
   }, [isTransfer]);
 
-  // Available locations
-  const locations = [
-    'Zagreb Downtown',
-    'Zagreb Airport',
-    'Split Downtown',
-    'Split Airport',
-    'Dubrovnik Downtown',
-    'Dubrovnik Airport',
-    'Rijeka Downtown',
-    'Pula Downtown',
-    'Zadar Downtown',
-  ];
+  // Fetch locations on mount and when vehicle type changes
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const serviceType = isTransfer ? 'transfer' : 'rental';
+        const response = await fetch(`/api/settings/locations?activeOnly=true&serviceType=${serviceType}`);
+        const data = await response.json();
+        if (data.success) {
+          setLocations(data.locations.map((loc: any) => loc.name));
+        }
+      } catch (error) {
+        console.error('Error fetching locations:', error);
+      }
+    };
+    fetchLocations();
+  }, [isTransfer]);
 
   // Handle mobile search modal
   const handleMobileSearch = (searchData: {

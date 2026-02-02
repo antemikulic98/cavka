@@ -26,6 +26,7 @@ interface Vehicle {
   make: string;
   model: string;
   category: string;
+  acrissCode?: string;
   dailyRate: number;
   currency: string;
   passengerCapacity: number;
@@ -60,18 +61,6 @@ interface AddOns {
 interface BookingFormProps {
   onBookingCreated?: () => void;
 }
-
-const locations = [
-  'Zagreb Downtown',
-  'Zagreb Airport',
-  'Split Downtown',
-  'Split Airport',
-  'Dubrovnik Downtown',
-  'Dubrovnik Airport',
-  'Rijeka Downtown',
-  'Pula Downtown',
-  'Zadar Downtown',
-];
 
 const countries = [
   { code: '+385', name: 'Croatia', flag: '🇭🇷' },
@@ -112,12 +101,14 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
   // State
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [vehicleType, setVehicleType] = useState<'rental' | 'transfer'>('rental');
   const [pickupDate, setPickupDate] = useState('');
   const [returnDate, setReturnDate] = useState('');
   const [pickupLocation, setPickupLocation] = useState('');
   const [returnLocation, setReturnLocation] = useState('');
   const [rentalDays, setRentalDays] = useState(0);
   const [cdwCoverage, setCdwCoverage] = useState<'basic' | 'full'>('basic');
+  const [locations, setLocations] = useState<string[]>([]);
   const [addOns, setAddOns] = useState<AddOns>({
     additionalDriver: false,
     wifiHotspot: false,
@@ -148,12 +139,33 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
     useState(false);
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [insurancePricing, setInsurancePricing] = useState<{
+    dailyPrice: number;
+    fullCoveragePrice: number;
+  } | null>(null);
 
   // Refs
   const vehicleDropdownRef = useRef<HTMLDivElement>(null);
   const locationDropdownRef = useRef<HTMLDivElement>(null);
   const returnLocationDropdownRef = useRef<HTMLDivElement>(null);
   const countryDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fetch locations on mount and when vehicle type changes
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const serviceType = vehicleType === 'rental' ? 'rental' : 'transfer';
+        const response = await fetch(`/api/settings/locations?activeOnly=true&serviceType=${serviceType}`);
+        const data = await response.json();
+        if (data.success) {
+          setLocations(data.locations.map((loc: any) => loc.name));
+        }
+      } catch (error) {
+        console.error('Error fetching locations:', error);
+      }
+    };
+    fetchLocations();
+  }, [vehicleType]);
 
   // Calculate rental days when dates change
   useEffect(() => {
@@ -166,12 +178,55 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
     }
   }, [pickupDate, returnDate]);
 
-  // Fetch vehicles when location or dates change
+  // Fetch vehicles when dates or vehicle type change
   useEffect(() => {
-    if (pickupLocation && pickupDate && returnDate) {
+    if (pickupDate && returnDate) {
       fetchAvailableVehicles();
+      // Reset selected vehicle when vehicle type changes
+      setSelectedVehicle(null);
     }
-  }, [pickupLocation, pickupDate, returnDate]);
+  }, [pickupDate, returnDate, vehicleType]);
+
+  // Fetch insurance pricing when vehicle is selected
+  useEffect(() => {
+    const fetchInsurancePricing = async () => {
+      if (!selectedVehicle || !selectedVehicle.acrissCode) {
+        // If no ACRISS code, use default pricing
+        setInsurancePricing({ dailyPrice: 0, fullCoveragePrice: 9.95 });
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/settings/insurance');
+
+        if (response.ok) {
+          const data = await response.json();
+          const pricing = data.pricing.find(
+            (p: any) => p.acrissCode === selectedVehicle.acrissCode
+          );
+
+          if (pricing) {
+            setInsurancePricing({
+              dailyPrice: pricing.dailyPrice || 0,
+              fullCoveragePrice: pricing.fullCoveragePrice || 9.95,
+            });
+          } else {
+            // No pricing found for this ACRISS code, use defaults
+            setInsurancePricing({ dailyPrice: 0, fullCoveragePrice: 9.95 });
+          }
+        } else {
+          setInsurancePricing({ dailyPrice: 0, fullCoveragePrice: 9.95 });
+        }
+      } catch (error) {
+        console.error('Error fetching insurance pricing:', error);
+        setInsurancePricing({ dailyPrice: 0, fullCoveragePrice: 9.95 });
+      }
+    };
+
+    if (selectedVehicle) {
+      fetchInsurancePricing();
+    }
+  }, [selectedVehicle]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -213,7 +268,8 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
       const params = new URLSearchParams({
         pickupDate,
         returnDate,
-        location: pickupLocation,
+        type: vehicleType,
+        // Note: Admin form doesn't filter by location - shows all vehicles
       });
 
       const response = await fetch(`/api/vehicles/availability?${params}`);
@@ -239,7 +295,8 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
     if (!selectedVehicle || !rentalDays) return { totalCost: 0, breakdown: {} };
 
     const baseCost = selectedVehicle.dailyRate * rentalDays;
-    const cdwCost = cdwCoverage === 'full' ? 9.95 * rentalDays : 0;
+    const fullCoverageRate = insurancePricing?.fullCoveragePrice || 9.95;
+    const cdwCost = cdwCoverage === 'full' ? fullCoverageRate * rentalDays : 0;
 
     let addOnsCost = 0;
     Object.entries(addOns).forEach(([key, selected]) => {
@@ -313,9 +370,11 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
       const bookingData = {
         clientInfo,
         vehicleId: selectedVehicle._id,
+        vehicleType,
         pickupDate: new Date(pickupDate).toISOString(),
         returnDate: new Date(returnDate).toISOString(),
         pickupLocation,
+        returnLocation: returnLocation || pickupLocation,
         rentalDays,
         cdwCoverage,
         addOns,
@@ -405,6 +464,71 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
       </div>
 
       <form onSubmit={handleSubmit} className='space-y-8'>
+        {/* Vehicle Type Selection */}
+        <div className='bg-gray-50 rounded-xl p-6'>
+          <h3 className='text-lg font-semibold text-gray-900 mb-4 flex items-center'>
+            <Car className='h-5 w-5 mr-2 text-emerald-600' />
+            Booking Type
+          </h3>
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+            <label
+              className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                vehicleType === 'rental'
+                  ? 'border-emerald-500 bg-emerald-50'
+                  : 'border-gray-300'
+              }`}
+            >
+              <input
+                type='radio'
+                name='vehicleType'
+                value='rental'
+                checked={vehicleType === 'rental'}
+                onChange={() => setVehicleType('rental')}
+                className='sr-only'
+              />
+              <div className='flex items-center justify-between mb-2'>
+                <span className='font-medium text-gray-900'>
+                  Car Rental
+                </span>
+                {vehicleType === 'rental' && (
+                  <CheckCircle className='h-5 w-5 text-emerald-500' />
+                )}
+              </div>
+              <p className='text-sm text-gray-600'>
+                Rent a car for your trip
+              </p>
+            </label>
+
+            <label
+              className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                vehicleType === 'transfer'
+                  ? 'border-emerald-500 bg-emerald-50'
+                  : 'border-gray-300'
+              }`}
+            >
+              <input
+                type='radio'
+                name='vehicleType'
+                value='transfer'
+                checked={vehicleType === 'transfer'}
+                onChange={() => setVehicleType('transfer')}
+                className='sr-only'
+              />
+              <div className='flex items-center justify-between mb-2'>
+                <span className='font-medium text-gray-900'>
+                  Transfer Service
+                </span>
+                {vehicleType === 'transfer' && (
+                  <CheckCircle className='h-5 w-5 text-emerald-500' />
+                )}
+              </div>
+              <p className='text-sm text-gray-600'>
+                Book a transfer from point A to B
+              </p>
+            </label>
+          </div>
+        </div>
+
         {/* Date and Location Selection */}
         <div className='bg-gray-50 rounded-xl p-6'>
           <h3 className='text-lg font-semibold text-gray-900 mb-4 flex items-center'>
@@ -502,7 +626,7 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
                         setPickupLocation(location);
                         setShowLocationDropdown(false);
                       }}
-                      className='w-full px-4 py-2 text-left hover:bg-emerald-50 transition-colors'
+                      className='w-full px-4 py-2 text-left hover:bg-emerald-50 transition-colors text-gray-900'
                     >
                       <div className='flex items-center'>
                         <MapPin className='h-4 w-4 text-gray-400 mr-3' />
@@ -551,7 +675,7 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
                       setReturnLocation('');
                       setShowReturnLocationDropdown(false);
                     }}
-                    className='w-full px-4 py-2 text-left hover:bg-emerald-50 transition-colors border-b'
+                    className='w-full px-4 py-2 text-left hover:bg-emerald-50 transition-colors border-b text-gray-900'
                   >
                     <div className='flex items-center'>
                       <MapPin className='h-4 w-4 text-gray-400 mr-3' />
@@ -566,7 +690,7 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
                         setReturnLocation(location);
                         setShowReturnLocationDropdown(false);
                       }}
-                      className='w-full px-4 py-2 text-left hover:bg-emerald-50 transition-colors'
+                      className='w-full px-4 py-2 text-left hover:bg-emerald-50 transition-colors text-gray-900'
                     >
                       <div className='flex items-center'>
                         <MapPin className='h-4 w-4 text-gray-400 mr-3' />
@@ -629,7 +753,7 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
                           setSelectedVehicle(vehicle);
                           setShowVehicleDropdown(false);
                         }}
-                        className='w-full px-4 py-3 text-left hover:bg-emerald-50 transition-colors border-b last:border-b-0'
+                        className='w-full px-4 py-3 text-left hover:bg-emerald-50 transition-colors border-b last:border-b-0 text-gray-900'
                       >
                         <div className='flex items-center justify-between'>
                           <div className='flex items-center'>
@@ -736,7 +860,9 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
                       <CheckCircle className='h-5 w-5 text-emerald-500' />
                     )}
                   </div>
-                  <p className='text-sm text-gray-600'>+€9.95 per day</p>
+                  <p className='text-sm text-gray-600'>
+                    +€{insurancePricing?.fullCoveragePrice?.toFixed(2) || '9.95'} per day
+                  </p>
                 </label>
               </div>
             </div>
@@ -859,7 +985,7 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
                   <button
                     type='button'
                     onClick={() => setShowCountryDropdown(!showCountryDropdown)}
-                    className='px-3 py-3 border border-r-0 border-gray-300 rounded-l-lg bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent'
+                    className='px-3 py-3 border border-r-0 border-gray-300 rounded-l-lg bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900'
                   >
                     <span className='flex items-center'>
                       {countries.find((c) => c.code === clientInfo.countryCode)
@@ -882,7 +1008,7 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
                             });
                             setShowCountryDropdown(false);
                           }}
-                          className='w-full px-3 py-2 text-left hover:bg-emerald-50 transition-colors flex items-center'
+                          className='w-full px-3 py-2 text-left hover:bg-emerald-50 transition-colors flex items-center text-gray-900'
                         >
                           <span className='mr-3'>{country.flag}</span>
                           <span className='flex-1'>{country.name}</span>

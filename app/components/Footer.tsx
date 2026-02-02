@@ -120,7 +120,7 @@ export default function Footer() {
       <div className='border-t border-gray-800 bg-black'>
         <div className='container mx-auto px-6 lg:px-8 py-6'>
           <div className='text-center text-gray-500 text-xs'>
-            © 2025 HIT Rent a Car. All rights reserved.
+            © {new Date().getFullYear()} HIT Rent a Car. All rights reserved.
           </div>
         </div>
       </div>

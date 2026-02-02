@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     const pickupDate = searchParams.get('pickupDate');
     const returnDate = searchParams.get('returnDate');
     const type = searchParams.get('type'); // Optional: filter by vehicle type (rental/transfer)
+    const location = searchParams.get('location'); // Optional: filter by location
 
     if (!pickupDate || !returnDate) {
       return NextResponse.json(
@@ -44,6 +45,11 @@ export async function GET(request: NextRequest) {
     // Filter by vehicle type if provided (rental or transfer)
     if (type && ['rental', 'transfer'].includes(type)) {
       query.type = type;
+    }
+
+    // Filter by location if provided
+    if (location) {
+      query.location = location;
     }
 
     // Find vehicles (both available and potentially overbooked)
