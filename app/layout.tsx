@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono, Poppins } from 'next/font/google';
 import './globals.css';
+import CookieBanner from './components/CookieBanner';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -20,29 +21,35 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: {
-    default: 'HIT Rent a Car | Rent a Car Croatia | Car Rental & Transfer Services',
-    template: '%s | HIT Rent a Car Croatia',
+    default: 'Family Rent a Car Croatia | Affordable Car Rental Zagreb, Split & Dubrovnik',
+    template: '%s | Family Rent a Car Croatia',
   },
-  description: 'HIT Rent a Car - Premium car rental and transfer services in Croatia. Rent quality vehicles at competitive prices in Zagreb, Split, Dubrovnik & more. Book online today!',
+  description: 'Family Rent a Car Croatia - Premium car rental in Zagreb, Split & Dubrovnik. Family-owned service, quality vehicles, competitive prices. Book online!',
   keywords: [
+    'family rent a car croatia',
     'rent a car croatia',
     'car rental croatia',
-    'hit rent a car',
+    'family car rental',
     'rent a car zagreb',
     'rent a car split',
     'rent a car dubrovnik',
     'airport car rental croatia',
     'cheap car rental croatia',
+    'affordable car rental croatia',
     'car hire croatia',
     'transfer services croatia',
     'airport transfer split',
     'airport transfer zagreb',
+    'airport transfer dubrovnik',
     'najam auta hrvatska',
     'rent a car hrvatska',
+    'family owned car rental',
+    'croatia road trip car rental',
+    'dalmatian coast car rental',
   ],
-  authors: [{ name: 'HIT Rent a Car' }],
-  creator: 'HIT Rent a Car',
-  publisher: 'HIT Rent a Car',
+  authors: [{ name: 'Family Rent a Car Croatia' }],
+  creator: 'Family Rent a Car Croatia',
+  publisher: 'Family Rent a Car Croatia',
   formatDetection: {
     email: false,
     address: false,
@@ -60,23 +67,24 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: 'https://hit-rent.com',
-    siteName: 'HIT Rent a Car',
-    title: 'HIT Rent a Car | Premium Car Rental & Transfer Services in Croatia',
-    description: 'Rent quality vehicles at competitive prices. Car rental and transfer services in Zagreb, Split, Dubrovnik and across Croatia. Book online today!',
+    siteName: 'Family Rent a Car Croatia',
+    title: 'Family Rent a Car | Premium Car Rental & Transfer Services in Croatia',
+    description: 'Your trusted family-owned car rental service. Rent quality vehicles at competitive prices. Car rental and transfer services in Zagreb, Split, Dubrovnik and across Croatia. Book online today!',
     images: [
       {
         url: '/img/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'HIT Rent a Car - Car Rental Croatia',
+        alt: 'Family Rent a Car Croatia - Premium Car Rental Service',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'HIT Rent a Car | Car Rental & Transfer Services Croatia',
-    description: 'Premium car rental and transfer services in Croatia. Book online today!',
+    title: 'Family Rent a Car Croatia | Premium Car Rental & Transfer Services',
+    description: 'Your trusted family-owned car rental service in Croatia. Premium vehicles, personal service, competitive prices. Book online today!',
     images: ['/img/og-image.jpg'],
+    creator: '@familyrentacar',
   },
   robots: {
     index: true,
@@ -97,14 +105,75 @@ export const metadata: Metadata = {
   category: 'travel',
 };
 
-// JSON-LD structured data for SEO
+// BreadcrumbList Schema for navigation
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Home',
+      item: 'https://hit-rent.com',
+    },
+  ],
+};
+
+// LocalBusiness Schema with multiple locations
+const localBusinessSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  '@id': 'https://hit-rent.com/#localbusiness',
+  name: 'Family Rent a Car Croatia',
+  image: 'https://hit-rent.com/img/og-image.jpg',
+  telephone: '+385 1 234 5678',
+  email: 'info@hit-rent.com',
+  priceRange: '€€',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: 'Main Office',
+    addressLocality: 'Zagreb',
+    addressRegion: 'Zagreb County',
+    postalCode: '10000',
+    addressCountry: 'HR',
+  },
+  geo: {
+    '@type': 'GeoCoordinates',
+    latitude: 45.815,
+    longitude: 15.9819,
+  },
+  url: 'https://hit-rent.com',
+  openingHoursSpecification: [
+    {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+      opens: '00:00',
+      closes: '23:59',
+    },
+  ],
+  aggregateRating: {
+    '@type': 'AggregateRating',
+    ratingValue: '4.8',
+    bestRating: '5',
+    reviewCount: '150',
+  },
+};
+
+// Main CarRental Schema for SEO
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'CarRental',
-  name: 'HIT Rent a Car',
-  description: 'Premium car rental and transfer services in Croatia',
+  '@id': 'https://hit-rent.com/#organization',
+  name: 'Family Rent a Car Croatia',
+  alternateName: 'Family Rent a Car',
+  description: 'Family-owned premium car rental and transfer services in Croatia. We offer quality vehicles, personalized service, and competitive prices across all major Croatian cities and airports.',
   url: 'https://hit-rent.com',
-  logo: 'https://hit-rent.com/img/logo.svg',
+  logo: {
+    '@type': 'ImageObject',
+    url: 'https://hit-rent.com/img/logo.svg',
+    width: 250,
+    height: 60,
+  },
   image: 'https://hit-rent.com/img/og-image.jpg',
   telephone: '+385 1 234 5678',
   email: 'info@hit-rent.com',
@@ -112,6 +181,7 @@ const jsonLd = {
     '@type': 'PostalAddress',
     addressCountry: 'HR',
     addressRegion: 'Croatia',
+    addressLocality: 'Zagreb',
   },
   geo: {
     '@type': 'GeoCoordinates',
@@ -120,11 +190,29 @@ const jsonLd = {
   },
   areaServed: [
     {
+      '@type': 'City',
+      name: 'Zagreb',
+    },
+    {
+      '@type': 'City',
+      name: 'Split',
+    },
+    {
+      '@type': 'City',
+      name: 'Dubrovnik',
+    },
+    {
+      '@type': 'City',
+      name: 'Zadar',
+    },
+    {
       '@type': 'Country',
       name: 'Croatia',
     },
   ],
   priceRange: '€€',
+  currenciesAccepted: 'EUR, USD',
+  paymentAccepted: 'Cash, Credit Card, Debit Card',
   openingHoursSpecification: {
     '@type': 'OpeningHoursSpecification',
     dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
@@ -132,13 +220,42 @@ const jsonLd = {
     closes: '23:59',
   },
   sameAs: [
-    'https://www.facebook.com/hitrentacar',
-    'https://www.instagram.com/hitrentacar',
+    'https://www.facebook.com/familyrentacar',
+    'https://www.instagram.com/familyrentacar',
   ],
   aggregateRating: {
     '@type': 'AggregateRating',
     ratingValue: '4.8',
+    bestRating: '5',
+    worstRating: '1',
     reviewCount: '150',
+  },
+  hasOfferCatalog: {
+    '@type': 'OfferCatalog',
+    name: 'Car Rental Services',
+    itemListElement: [
+      {
+        '@type': 'Offer',
+        itemOffered: {
+          '@type': 'Service',
+          name: 'Car Rental',
+          description: 'Rent quality vehicles for your trip in Croatia',
+        },
+      },
+      {
+        '@type': 'Offer',
+        itemOffered: {
+          '@type': 'Service',
+          name: 'Airport Transfer',
+          description: 'Reliable airport transfer services across Croatia',
+        },
+      },
+    ],
+  },
+  founder: {
+    '@type': 'Person',
+    name: 'Family Business',
+    description: 'Family-owned business dedicated to quality service',
   },
 };
 
@@ -155,15 +272,32 @@ export default function RootLayout({
         <meta name="theme-color" content="#166534" />
         <meta name="geo.region" content="HR" />
         <meta name="geo.placename" content="Croatia" />
+        <meta name="geo.position" content="45.815;15.9819" />
+        <meta name="ICBM" content="45.815, 15.9819" />
+
+        {/* Main Organization Schema */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+
+        {/* LocalBusiness Schema */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
+        />
+
+        {/* BreadcrumbList Schema */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
         />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} antialiased`}
       >
         {children}
+        <CookieBanner />
       </body>
     </html>
   );

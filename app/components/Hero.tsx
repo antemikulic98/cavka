@@ -827,24 +827,29 @@ export default function Hero() {
           <div className='absolute inset-0 bg-black/40 backdrop-blur-md rounded-b-3xl border border-white/20 shadow-2xl'></div>
 
           <div className='relative z-10 py-4 md:py-6 px-4'>
+            {/* SEO H1 - Hidden but accessible for search engines */}
+            <h1 className='sr-only'>
+              Family Rent a Car Croatia - Premium Car Rental in Zagreb, Split, and Dubrovnik
+            </h1>
+
             {/* Supporting tagline */}
             <p className='font-poppins text-xs md:text-sm lg:text-base text-gray-200 font-medium mb-2 opacity-90 tracking-wide uppercase animate-fade-in-delayed'>
-              Beyond driving.
+              Family Rent a Car Croatia - Beyond driving.
             </p>
 
             {/* Main headline with enhanced styling */}
-            <h1 className='font-poppins text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black text-white mb-1 tracking-tight leading-tight'>
+            <div className='font-poppins text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black text-white mb-1 tracking-tight leading-tight' role='heading' aria-level={2}>
               <span className='block drop-shadow-2xl text-shadow-lg hover:scale-105 transition-transform duration-300'>
                 DON&apos;T JUST RENT A CAR.
               </span>
-            </h1>
+            </div>
 
             {/* Emphasized second line with gradient */}
-            <h2 className='font-poppins text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black tracking-tight leading-tight'>
+            <div className='font-poppins text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black tracking-tight leading-tight' role='heading' aria-level={3}>
               <span className='block bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 bg-clip-text text-transparent drop-shadow-2xl hover:scale-105 transition-all duration-500 hover:from-amber-200 hover:via-yellow-300 hover:to-amber-400'>
                 RENT THE EXPERIENCE.
               </span>
-            </h2>
+            </div>
           </div>
 
           {/* Animated background elements */}

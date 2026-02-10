@@ -1,0 +1,41 @@
+# Family Rent a Car - Robots.txt
+# https://hit-rent.com/robots.txt
+
+User-agent: *
+Allow: /
+
+# Disallow admin and private areas
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /admin/
+Disallow: /settings/
+Disallow: /profile/
+Disallow: /analytics/
+Disallow: /overbookings/
+
+# Allow important pages
+Allow: /search
+Allow: /browse-cars
+Allow: /vehicles
+
+# Sitemap location
+Sitemap: https://hit-rent.com/sitemap.xml
+
+# Crawl-delay (optional - helps prevent server overload)
+Crawl-delay: 1
+
+# Specific bot rules
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Block bad bots
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+User-agent: SemrushBot
+Crawl-delay: 10

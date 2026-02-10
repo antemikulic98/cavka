@@ -1,21 +1,32 @@
 'use client';
 
 import React from 'react';
-import { Phone, Mail, MapPin, Facebook, Instagram } from 'lucide-react';
+import { Phone, Mail, MapPin, Facebook, Instagram, Cookie } from 'lucide-react';
 import Image from 'next/image';
+import Cookies from 'js-cookie';
 
 export default function Footer() {
   const quickLinks = [
     { name: 'Car Rental', href: '/search?vehicleType=car' },
     { name: 'Transfer Services', href: '/search?vehicleType=transfers' },
-    { name: 'Contact Us', href: '#' },
-    { name: 'About Us', href: '#' },
+    { name: 'Privacy Policy', href: '/privacy-policy' },
+    { name: 'Terms & Conditions', href: '/terms-and-conditions' },
+    { name: 'Cookie Policy', href: '/cookie-policy' },
   ];
 
   const socialLinks = [
     { name: 'Facebook', icon: Facebook, url: '#' },
     { name: 'Instagram', icon: Instagram, url: '#' },
   ];
+
+  const handleCookieSettings = () => {
+    // Remove cookie consent to trigger banner
+    Cookies.remove('cookie-consent');
+    // Reload page to show banner
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
+  };
 
   return (
     <footer className='bg-gradient-to-b from-gray-900 to-black text-white'>
@@ -28,22 +39,23 @@ export default function Footer() {
               <a
                 href='/'
                 className='inline-block'
-                aria-label='HIT Rent a Car - Home'
+                aria-label='Family Rent a Car Croatia - Home'
               >
                 <Image
                   src='/img/logo.svg'
-                  alt='HIT Rent a Car Logo - Car Rental Croatia'
+                  alt='Family Rent a Car Croatia Logo - Premium Car Rental Service'
                   width={150}
                   height={50}
                   className='h-12 w-auto'
+                  priority
                 />
               </a>
             </div>
 
             <p className='text-gray-400 leading-relaxed mb-6 text-sm'>
-              HIT Rent a Car - Premium car rental and transfer services across
-              Croatia. Quality vehicles, professional service, competitive
-              prices. Serving Zagreb, Split, Dubrovnik and all major Croatian
+              Family Rent a Car - Your trusted family-owned car rental and transfer service across
+              Croatia. Premium vehicles, personal service, competitive
+              prices. Proudly serving Zagreb, Split, Dubrovnik and all major Croatian
               destinations.
             </p>
 
@@ -119,8 +131,17 @@ export default function Footer() {
       {/* Bottom Footer */}
       <div className='border-t border-gray-800 bg-black'>
         <div className='container mx-auto px-6 lg:px-8 py-6'>
-          <div className='text-center text-gray-500 text-xs'>
-            © {new Date().getFullYear()} HIT Rent a Car. All rights reserved.
+          <div className='flex flex-col md:flex-row items-center justify-between gap-4'>
+            <div className='text-center md:text-left text-gray-500 text-xs'>
+              © {new Date().getFullYear()} Family Rent a Car Croatia. All rights reserved. | Premium Car Rental Service
+            </div>
+            <button
+              onClick={handleCookieSettings}
+              className='flex items-center gap-2 text-gray-400 hover:text-green-400 text-xs transition-colors duration-200'
+            >
+              <Cookie className='h-4 w-4' />
+              Cookie Settings
+            </button>
           </div>
         </div>
       </div>
