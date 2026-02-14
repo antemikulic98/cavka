@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Phone, Mail, MapPin, Facebook, Instagram, Cookie } from 'lucide-react';
+import { Phone, Mail, MapPin, Instagram, Cookie } from 'lucide-react';
 import Image from 'next/image';
 import Cookies from 'js-cookie';
 
@@ -15,8 +15,7 @@ export default function Footer() {
   ];
 
   const socialLinks = [
-    { name: 'Facebook', icon: Facebook, url: '#' },
-    { name: 'Instagram', icon: Instagram, url: '#' },
+    { name: 'Instagram', icon: Instagram, url: 'https://www.instagram.com/hit_rentacar?igsh=dWh4NzUwdzljODZl' },
   ];
 
   const handleCookieSettings = () => {

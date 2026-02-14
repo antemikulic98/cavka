@@ -124,7 +124,7 @@ export default function FAQ() {
                       : 'max-h-0 opacity-0 overflow-hidden'
                   }`}
                 >
-                  <div className='px-6 pb-6'>
+                  <div className='px-6 pb-6 pt-4'>
                     <p className='text-gray-700 leading-relaxed'>{faq.answer}</p>
                   </div>
                 </div>
