@@ -4,8 +4,8 @@ import Footer from '../components/Footer';
 import { Shield, Lock, Eye, FileText, Users, Database, Globe } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy | Family Rent a Car Croatia',
-  description: 'Privacy Policy for Family Rent a Car Croatia (Turist ekspert d.o.o.). Learn how we collect, use, and protect your personal data in compliance with GDPR.',
+  title: 'Privacy Policy | Hit Rent Croatia',
+  description: 'Privacy Policy for Hit Rent Croatia (Turist ekspert d.o.o.). Learn how we collect, use, and protect your personal data in compliance with GDPR.',
   robots: {
     index: true,
     follow: true,

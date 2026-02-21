@@ -11,7 +11,7 @@ interface FAQItem {
 const faqData: FAQItem[] = [
   {
     question: 'What do I need to rent a car in Croatia?',
-    answer: 'To rent a car with Family Rent a Car, you need a valid driver\'s license (held for at least 2 years), a passport or ID, and a credit card in the driver\'s name. International customers may need an International Driving Permit depending on their country of origin.',
+    answer: 'To rent a car with Hit Rent, you need a valid driver\'s license (held for at least 2 years), a passport or ID, and a credit card in the driver\'s name. International customers may need an International Driving Permit depending on their country of origin.',
   },
   {
     question: 'What is included in the rental price?',
@@ -90,7 +90,7 @@ export default function FAQ() {
               Frequently Asked <span className='text-green-800'>Questions</span>
             </h2>
             <p className='text-gray-600 text-lg'>
-              Find answers to common questions about renting a car with Family Rent a Car
+              Find answers to common questions about renting a car with Hit Rent
             </p>
             <div className='w-24 h-1 bg-green-800 mx-auto rounded-full mt-4'></div>
           </div>

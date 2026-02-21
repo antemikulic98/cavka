@@ -38,11 +38,11 @@ export default function Footer() {
               <a
                 href='/'
                 className='inline-block'
-                aria-label='Family Rent a Car Croatia - Home'
+                aria-label='Hit Rent Croatia - Home'
               >
                 <Image
                   src='/img/logo.svg'
-                  alt='Family Rent a Car Croatia Logo - Premium Car Rental Service'
+                  alt='Hit Rent Croatia Logo - Premium Car Rental Service'
                   width={150}
                   height={50}
                   className='h-12 w-auto'
@@ -52,7 +52,7 @@ export default function Footer() {
             </div>
 
             <p className='text-gray-400 leading-relaxed mb-6 text-sm'>
-              Family Rent a Car - Your trusted family-owned car rental and transfer service across
+              Hit Rent - Your trusted family-owned car rental and transfer service across
               Croatia. Premium vehicles, personal service, competitive
               prices. Proudly serving Zagreb, Split, Dubrovnik and all major Croatian
               destinations.
@@ -132,7 +132,7 @@ export default function Footer() {
         <div className='container mx-auto px-6 lg:px-8 py-6'>
           <div className='flex flex-col md:flex-row items-center justify-between gap-4'>
             <div className='text-center md:text-left text-gray-500 text-xs'>
-              © {new Date().getFullYear()} Family Rent a Car Croatia. All rights reserved. | Premium Car Rental Service
+              © {new Date().getFullYear()} Hit Rent Croatia. All rights reserved. | Premium Car Rental Service
             </div>
             <button
               onClick={handleCookieSettings}

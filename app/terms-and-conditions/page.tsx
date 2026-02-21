@@ -4,8 +4,8 @@ import Footer from '../components/Footer';
 import { FileText, Car, CreditCard, AlertTriangle, Shield, CheckCircle } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Terms and Conditions | Family Rent a Car Croatia',
-  description: 'Terms and Conditions for car rental services by Family Rent a Car Croatia (Turist ekspert d.o.o.). Read our rental agreement terms before booking.',
+  title: 'Terms and Conditions | Hit Rent Croatia',
+  description: 'Terms and Conditions for car rental services by Hit Rent Croatia (Turist ekspert d.o.o.). Read our rental agreement terms before booking.',
   robots: {
     index: true,
     follow: true,
@@ -28,7 +28,7 @@ export default function TermsAndConditions() {
               Terms and Conditions
             </h1>
             <p className='text-xl text-gray-300'>
-              Car rental agreement terms for Family Rent a Car Croatia
+              Car rental agreement terms for Hit Rent Croatia
             </p>
             <p className='text-sm text-gray-400 mt-4'>
               Last updated: January 12, 2026
@@ -46,7 +46,7 @@ export default function TermsAndConditions() {
             <div className='bg-white rounded-2xl shadow-lg p-8 mb-8'>
               <h2 className='text-3xl font-bold text-gray-900 mb-6'>1. General Information</h2>
               <p className='text-gray-700 leading-relaxed mb-4'>
-                These Terms and Conditions govern the car rental services provided by <strong>Turist ekspert d.o.o.</strong>, trading as <strong>Family Rent a Car Croatia</strong>.
+                These Terms and Conditions govern the car rental services provided by <strong>Turist ekspert d.o.o.</strong>, trading as <strong>Hit Rent Croatia</strong>.
               </p>
               <div className='bg-gray-50 rounded-xl p-6 space-y-2'>
                 <p className='text-sm text-gray-700'><strong>Company:</strong> Turist ekspert d.o.o.</p>
@@ -66,7 +66,7 @@ export default function TermsAndConditions() {
                 <div className='flex-1'>
                   <h2 className='text-3xl font-bold text-gray-900 mb-6'>2. Rental Requirements</h2>
                   <p className='text-gray-700 leading-relaxed mb-4'>
-                    To rent a vehicle from Family Rent a Car, you must meet the following requirements:
+                    To rent a vehicle from Hit Rent, you must meet the following requirements:
                   </p>
                   <ul className='space-y-3'>
                     <li className='flex items-start gap-3'>
@@ -354,7 +354,7 @@ export default function TermsAndConditions() {
                         </li>
                         <li className='flex items-start gap-3'>
                           <div className='w-2 h-2 bg-green-800 rounded-full mt-2 flex-shrink-0'></div>
-                          <span className='text-gray-700'>Notify Family Rent a Car as soon as possible</span>
+                          <span className='text-gray-700'>Notify Hit Rent as soon as possible</span>
                         </li>
                         <li className='flex items-start gap-3'>
                           <div className='w-2 h-2 bg-green-800 rounded-full mt-2 flex-shrink-0'></div>
@@ -369,7 +369,7 @@ export default function TermsAndConditions() {
                     <div>
                       <h3 className='font-semibold text-gray-900 mb-2'>8.2 Theft</h3>
                       <p className='text-gray-700 leading-relaxed'>
-                        Report theft immediately to the police and Family Rent a Car. Provide a copy of the police report.
+                        Report theft immediately to the police and Hit Rent. Provide a copy of the police report.
                       </p>
                     </div>
                     <div>
@@ -408,7 +408,7 @@ export default function TermsAndConditions() {
             <div className='bg-white rounded-2xl shadow-lg p-8 mb-8'>
               <h2 className='text-3xl font-bold text-gray-900 mb-6'>10. Liability and Indemnification</h2>
               <p className='text-gray-700 leading-relaxed mb-4'>
-                Family Rent a Car is not liable for:
+                Hit Rent is not liable for:
               </p>
               <ul className='space-y-2'>
                 {[

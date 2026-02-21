@@ -21,10 +21,10 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Family Rent a Car Croatia | Affordable Car Rental Zagreb, Split & Dubrovnik',
-    template: '%s | Family Rent a Car Croatia',
+    default: 'Hit Rent Croatia | Affordable Car Rental Zagreb, Split & Dubrovnik',
+    template: '%s | Hit Rent Croatia',
   },
-  description: 'Family Rent a Car Croatia - Premium car rental in Zagreb, Split & Dubrovnik. Family-owned service, quality vehicles, competitive prices. Book online!',
+  description: 'Hit Rent Croatia - Premium car rental in Zagreb, Split & Dubrovnik. Family-owned service, quality vehicles, competitive prices. Book online!',
   keywords: [
     'family rent a car croatia',
     'rent a car croatia',
@@ -47,9 +47,9 @@ export const metadata: Metadata = {
     'croatia road trip car rental',
     'dalmatian coast car rental',
   ],
-  authors: [{ name: 'Family Rent a Car Croatia' }],
-  creator: 'Family Rent a Car Croatia',
-  publisher: 'Family Rent a Car Croatia',
+  authors: [{ name: 'Hit Rent Croatia' }],
+  creator: 'Hit Rent Croatia',
+  publisher: 'Hit Rent Croatia',
   formatDetection: {
     email: false,
     address: false,
@@ -67,24 +67,24 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: 'https://hit-rent.com',
-    siteName: 'Family Rent a Car Croatia',
-    title: 'Family Rent a Car | Premium Car Rental & Transfer Services in Croatia',
+    siteName: 'Hit Rent Croatia',
+    title: 'Hit Rent | Premium Car Rental & Transfer Services in Croatia',
     description: 'Your trusted family-owned car rental service. Rent quality vehicles at competitive prices. Car rental and transfer services in Zagreb, Split, Dubrovnik and across Croatia. Book online today!',
     images: [
       {
         url: '/img/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'Family Rent a Car Croatia - Premium Car Rental Service',
+        alt: 'Hit Rent Croatia - Premium Car Rental Service',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Family Rent a Car Croatia | Premium Car Rental & Transfer Services',
+    title: 'Hit Rent Croatia | Premium Car Rental & Transfer Services',
     description: 'Your trusted family-owned car rental service in Croatia. Premium vehicles, personal service, competitive prices. Book online today!',
     images: ['/img/og-image.jpg'],
-    creator: '@familyrentacar',
+    creator: '@hitrentcroatia',
   },
   robots: {
     index: true,
@@ -124,7 +124,7 @@ const localBusinessSchema = {
   '@context': 'https://schema.org',
   '@type': 'LocalBusiness',
   '@id': 'https://hit-rent.com/#localbusiness',
-  name: 'Family Rent a Car Croatia',
+  name: 'Hit Rent Croatia',
   image: 'https://hit-rent.com/img/og-image.jpg',
   telephone: '+385 1 234 5678',
   email: 'info@hit-rent.com',
@@ -164,8 +164,8 @@ const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'CarRental',
   '@id': 'https://hit-rent.com/#organization',
-  name: 'Family Rent a Car Croatia',
-  alternateName: 'Family Rent a Car',
+  name: 'Hit Rent Croatia',
+  alternateName: 'Hit Rent',
   description: 'Family-owned premium car rental and transfer services in Croatia. We offer quality vehicles, personalized service, and competitive prices across all major Croatian cities and airports.',
   url: 'https://hit-rent.com',
   logo: {

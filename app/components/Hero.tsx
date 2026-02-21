@@ -829,12 +829,12 @@ export default function Hero() {
           <div className='relative z-10 py-4 md:py-6 px-4'>
             {/* SEO H1 - Hidden but accessible for search engines */}
             <h1 className='sr-only'>
-              Family Rent a Car Croatia - Premium Car Rental in Zagreb, Split, and Dubrovnik
+              Hit Rent Croatia - Premium Car Rental in Zagreb, Split, and Dubrovnik
             </h1>
 
             {/* Supporting tagline */}
             <p className='font-poppins text-xs md:text-sm lg:text-base text-gray-200 font-medium mb-2 opacity-90 tracking-wide uppercase animate-fade-in-delayed'>
-              Family Rent a Car Croatia - Beyond driving.
+              Hit Rent Croatia - Beyond driving.
             </p>
 
             {/* Main headline with enhanced styling */}

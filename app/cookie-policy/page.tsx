@@ -45,7 +45,7 @@ export default function CookiePolicy() {
                 Cookies are small text files that are placed on your computer or mobile device when you visit a website. They are widely used to make websites work more efficiently and provide information to the owners of the site.
               </p>
               <p className='text-gray-700 leading-relaxed'>
-                At Family Rent a Car Croatia, we use cookies to enhance your browsing experience, remember your preferences, and understand how you use our website to continually improve our services.
+                At Hit Rent Croatia, we use cookies to enhance your browsing experience, remember your preferences, and understand how you use our website to continually improve our services.
               </p>
             </div>
 

@@ -1,4 +1,4 @@
-# Family Rent a Car - Robots.txt
+# Hit Rent - Robots.txt
 # https://hit-rent.com/robots.txt
 
 User-agent: *

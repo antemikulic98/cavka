@@ -53,7 +53,7 @@ export default function VehicleSchema({
         .split('T')[0],
       seller: {
         '@type': 'Organization',
-        name: 'Family Rent a Car Croatia',
+        name: 'Hit Rent Croatia',
       },
     },
     aggregateRating: {
