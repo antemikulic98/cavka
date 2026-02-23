@@ -250,6 +250,44 @@ export default function VehicleView({ vehicleId, onBack }: VehicleViewProps) {
     }
   };
 
+  const saveBulkPriceChange = async (
+    startDate: Date,
+    endDate: Date,
+    price: number,
+    label: string
+  ) => {
+    try {
+      const response = await fetch(`/api/vehicles/${vehicleId}/pricing/bulk`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0],
+          price,
+          label: label || 'Bulk Price',
+          type: 'bulk',
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Refresh pricing data
+        setDayPricing(data.allPricing || []);
+        closePriceModal();
+        alert(`Successfully applied pricing to ${data.stats.totalDays} days`);
+      } else {
+        const error = await response.json();
+        alert(`Error saving bulk price: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error saving bulk price:', error);
+      alert('Failed to save bulk price. Please try again.');
+    }
+  };
+
   const clearCustomPrice = async (date: Date) => {
     const dateStr = date.toISOString().split('T')[0];
 
@@ -434,6 +472,7 @@ export default function VehicleView({ vehicleId, onBack }: VehicleViewProps) {
         onClose={closePriceModal}
         onPriceChange={setNewPrice}
         onSave={savePriceChange}
+        onBulkSave={saveBulkPriceChange}
       />
 
       {/* Edit Vehicle Modal */}
