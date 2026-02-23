@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
+  // Security: Disable in production
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json(
+      { error: 'Not found' },
+      { status: 404 }
+    );
+  }
+
   try {
     // Test environment variables (without exposing sensitive values)
     const envCheck = {

@@ -1,9 +1,15 @@
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 
-const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  'your-super-secret-jwt-key-change-this-in-production';
+// Security: JWT_SECRET must be set in environment variables
+if (!process.env.JWT_SECRET) {
+  throw new Error(
+    'CRITICAL SECURITY ERROR: JWT_SECRET environment variable is not set. ' +
+    'Generate a secure secret with: openssl rand -base64 32'
+  );
+}
+
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export interface JWTPayload {
   id: string;

@@ -3,9 +3,20 @@ import { connectMongoDB } from '@/lib/mongodb';
 import Booking from '@/models/Booking';
 import Vehicle from '@/models/Vehicle';
 import { sendBookingConfirmation } from '@/lib/email';
+import { validators, logSecurityEvent, rateLimit } from '@/lib/security';
 
 // POST - Create a new booking
 export async function POST(request: NextRequest) {
+  // Security: Rate limiting - max 5 bookings per 15 minutes per IP
+  const rateLimitResponse = await rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    maxRequests: 5,
+  })(request);
+
+  if (rateLimitResponse) {
+    return rateLimitResponse; // Return 429 if rate limit exceeded
+  }
+
   try {
     await connectMongoDB();
 
@@ -44,6 +55,57 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
+    }
+
+    // Security: Validate email format
+    if (!validators.email(bookingData.clientInfo.email)) {
+      logSecurityEvent('invalid_email_attempt', {
+        email: bookingData.clientInfo.email,
+        ip: request.headers.get('x-forwarded-for'),
+      }, 'warning');
+      return NextResponse.json(
+        { error: 'Invalid email format' },
+        { status: 400 }
+      );
+    }
+
+    // Security: Validate phone format
+    if (!validators.phone(bookingData.clientInfo.phoneNumber)) {
+      return NextResponse.json(
+        { error: 'Invalid phone number format' },
+        { status: 400 }
+      );
+    }
+
+    // Security: Validate vehicleId is valid ObjectId
+    if (!validators.objectId(bookingData.vehicleId)) {
+      logSecurityEvent('invalid_vehicle_id', {
+        vehicleId: bookingData.vehicleId,
+      }, 'warning');
+      return NextResponse.json(
+        { error: 'Invalid vehicle ID' },
+        { status: 400 }
+      );
+    }
+
+    // Security: Validate dates
+    if (!validators.date(bookingData.pickupDate) || !validators.date(bookingData.returnDate)) {
+      return NextResponse.json(
+        { error: 'Invalid date format' },
+        { status: 400 }
+      );
+    }
+
+    // Security: Sanitize text inputs to prevent XSS
+    bookingData.clientInfo.firstName = validators.sanitizeString(bookingData.clientInfo.firstName.trim());
+    bookingData.clientInfo.lastName = validators.sanitizeString(bookingData.clientInfo.lastName.trim());
+    bookingData.clientInfo.email = bookingData.clientInfo.email.toLowerCase().trim();
+
+    if (bookingData.clientInfo.company) {
+      bookingData.clientInfo.company = validators.sanitizeString(bookingData.clientInfo.company.trim());
+    }
+    if (bookingData.clientInfo.flightNumber) {
+      bookingData.clientInfo.flightNumber = validators.sanitizeString(bookingData.clientInfo.flightNumber.trim());
     }
 
     // Fetch vehicle information
