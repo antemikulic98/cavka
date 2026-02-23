@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
 import Booking from '@/models/Booking';
 import ExternalCarSource from '@/models/ExternalCarSource';
+import Vehicle from '@/models/Vehicle';
 
 // GET - Get a specific overbooking with external source details
 export async function GET(
@@ -10,6 +11,11 @@ export async function GET(
 ) {
   try {
     await connectMongoDB();
+
+    // Ensure models are registered
+    Vehicle;
+    ExternalCarSource;
+
     const { id } = await params;
 
     const booking = await Booking.findById(id)
@@ -66,6 +72,11 @@ export async function PATCH(
 ) {
   try {
     await connectMongoDB();
+
+    // Ensure models are registered
+    Vehicle;
+    ExternalCarSource;
+
     const { id } = await params;
 
     const data = await request.json();

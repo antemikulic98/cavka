@@ -9,9 +9,24 @@ export async function GET(request: NextRequest) {
   try {
     await connectMongoDB();
 
+    // Ensure models are registered
+    Vehicle;
+    ExternalCarSource;
+
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get('status'); // Filter by overbooking status
 
+    // First, get all overbookings for stats calculation
+    const allOverbookings = await Booking.find({ isOverbooking: true });
+
+    // Calculate stats from ALL overbookings
+    const stats = {
+      pending: allOverbookings.filter(b => b.overbookingStatus === 'pending').length,
+      arranged: allOverbookings.filter(b => b.overbookingStatus === 'arranged').length,
+      confirmed: allOverbookings.filter(b => b.overbookingStatus === 'confirmed').length,
+    };
+
+    // Then filter for display based on status
     let query: any = { isOverbooking: true };
 
     if (status && status !== 'all') {
@@ -19,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     const overbookings = await Booking.find(query)
-      .populate('vehicleId', 'make vehicleModel year category dailyRate currency location mainImage')
+      .populate('vehicleId', 'make model year category dailyRate currency location mainImage')
       .populate('externalSourceId')
       .sort({ createdAt: -1 });
 
@@ -45,11 +60,7 @@ export async function GET(request: NextRequest) {
       success: true,
       overbookings: formattedOverbookings,
       total: formattedOverbookings.length,
-      stats: {
-        pending: overbookings.filter(b => b.overbookingStatus === 'pending').length,
-        arranged: overbookings.filter(b => b.overbookingStatus === 'arranged').length,
-        confirmed: overbookings.filter(b => b.overbookingStatus === 'confirmed').length,
-      },
+      stats,
     });
   } catch (error) {
     console.error('Overbooking retrieval error:', error);
@@ -64,6 +75,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     await connectMongoDB();
+
+    // Ensure models are registered
+    Vehicle;
+    ExternalCarSource;
 
     const data = await request.json();
 
