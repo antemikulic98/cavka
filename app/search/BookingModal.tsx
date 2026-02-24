@@ -26,6 +26,12 @@ interface Vehicle {
   fuelAirCon?: string;
   fuelType?: string;
   dailyRate: number;
+  customPricing?: {
+    date: string;
+    price: number;
+    label?: string;
+    type?: string;
+  }[];
   currency: string;
   status: string;
   location: string;
@@ -299,6 +305,47 @@ export default function BookingModal({
     return getSelectedAddOns().reduce((total, addon) => total + addon.price, 0);
   };
 
+  // Get price for a specific date, checking custom pricing first
+  const getPriceForDate = (date: Date): number => {
+    if (!vehicle) return 0;
+
+    // Format date as YYYY-MM-DD to match customPricing format
+    const dateStr = date.toISOString().split('T')[0];
+
+    // Check if there's custom pricing for this date
+    if (vehicle.customPricing && vehicle.customPricing.length > 0) {
+      const customPrice = vehicle.customPricing.find(p => p.date === dateStr);
+      if (customPrice) {
+        return customPrice.price;
+      }
+    }
+
+    // Fall back to daily rate
+    return vehicle.dailyRate;
+  };
+
+  // Calculate total base vehicle cost for all rental days
+  const getBaseVehicleCost = (): number => {
+    if (!vehicle || !pickupDate || !returnDate) return 0;
+
+    // For transfers, use simple daily rate
+    if (vehicle.type === 'transfer') {
+      return vehicle.dailyRate;
+    }
+
+    // For rentals, sum up prices for each day
+    let total = 0;
+    const pickup = new Date(pickupDate);
+
+    for (let i = 0; i < rentalDays; i++) {
+      const currentDate = new Date(pickup);
+      currentDate.setDate(pickup.getDate() + i);
+      total += getPriceForDate(currentDate);
+    }
+
+    return total;
+  };
+
   const getCdwCost = () => {
     // Transfer vehicles don't have insurance costs
     if (vehicle?.type === 'transfer') {
@@ -315,10 +362,12 @@ export default function BookingModal({
     if (vehicle?.type === 'transfer') {
       return vehicle.dailyRate;
     }
-    // For rental vehicles, include insurance and add-ons
-    const baseCost = vehicle.dailyRate + getCdwCost();
+    // For rental vehicles, get average daily rate including insurance and add-ons
+    const baseVehicleCost = getBaseVehicleCost();
+    const avgDailyVehicleCost = rentalDays > 0 ? baseVehicleCost / rentalDays : vehicle.dailyRate;
+    const cdwCost = getCdwCost();
     const addOnsCost = currentStep >= 3 ? calculateAddOnsTotal() : 0;
-    return baseCost + addOnsCost;
+    return avgDailyVehicleCost + cdwCost + addOnsCost;
   };
 
   const getDiscountPercentage = () => {
@@ -1659,7 +1708,7 @@ export default function BookingModal({
                         {rentalDays === 1 ? 'day' : 'days'})
                       </span>
                       <span className='text-sm font-medium text-gray-900'>
-                        €{(vehicle.dailyRate * rentalDays).toFixed(2)}
+                        €{getBaseVehicleCost().toFixed(2)}
                       </span>
                     </div>
 

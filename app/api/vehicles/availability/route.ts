@@ -105,6 +105,7 @@ export async function GET(request: NextRequest) {
         acrissCode: vehicleData.acrissCode, // Include ACRISS code for insurance pricing
         type: vehicleData.type, // Include vehicle type (rental/transfer)
         dailyRate: vehicle.dailyRate,
+        customPricing: vehicleData.customPricing || [], // Include custom pricing by date
         currency: vehicle.currency,
         location: vehicle.location,
         mainImage: vehicle.mainImage,

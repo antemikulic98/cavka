@@ -30,6 +30,12 @@ interface Vehicle {
   fuelAirCon?: string;
   fuelType?: string;
   dailyRate: number;
+  customPricing?: {
+    date: string;
+    price: number;
+    label?: string;
+    type?: string;
+  }[];
   currency: string;
   status: string;
   location: string;
@@ -233,6 +239,23 @@ export default function SearchResults() {
     return matchingTrip || vehicle.trips[0]; // Return first trip if no match
   };
 
+  // Get price for a specific date, checking custom pricing first
+  const getPriceForDate = (vehicle: Vehicle, date: Date): number => {
+    // Format date as YYYY-MM-DD to match customPricing format
+    const dateStr = date.toISOString().split('T')[0];
+
+    // Check if there's custom pricing for this date
+    if (vehicle.customPricing && vehicle.customPricing.length > 0) {
+      const customPrice = vehicle.customPricing.find(p => p.date === dateStr);
+      if (customPrice) {
+        return customPrice.price;
+      }
+    }
+
+    // Fall back to daily rate
+    return vehicle.dailyRate;
+  };
+
   // Calculate total price for the rental period or trip
   const calculateTotalPrice = (vehicle: Vehicle) => {
     const symbol =
@@ -250,9 +273,18 @@ export default function SearchResults() {
       };
     }
 
-    // For rentals, calculate based on days
+    // For rentals, calculate based on days with custom pricing
     const days = calculateRentalDays();
-    const total = vehicle.dailyRate * days;
+    let total = 0;
+
+    // Calculate price for each day in the rental period
+    const pickup = new Date(pickupDate);
+    for (let i = 0; i < days; i++) {
+      const currentDate = new Date(pickup);
+      currentDate.setDate(pickup.getDate() + i);
+      total += getPriceForDate(vehicle, currentDate);
+    }
+
     return {
       days,
       total,
