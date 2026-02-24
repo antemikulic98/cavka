@@ -184,20 +184,23 @@ export default function SearchResults() {
     });
   };
 
-  // Calculate number of rental days (inclusive)
+  // Calculate number of rental days based on actual time difference
   const calculateRentalDays = () => {
     if (!pickupDate || !returnDate) return 1;
 
-    // Use date-only strings to avoid timezone issues
-    const pickupDateStr = pickupDate.split('T')[0];
-    const returnDateStr = returnDate.split('T')[0];
+    // Parse full datetime strings including time
+    const pickup = new Date(pickupDate);
+    const returnDay = new Date(returnDate);
 
-    const pickup = new Date(pickupDateStr);
-    const returnDay = new Date(returnDateStr);
-
-    // Calculate difference in days and add 1 for inclusive range
+    // Calculate difference in milliseconds
     const diffTime = returnDay.getTime() - pickup.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+    // If return time is before or equal to pickup time, return 0 (invalid)
+    if (diffTime <= 0) return 1;
+
+    // Convert to days and round up (any partial day counts as a full day)
+    // This allows same-day rentals (e.g., 8:00 AM to 10:00 PM = 1 day)
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     return Math.max(diffDays, 1); // Minimum 1 day
   };

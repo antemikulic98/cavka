@@ -111,14 +111,16 @@ export default function MobileSearchModal({
   const handleCalendarDateSelect = (date: Date) => {
     if (selectingPickup) {
       setPickupDate(date);
-      if (date >= returnDate) {
+      // Allow same-day rentals - only adjust if return date is before pickup date
+      if (date > returnDate) {
         const newReturnDate = new Date(date);
         newReturnDate.setDate(date.getDate() + 1);
         setReturnDate(newReturnDate);
       }
       setSelectingPickup(false);
     } else {
-      if (date > pickupDate) {
+      // Allow same day or later for return date
+      if (date >= pickupDate) {
         setReturnDate(date);
       }
     }
