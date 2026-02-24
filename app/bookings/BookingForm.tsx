@@ -348,8 +348,9 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
       if (pickup < today) {
         newErrors.pickupDate = 'Pickup date cannot be in the past';
       }
-      if (returnD <= pickup) {
-        newErrors.returnDate = 'Return date must be after pickup date';
+      // Allow same day rentals - only check if return is before pickup
+      if (returnD < pickup) {
+        newErrors.returnDate = 'Return date and time must be after pickup date and time';
       }
     }
 

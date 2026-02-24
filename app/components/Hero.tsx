@@ -126,8 +126,32 @@ export default function Hero() {
     if (searchData.returnLocation) {
       searchParams.set('returnLocation', searchData.returnLocation);
     }
-    searchParams.set('pickupDate', searchData.pickupDate.toISOString());
-    searchParams.set('returnDate', searchData.returnDate.toISOString());
+
+    // Format dates with time to avoid timezone issues
+    const formatDateTimeForURL = (date: Date, time: string) => {
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}T${time}`;
+    };
+
+    // Convert 12-hour time format to 24-hour HH:mm format
+    const convertTo24Hour = (time12h: string): string => {
+      const [time, period] = time12h.split(' ');
+      let [hours, minutes] = time.split(':');
+      let hour = parseInt(hours);
+
+      if (period === 'PM' && hour !== 12) hour += 12;
+      if (period === 'AM' && hour === 12) hour = 0;
+
+      return `${String(hour).padStart(2, '0')}:${minutes}`;
+    };
+
+    const pickupTime24 = convertTo24Hour(searchData.pickupTime);
+    const returnTime24 = convertTo24Hour(searchData.returnTime);
+
+    searchParams.set('pickupDate', formatDateTimeForURL(searchData.pickupDate, pickupTime24));
+    searchParams.set('returnDate', formatDateTimeForURL(searchData.returnDate, returnTime24));
     searchParams.set('pickupTime', searchData.pickupTime);
     searchParams.set('returnTime', searchData.returnTime);
     searchParams.set('vehicleType', searchData.vehicleType);
@@ -144,8 +168,33 @@ export default function Hero() {
     if (showReturnLocation && returnLocationValue) {
       searchParams.set('returnLocation', returnLocationValue);
     }
-    searchParams.set('pickupDate', pickupDate.toISOString());
-    searchParams.set('returnDate', returnDate.toISOString());
+
+    // Format dates with time to avoid timezone issues
+    // Create ISO string with local date and selected time
+    const formatDateTimeForURL = (date: Date, time: string) => {
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}T${time}`;
+    };
+
+    // Convert 12-hour time format to 24-hour HH:mm format
+    const convertTo24Hour = (time12h: string): string => {
+      const [time, period] = time12h.split(' ');
+      let [hours, minutes] = time.split(':');
+      let hour = parseInt(hours);
+
+      if (period === 'PM' && hour !== 12) hour += 12;
+      if (period === 'AM' && hour === 12) hour = 0;
+
+      return `${String(hour).padStart(2, '0')}:${minutes}`;
+    };
+
+    const pickupTime24 = convertTo24Hour(pickupTime);
+    const returnTime24 = convertTo24Hour(returnTime);
+
+    searchParams.set('pickupDate', formatDateTimeForURL(pickupDate, pickupTime24));
+    searchParams.set('returnDate', formatDateTimeForURL(returnDate, returnTime24));
     searchParams.set('pickupTime', pickupTime);
     searchParams.set('returnTime', returnTime);
     searchParams.set('vehicleType', selectedVehicleType);

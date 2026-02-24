@@ -239,38 +239,60 @@ export default function SearchResults() {
     return matchingTrip || vehicle.trips[0]; // Return first trip if no match
   };
 
-  // Get price for a specific date, checking custom pricing first
-  const getPriceForDate = (vehicle: Vehicle, date: Date): number => {
-    // Format date as YYYY-MM-DD to match customPricing format
-    const dateStr = date.toISOString().split('T')[0];
+  // Get price for a specific date string (YYYY-MM-DD), checking custom pricing first
+  const getPriceForDateString = (vehicle: Vehicle, dateStr: string): number => {
+    // Debug logging
+    const customDates = vehicle.customPricing?.map(p => p.date) || [];
+    console.log('🔍 getPriceForDate DEBUG:', {
+      vehicleName: `${vehicle.make} ${vehicle.model}`,
+      lookingForDate: dateStr,
+      hasCustomPricing: !!vehicle.customPricing,
+      customPricingCount: vehicle.customPricing?.length || 0,
+      customPricingDates: customDates,
+      customPricingFull: vehicle.customPricing, // Show full pricing objects
+      dailyRate: vehicle.dailyRate,
+    });
+
+    console.log('🎯 Exact date comparison:', {
+      lookingFor: dateStr,
+      availableDates: customDates,
+      matches: customDates.map(d => ({ date: d, matches: d === dateStr })),
+    });
 
     // Check if there's custom pricing for this date
     if (vehicle.customPricing && vehicle.customPricing.length > 0) {
       const customPrice = vehicle.customPricing.find(p => p.date === dateStr);
       if (customPrice) {
+        console.log('✅ Found custom price:', customPrice.price, 'for date:', dateStr);
         return customPrice.price;
+      } else {
+        console.log('❌ No custom price found for date:', dateStr);
       }
     }
 
     // Fall back to daily rate
+    console.log('📊 Using daily rate:', vehicle.dailyRate);
     return vehicle.dailyRate;
   };
 
-  // Calculate total price for the rental period or trip
-  const calculateTotalPrice = (vehicle: Vehicle) => {
-    const symbol =
-      vehicle.currency === 'EUR' ? '€' : vehicle.currency === 'USD' ? '$' : vehicle.currency;
+  // Calculate average daily rate with custom pricing
+  const getAverageDailyRate = (vehicle: Vehicle): number => {
+    if (vehicle.type === 'transfer') {
+      const trip = getMatchingTrip(vehicle);
+      return trip ? trip.price : vehicle.dailyRate;
+    }
 
+    const totalPrice = calculateTotalPriceValue(vehicle);
+    const days = calculateRentalDays();
+    return days > 0 ? totalPrice / days : vehicle.dailyRate;
+  };
+
+  // Calculate total price value (number only)
+  const calculateTotalPriceValue = (vehicle: Vehicle): number => {
     // For transfers, show trip price
     if (vehicle.type === 'transfer') {
       const trip = getMatchingTrip(vehicle);
-      const total = trip ? trip.price : vehicle.dailyRate;
-      return {
-        days: 1,
-        total,
-        formatted: `${symbol}${total.toLocaleString()}`,
-        isTrip: true,
-      };
+      return trip ? trip.price : vehicle.dailyRate;
     }
 
     // For rentals, calculate based on days with custom pricing
@@ -278,18 +300,40 @@ export default function SearchResults() {
     let total = 0;
 
     // Calculate price for each day in the rental period
-    const pickup = new Date(pickupDate);
+    // Work with date strings directly to avoid timezone issues
+    const pickupDateStr = pickupDate.split('T')[0]; // Get YYYY-MM-DD only
+    const [year, month, day] = pickupDateStr.split('-').map(Number);
+
     for (let i = 0; i < days; i++) {
-      const currentDate = new Date(pickup);
-      currentDate.setDate(pickup.getDate() + i);
-      total += getPriceForDate(vehicle, currentDate);
+      // Calculate the date for day i by adding i days
+      const currentDay = day + i;
+      const dateObj = new Date(year, month - 1, currentDay);
+
+      // Format as YYYY-MM-DD string
+      const yyyy = dateObj.getFullYear();
+      const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const dd = String(dateObj.getDate()).padStart(2, '0');
+      const currentDateStr = `${yyyy}-${mm}-${dd}`;
+
+      total += getPriceForDateString(vehicle, currentDateStr);
     }
+
+    return total;
+  };
+
+  // Calculate total price for the rental period or trip
+  const calculateTotalPrice = (vehicle: Vehicle) => {
+    const symbol =
+      vehicle.currency === 'EUR' ? '€' : vehicle.currency === 'USD' ? '$' : vehicle.currency;
+
+    const total = calculateTotalPriceValue(vehicle);
+    const days = calculateRentalDays();
 
     return {
       days,
       total,
       formatted: `${symbol}${total.toLocaleString()}`,
-      isTrip: false,
+      isTrip: vehicle.type === 'transfer',
     };
   };
 
@@ -483,25 +527,19 @@ export default function SearchResults() {
                               <span className='text-4xl font-bold'>
                                 {
                                   formatPriceWithCents(
-                                    vehicle.type === 'transfer'
-                                      ? (getMatchingTrip(vehicle)?.price || vehicle.dailyRate)
-                                      : vehicle.dailyRate,
+                                    getAverageDailyRate(vehicle),
                                     vehicle.currency
                                   ).whole
                                 }
                               </span>
                               {formatPriceWithCents(
-                                vehicle.type === 'transfer'
-                                  ? (getMatchingTrip(vehicle)?.price || vehicle.dailyRate)
-                                  : vehicle.dailyRate,
+                                getAverageDailyRate(vehicle),
                                 vehicle.currency
                               ).hasDecimals && (
                                 <span className='text-xl font-semibold'>
                                   .
                                   {formatPriceWithCents(
-                                    vehicle.type === 'transfer'
-                                      ? (getMatchingTrip(vehicle)?.price || vehicle.dailyRate)
-                                      : vehicle.dailyRate,
+                                    getAverageDailyRate(vehicle),
                                     vehicle.currency
                                   )
                                     .cents.toString()

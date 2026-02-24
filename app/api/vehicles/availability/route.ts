@@ -25,10 +25,10 @@ export async function GET(request: NextRequest) {
     const pickup = new Date(pickupDate);
     const returnD = new Date(returnDate);
 
-    // Validate dates
-    if (pickup >= returnD) {
+    // Validate dates - allow same day rentals
+    if (pickup > returnD) {
       return NextResponse.json(
-        { error: 'Return date must be after pickup date' },
+        { error: 'Return date and time must be after pickup date and time' },
         { status: 400 }
       );
     }

@@ -305,12 +305,9 @@ export default function BookingModal({
     return getSelectedAddOns().reduce((total, addon) => total + addon.price, 0);
   };
 
-  // Get price for a specific date, checking custom pricing first
-  const getPriceForDate = (date: Date): number => {
+  // Get price for a specific date string (YYYY-MM-DD), checking custom pricing first
+  const getPriceForDateString = (dateStr: string): number => {
     if (!vehicle) return 0;
-
-    // Format date as YYYY-MM-DD to match customPricing format
-    const dateStr = date.toISOString().split('T')[0];
 
     // Check if there's custom pricing for this date
     if (vehicle.customPricing && vehicle.customPricing.length > 0) {
@@ -335,12 +332,22 @@ export default function BookingModal({
 
     // For rentals, sum up prices for each day
     let total = 0;
-    const pickup = new Date(pickupDate);
+    // Work with date strings directly to avoid timezone issues
+    const pickupDateStr = pickupDate.split('T')[0]; // Get YYYY-MM-DD only
+    const [year, month, day] = pickupDateStr.split('-').map(Number);
 
     for (let i = 0; i < rentalDays; i++) {
-      const currentDate = new Date(pickup);
-      currentDate.setDate(pickup.getDate() + i);
-      total += getPriceForDate(currentDate);
+      // Calculate the date for day i by adding i days
+      const currentDay = day + i;
+      const dateObj = new Date(year, month - 1, currentDay);
+
+      // Format as YYYY-MM-DD string
+      const yyyy = dateObj.getFullYear();
+      const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const dd = String(dateObj.getDate()).padStart(2, '0');
+      const currentDateStr = `${yyyy}-${mm}-${dd}`;
+
+      total += getPriceForDateString(currentDateStr);
     }
 
     return total;
