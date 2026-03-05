@@ -188,7 +188,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     const vehicles = await Vehicle.find(query)
-      .sort({ createdAt: -1 })
+      .sort({ order: 1, createdAt: -1 }) // Sort by order first, then by creation date
       .skip(skip)
       .limit(limit)
       .lean();

@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Find vehicles (both available and potentially overbooked)
-    const vehicles = await Vehicle.find(query);
+    const vehicles = await Vehicle.find(query).sort({ order: 1, createdAt: -1 });
 
     if (vehicles.length === 0) {
       return NextResponse.json({
@@ -121,9 +121,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Sort: available vehicles first, then overbooked ones
+    // Within each group, maintain the order field
     vehiclesWithAvailability.sort((a, b) => {
       if (a.available && !b.available) return -1;
       if (!a.available && b.available) return 1;
+      // If both have same availability, they're already sorted by order from the query
       return 0;
     });
 

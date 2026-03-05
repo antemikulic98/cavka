@@ -65,6 +65,9 @@ export interface IVehicle {
     type?: string;
   }[];
 
+  // Display Order
+  order?: number; // Order for display on landing page and search results
+
   // Metadata
   createdAt: Date;
   updatedAt: Date;
@@ -279,6 +282,13 @@ const VehicleSchema = new Schema<IVehicle & Document>(
         },
       },
     ],
+
+    // Display Order
+    order: {
+      type: Number,
+      default: 0,
+      index: true, // Index for sorting
+    },
 
     // Metadata
     addedBy: {

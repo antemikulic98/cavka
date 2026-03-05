@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   AlertTriangle,
+  ArrowUpDown,
 } from 'lucide-react';
 import { UserSession } from '@/lib/auth';
 
@@ -94,6 +95,12 @@ export default function DashboardLayout({ user, children }: DashboardLayoutProps
       icon: Car,
       href: '/browse-cars',
       current: pathname === '/browse-cars',
+    },
+    {
+      name: 'Vehicle Order',
+      icon: ArrowUpDown,
+      href: '/vehicle-order',
+      current: pathname === '/vehicle-order',
     },
     {
       name: 'Analytics',
