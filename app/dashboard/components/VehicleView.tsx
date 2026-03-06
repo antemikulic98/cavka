@@ -11,6 +11,7 @@ import PriceEditModal from './PriceEditModal';
 import DateInfoPanel from './DateInfoPanel';
 import EditVehicleModal from './EditVehicleModal';
 import DeleteConfirmModal from './DeleteConfirmModal';
+import BlockDateModal from './BlockDateModal';
 
 interface DayPricing {
   date: string;
@@ -30,6 +31,13 @@ interface Booking {
   totalAmount: number;
   status: string;
   createdAt: string;
+}
+
+interface BlockedDate {
+  _id: string;
+  startDate: string;
+  endDate: string;
+  reason?: string;
 }
 
 interface Vehicle {
@@ -76,12 +84,15 @@ export default function VehicleView({ vehicleId, onBack }: VehicleViewProps) {
   // State
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([]);
   const [dayPricing, setDayPricing] = useState<DayPricing[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [editMode, setEditMode] = useState(false);
+  const [blockMode, setBlockMode] = useState(false);
   const [showPriceModal, setShowPriceModal] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
   const [editingDate, setEditingDate] = useState<Date | null>(null);
   const [newPrice, setNewPrice] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
@@ -143,6 +154,26 @@ export default function VehicleView({ vehicleId, onBack }: VehicleViewProps) {
     }
   }, [vehicleId]);
 
+  // Fetch blocked dates
+  const fetchBlockedDates = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/vehicles/${vehicleId}/blocked-dates`, {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setBlockedDates(data.blockedDates || []);
+      } else {
+        console.error('Failed to fetch blocked dates');
+        setBlockedDates([]);
+      }
+    } catch (error) {
+      console.error('Error fetching blocked dates:', error);
+      setBlockedDates([]);
+    }
+  }, [vehicleId]);
+
   // Fetch day pricing
   const fetchDayPricing = useCallback(async () => {
     try {
@@ -167,13 +198,17 @@ export default function VehicleView({ vehicleId, onBack }: VehicleViewProps) {
   useEffect(() => {
     fetchVehicleDetails();
     fetchBookings();
+    fetchBlockedDates();
     fetchDayPricing();
-  }, [fetchVehicleDetails, fetchBookings, fetchDayPricing]);
+  }, [fetchVehicleDetails, fetchBookings, fetchBlockedDates, fetchDayPricing]);
 
   // Event handlers
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
-    if (editMode && !isDateBooked(date) && date >= new Date()) {
+    if (blockMode && date >= new Date()) {
+      // Open block modal when in block mode
+      setShowBlockModal(true);
+    } else if (editMode && !isDateBooked(date) && date >= new Date()) {
       openPriceModal(date);
     }
   };
@@ -318,6 +353,64 @@ export default function VehicleView({ vehicleId, onBack }: VehicleViewProps) {
     }
   };
 
+  // Block dates handlers
+  const handleBlockDates = async (startDate: Date, endDate: Date, reason: string) => {
+    try {
+      const response = await fetch(`/api/vehicles/${vehicleId}/blocked-dates`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+          reason,
+        }),
+      });
+
+      if (response.ok) {
+        // Refresh blocked dates
+        await fetchBlockedDates();
+        alert('Dates blocked successfully');
+      } else {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to block dates');
+      }
+    } catch (error: any) {
+      console.error('Error blocking dates:', error);
+      throw error; // Re-throw to be handled by modal
+    }
+  };
+
+  const handleRemoveBlock = async (blockId: string) => {
+    if (!confirm('Are you sure you want to unblock these dates?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/vehicles/${vehicleId}/blocked-dates?blockId=${blockId}`,
+        {
+          method: 'DELETE',
+          credentials: 'include',
+        }
+      );
+
+      if (response.ok) {
+        // Refresh blocked dates
+        await fetchBlockedDates();
+        alert('Dates unblocked successfully');
+      } else {
+        const error = await response.json();
+        alert(`Error removing block: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error removing block:', error);
+      alert('Failed to remove block. Please try again.');
+    }
+  };
+
   const handleDeleteVehicle = async () => {
     try {
       setDeleting(true);
@@ -442,11 +535,18 @@ export default function VehicleView({ vehicleId, onBack }: VehicleViewProps) {
           currentDate={currentDate}
           dayPricing={dayPricing}
           bookings={bookings}
+          blockedDates={blockedDates}
           editMode={editMode}
+          blockMode={blockMode}
           onDateClick={handleDateClick}
           onMonthNavigate={navigateMonth}
           onClearCustomPrice={clearCustomPrice}
           onToggleEditMode={() => setEditMode(!editMode)}
+          onToggleBlockMode={() => {
+            setBlockMode(!blockMode);
+            setEditMode(false); // Disable edit mode when enabling block mode
+          }}
+          onRemoveBlock={handleRemoveBlock}
         />
 
         {/* Selected Date Info */}
@@ -487,6 +587,14 @@ export default function VehicleView({ vehicleId, onBack }: VehicleViewProps) {
           vehicle={vehicle}
         />
       )}
+
+      {/* Block Date Modal */}
+      <BlockDateModal
+        isOpen={showBlockModal}
+        onClose={() => setShowBlockModal(false)}
+        onSubmit={handleBlockDates}
+        selectedDate={selectedDate}
+      />
 
       {/* Delete Confirm Modal */}
       <DeleteConfirmModal

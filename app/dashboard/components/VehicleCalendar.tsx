@@ -12,6 +12,8 @@ import {
   Car,
   Edit,
   Check,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 
 interface DayPricing {
@@ -33,6 +35,13 @@ interface Booking {
   createdAt?: string;
 }
 
+interface BlockedDate {
+  _id: string;
+  startDate: string;
+  endDate: string;
+  reason?: string;
+}
+
 interface VehicleCalendarProps {
   vehicle: {
     dailyRate: number;
@@ -40,11 +49,15 @@ interface VehicleCalendarProps {
   currentDate: Date;
   dayPricing: DayPricing[];
   bookings: Booking[];
+  blockedDates: BlockedDate[];
   editMode: boolean;
+  blockMode: boolean;
   onDateClick: (date: Date) => void;
   onMonthNavigate: (direction: 'prev' | 'next') => void;
   onClearCustomPrice: (date: Date) => void;
   onToggleEditMode: () => void;
+  onToggleBlockMode: () => void;
+  onRemoveBlock: (blockId: string) => void;
 }
 
 export default function VehicleCalendar({
@@ -52,11 +65,15 @@ export default function VehicleCalendar({
   currentDate,
   dayPricing,
   bookings,
+  blockedDates,
   editMode,
+  blockMode,
   onDateClick,
   onMonthNavigate,
   onClearCustomPrice,
   onToggleEditMode,
+  onToggleBlockMode,
+  onRemoveBlock,
 }: VehicleCalendarProps) {
   const getPriceForDate = (date: Date) => {
     const dateStr = date.toISOString().split('T')[0];
@@ -103,6 +120,24 @@ export default function VehicleCalendar({
         checkDateStr <= endDateStr &&
         booking.status === 'confirmed'
       );
+    });
+  };
+
+  const isDateBlocked = (date: Date) => {
+    const checkDateStr = date.toISOString().split('T')[0];
+    return blockedDates.some((blocked) => {
+      const startDateStr = blocked.startDate.split('T')[0];
+      const endDateStr = blocked.endDate.split('T')[0];
+      return checkDateStr >= startDateStr && checkDateStr <= endDateStr;
+    });
+  };
+
+  const getBlockedDateForDate = (date: Date) => {
+    const checkDateStr = date.toISOString().split('T')[0];
+    return blockedDates.find((blocked) => {
+      const startDateStr = blocked.startDate.split('T')[0];
+      const endDateStr = blocked.endDate.split('T')[0];
+      return checkDateStr >= startDateStr && checkDateStr <= endDateStr;
     });
   };
 
@@ -204,7 +239,9 @@ export default function VehicleCalendar({
       const isToday =
         date.toISOString().split('T')[0] === today.toISOString().split('T')[0];
       const isBooked = isDateBooked(date);
+      const isBlocked = isDateBlocked(date);
       const booking = getBookingForDate(date);
+      const blockedInfo = getBlockedDateForDate(date);
       const todayUTC = new Date(
         Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())
       );
@@ -222,11 +259,20 @@ export default function VehicleCalendar({
           getBookingDuration(booking.startDate, booking.endDate)
         : 0;
 
-      // Create rich tooltip for booked dates
-      const createBookingTooltip = () => {
+      // Create rich tooltip for booked/blocked dates
+      const createTooltip = () => {
+        if (isBlocked && blockedInfo) {
+          const startDate = new Date(blockedInfo.startDate).toLocaleDateString();
+          const endDate = new Date(blockedInfo.endDate).toLocaleDateString();
+          const reason = blockedInfo.reason || 'Unavailable';
+          return `🔒 BLOCKED: ${reason}\n${startDate} - ${endDate}${blockMode ? '\nClick to remove block' : ''}`;
+        }
+
         if (!booking)
           return isPast
             ? 'Past date'
+            : blockMode
+            ? 'Click to block this date'
             : `${
                 editMode ? 'Click to edit price' : 'Available'
               } - €${price}/day`;
@@ -243,29 +289,52 @@ export default function VehicleCalendar({
       days.push(
         <div
           key={day}
-          onClick={() => onDateClick(date)}
+          onClick={() => {
+            if (isBlocked && blockMode && blockedInfo) {
+              onRemoveBlock(blockedInfo._id);
+            } else {
+              onDateClick(date);
+            }
+          }}
           className={`h-32 p-3 rounded-xl cursor-pointer transition-all duration-300 relative shadow-sm hover:shadow-lg ${
             isPast
               ? 'bg-gray-100 border-2 border-gray-300 text-gray-500 cursor-not-allowed'
+              : isBlocked
+              ? 'bg-orange-50 border-2 border-orange-400 text-orange-900 hover:bg-orange-100'
               : isBooked && bookingPosition
               ? getBookingPeriodStyling(bookingPosition) + ' hover:bg-red-100'
               : getPriceTypeColor(type, false, false)
           } ${
-            editMode && !isBooked && !isPast
+            (editMode || blockMode) && !isBooked && !isPast
               ? 'hover:scale-105 hover:shadow-xl'
               : ''
           }`}
-          title={createBookingTooltip()}
+          title={createTooltip()}
         >
           <div className='font-bold text-lg mb-1'>{day}</div>
 
+          {/* Blocked date indicator */}
+          {isBlocked && !isBooked && (
+            <div className='space-y-1'>
+              <div className='flex items-center text-xs text-orange-800 font-bold bg-orange-200 px-2 py-1 rounded-md'>
+                <Lock className='w-3 h-3 mr-1' />
+                BLOCKED
+              </div>
+              {blockedInfo?.reason && (
+                <div className='text-xs text-orange-700 font-medium truncate'>
+                  {blockedInfo.reason}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Available date pricing */}
-          {!isBooked && !isPast && (
+          {!isBooked && !isPast && !isBlocked && (
             <div className='text-sm font-bold text-green-900'>€{price}</div>
           )}
 
           {/* Past date indicator */}
-          {isPast && !isBooked && (
+          {isPast && !isBooked && !isBlocked && (
             <div className='text-xs text-gray-500 font-medium'>Past</div>
           )}
 
@@ -349,9 +418,12 @@ export default function VehicleCalendar({
           </h3>
           <button
             onClick={onToggleEditMode}
+            disabled={blockMode}
             className={`flex items-center px-6 py-3 text-sm font-semibold rounded-xl transition-all shadow-sm ${
               editMode
                 ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 shadow-green-200'
+                : blockMode
+                ? 'bg-gray-100 text-gray-400 border-2 border-gray-200 cursor-not-allowed'
                 : 'bg-white text-gray-700 border-2 hover:bg-gray-50 hover:border-gray-300'
             }`}
           >
@@ -367,11 +439,42 @@ export default function VehicleCalendar({
               </>
             )}
           </button>
+          <button
+            onClick={onToggleBlockMode}
+            disabled={editMode}
+            className={`flex items-center px-6 py-3 text-sm font-semibold rounded-xl transition-all shadow-sm ${
+              blockMode
+                ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 shadow-orange-200'
+                : editMode
+                ? 'bg-gray-100 text-gray-400 border-2 border-gray-200 cursor-not-allowed'
+                : 'bg-white text-gray-700 border-2 hover:bg-gray-50 hover:border-gray-300'
+            }`}
+          >
+            {blockMode ? (
+              <>
+                <Unlock className='w-4 h-4 mr-2' />
+                Done Blocking
+              </>
+            ) : (
+              <>
+                <Lock className='w-4 h-4 mr-2' />
+                Block Dates
+              </>
+            )}
+          </button>
           {editMode && (
             <div className='flex items-center bg-green-50 text-green-700 px-4 py-2 rounded-xl border border-green-200'>
               <div className='w-2 h-2 bg-green-500 rounded-full mr-2'></div>
               <span className='text-sm font-medium'>
                 Click dates to set prices
+              </span>
+            </div>
+          )}
+          {blockMode && (
+            <div className='flex items-center bg-orange-50 text-orange-700 px-4 py-2 rounded-xl border border-orange-200'>
+              <div className='w-2 h-2 bg-orange-500 rounded-full mr-2'></div>
+              <span className='text-sm font-medium'>
+                Click dates to block/unblock
               </span>
             </div>
           )}
@@ -408,6 +511,12 @@ export default function VehicleCalendar({
           <div className='w-4 h-4 bg-red-500 rounded-lg mr-2 shadow-sm'></div>
           <span className='text-sm font-semibold text-gray-700'>
             Booked Period
+          </span>
+        </div>
+        <div className='flex items-center'>
+          <div className='w-4 h-4 bg-orange-500 rounded-lg mr-2 shadow-sm'></div>
+          <span className='text-sm font-semibold text-gray-700'>
+            Blocked
           </span>
         </div>
         <div className='flex items-center'>
