@@ -19,6 +19,7 @@ import {
   Play,
   ChevronDown,
   FileDown,
+  AlertTriangle,
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 
@@ -62,6 +63,8 @@ interface Booking {
     totalCost: number;
   };
   status: string;
+  isOverbooking?: boolean;
+  overbookingStatus?: string;
   createdAt: string;
 }
 
@@ -630,6 +633,58 @@ export default function BookingManagement() {
       );
     } finally {
       setUpdateLoading(false);
+    }
+  };
+
+  const handleToggleOverbooking = async () => {
+    if (!selectedBooking) return;
+
+    const newOverbookingState = !selectedBooking.isOverbooking;
+    const confirmMessage = newOverbookingState
+      ? `Mark this booking as OVERBOOKING?\n\nThis means there's a conflict and this booking might need alternative arrangements.`
+      : `Remove overbooking status from this booking?`;
+
+    if (!confirm(confirmMessage)) return;
+
+    try {
+      const response = await fetch(
+        `/api/bookings/${selectedBooking.id}/overbooking`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            isOverbooking: newOverbookingState,
+            overbookingStatus: newOverbookingState ? 'pending' : 'none',
+          }),
+          credentials: 'include',
+        }
+      );
+
+      if (response.ok) {
+        // Refresh bookings
+        await fetchAllBookings();
+        // Update selected booking state
+        setSelectedBooking({
+          ...selectedBooking,
+          isOverbooking: newOverbookingState,
+          overbookingStatus: newOverbookingState ? 'pending' : 'none',
+        });
+        alert(
+          newOverbookingState
+            ? '✓ Booking marked as overbooking'
+            : '✓ Overbooking status removed'
+        );
+      } else {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update overbooking status');
+      }
+    } catch (err) {
+      alert(
+        'Failed to update overbooking status: ' +
+          (err instanceof Error ? err.message : 'Unknown error')
+      );
     }
   };
 
@@ -1239,6 +1294,40 @@ export default function BookingManagement() {
                       className='bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-sm whitespace-nowrap'
                     >
                       {updateLoading ? 'Updating...' : 'Update'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Overbooking Management */}
+                <div className='bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4'>
+                  <h4 className='text-sm font-semibold text-gray-900 mb-2 flex items-center'>
+                    <AlertTriangle className='h-4 w-4 text-yellow-600 mr-2' />
+                    Overbooking Management
+                  </h4>
+                  <div className='flex items-start justify-between'>
+                    <div className='flex-1'>
+                      <p className='text-xs text-gray-600 mb-2'>
+                        {selectedBooking.isOverbooking
+                          ? '⚠️ This booking is marked as OVERBOOKING - there may be a conflict with another booking or external reservation.'
+                          : 'Mark this booking as overbooking if there\'s a conflict (e.g., external booking took priority).'}
+                      </p>
+                      {selectedBooking.isOverbooking && (
+                        <div className='inline-block px-2 py-1 bg-yellow-100 border border-yellow-300 rounded text-xs font-medium text-yellow-800'>
+                          Status: {selectedBooking.overbookingStatus || 'pending'}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={handleToggleOverbooking}
+                      className={`ml-4 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                        selectedBooking.isOverbooking
+                          ? 'bg-green-600 text-white hover:bg-green-700'
+                          : 'bg-yellow-600 text-white hover:bg-yellow-700'
+                      }`}
+                    >
+                      {selectedBooking.isOverbooking
+                        ? 'Remove Overbooking'
+                        : 'Mark as Overbooking'}
                     </button>
                   </div>
                 </div>

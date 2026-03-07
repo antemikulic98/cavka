@@ -14,6 +14,7 @@ import {
   Check,
   Lock,
   Unlock,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface DayPricing {
@@ -33,6 +34,8 @@ interface Booking {
   customerName?: string;
   totalCost?: number;
   createdAt?: string;
+  isOverbooking?: boolean;
+  overbookingStatus?: string;
 }
 
 interface BlockedDate {
@@ -172,20 +175,24 @@ export default function VehicleCalendar({
     }
   };
 
-  // Get booking period styling based on position
-  const getBookingPeriodStyling = (position: string) => {
-    const baseClasses =
-      'bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300 text-red-800 shadow-sm';
+  // Get booking period styling based on position and overbooking status
+  const getBookingPeriodStyling = (position: string, isOverbooking: boolean = false) => {
+    const baseClasses = isOverbooking
+      ? 'bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-400 text-yellow-900 shadow-sm'
+      : 'bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300 text-red-800 shadow-sm';
+
+    const borderColor = isOverbooking ? 'border-yellow-500' : 'border-red-400';
+    const lightBorder = isOverbooking ? 'border-yellow-400' : 'border-red-300';
 
     switch (position) {
       case 'start':
-        return `${baseClasses} border-red-400 shadow-md`;
+        return `${baseClasses} ${borderColor} shadow-md`;
       case 'middle':
-        return `${baseClasses} border-red-300`;
+        return `${baseClasses} ${lightBorder}`;
       case 'end':
-        return `${baseClasses} border-red-400 shadow-md`;
+        return `${baseClasses} ${borderColor} shadow-md`;
       case 'single':
-        return `${baseClasses} border-red-400 shadow-md`;
+        return `${baseClasses} ${borderColor} shadow-md`;
       default:
         return `${baseClasses}`;
     }
@@ -302,7 +309,8 @@ export default function VehicleCalendar({
               : isBlocked
               ? 'bg-orange-50 border-2 border-orange-400 text-orange-900 hover:bg-orange-100'
               : isBooked && bookingPosition
-              ? getBookingPeriodStyling(bookingPosition) + ' hover:bg-red-100'
+              ? getBookingPeriodStyling(bookingPosition, booking?.isOverbooking) +
+                (booking?.isOverbooking ? ' hover:bg-yellow-100' : ' hover:bg-red-100')
               : getPriceTypeColor(type, false, false)
           } ${
             (editMode || blockMode) && !isBooked && !isPast
@@ -341,27 +349,51 @@ export default function VehicleCalendar({
           {/* Enhanced booking information */}
           {isBooked && booking && (
             <div className='space-y-2'>
+              {/* Overbooking indicator */}
+              {booking.isOverbooking && (
+                <div className='flex items-center text-xs text-yellow-900 font-bold bg-yellow-300 px-2 py-1 rounded-md'>
+                  <AlertTriangle className='w-3 h-3 mr-1' />
+                  OVERBOOKING
+                </div>
+              )}
+
               {/* Booking position indicator */}
               {bookingPosition === 'start' && (
-                <div className='flex items-center text-xs text-red-800 font-bold bg-red-200 px-2 py-1 rounded-md'>
+                <div className={`flex items-center text-xs font-bold px-2 py-1 rounded-md ${
+                  booking.isOverbooking
+                    ? 'text-yellow-900 bg-yellow-200'
+                    : 'text-red-800 bg-red-200'
+                }`}>
                   <Calendar className='w-3 h-3 mr-1' />
                   START ({bookingDuration}d)
                 </div>
               )}
               {bookingPosition === 'middle' && (
-                <div className='flex items-center text-xs text-red-800 font-bold bg-red-200 px-2 py-1 rounded-md'>
+                <div className={`flex items-center text-xs font-bold px-2 py-1 rounded-md ${
+                  booking.isOverbooking
+                    ? 'text-yellow-900 bg-yellow-200'
+                    : 'text-red-800 bg-red-200'
+                }`}>
                   <Clock className='w-3 h-3 mr-1' />
                   DAY {getBookingDayNumber(date, booking.startDate)}
                 </div>
               )}
               {bookingPosition === 'end' && (
-                <div className='flex items-center text-xs text-red-800 font-bold bg-red-200 px-2 py-1 rounded-md'>
+                <div className={`flex items-center text-xs font-bold px-2 py-1 rounded-md ${
+                  booking.isOverbooking
+                    ? 'text-yellow-900 bg-yellow-200'
+                    : 'text-red-800 bg-red-200'
+                }`}>
                   <MapPin className='w-3 h-3 mr-1' />
                   END
                 </div>
               )}
               {bookingPosition === 'single' && (
-                <div className='flex items-center text-xs text-red-800 font-bold bg-red-200 px-2 py-1 rounded-md'>
+                <div className={`flex items-center text-xs font-bold px-2 py-1 rounded-md ${
+                  booking.isOverbooking
+                    ? 'text-yellow-900 bg-yellow-200'
+                    : 'text-red-800 bg-red-200'
+                }`}>
                   <Calendar className='w-3 h-3 mr-1' />1 DAY
                 </div>
               )}
@@ -502,7 +534,7 @@ export default function VehicleCalendar({
       </div>
 
       {/* Enhanced Legend */}
-      <div className='flex items-center justify-center space-x-6 mb-6 bg-white p-4 rounded-xl shadow-sm border'>
+      <div className='flex items-center justify-center flex-wrap gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm border'>
         <div className='flex items-center'>
           <div className='w-4 h-4 bg-green-500 rounded-lg mr-2 shadow-sm'></div>
           <span className='text-sm font-semibold text-gray-700'>Available</span>
@@ -510,7 +542,13 @@ export default function VehicleCalendar({
         <div className='flex items-center'>
           <div className='w-4 h-4 bg-red-500 rounded-lg mr-2 shadow-sm'></div>
           <span className='text-sm font-semibold text-gray-700'>
-            Booked Period
+            Booked
+          </span>
+        </div>
+        <div className='flex items-center'>
+          <div className='w-4 h-4 bg-yellow-500 rounded-lg mr-2 shadow-sm'></div>
+          <span className='text-sm font-semibold text-gray-700'>
+            Overbooking
           </span>
         </div>
         <div className='flex items-center'>
