@@ -19,6 +19,7 @@ import AddCarModal from './AddCarModal';
 
 interface Vehicle {
   _id: string;
+  type: 'rental' | 'transfer';
   make: string;
   model: string;
   year: number;
@@ -54,6 +55,15 @@ interface Vehicle {
     last_name: string;
   };
   fullName?: string;
+
+  // Transfer-specific fields
+  trips?: {
+    from: string;
+    to: string;
+    price: number;
+    duration?: string;
+    distance?: string;
+  }[];
 
   // Booking statistics
   bookingStats?: {
@@ -93,6 +103,7 @@ export default function BrowseCars({
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedLocation, setSelectedLocation] = useState('all');
+  const [selectedType, setSelectedType] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -106,9 +117,11 @@ export default function BrowseCars({
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const locationDropdownRef = useRef<HTMLDivElement>(null);
+  const typeDropdownRef = useRef<HTMLDivElement>(null);
 
   const categories = [
     { value: 'all', label: 'All Categories' },
@@ -141,6 +154,12 @@ export default function BrowseCars({
     { value: 'Rijeka Downtown', label: 'Rijeka Downtown' },
     { value: 'Pula Downtown', label: 'Pula Downtown' },
     { value: 'Zadar Downtown', label: 'Zadar Downtown' },
+  ];
+
+  const vehicleTypes = [
+    { value: 'all', label: 'All Types' },
+    { value: 'rental', label: 'Rental Vehicles' },
+    { value: 'transfer', label: 'Transfer Vehicles' },
   ];
 
   // Fetch booking statistics for a vehicle
@@ -193,6 +212,7 @@ export default function BrowseCars({
       if (selectedStatus !== 'all') params.append('status', selectedStatus);
       if (selectedLocation !== 'all')
         params.append('location', selectedLocation);
+      if (selectedType !== 'all') params.append('type', selectedType);
 
       const response = await fetch(`/api/vehicles?${params}`, {
         credentials: 'include', // Include cookies for authentication
@@ -225,7 +245,7 @@ export default function BrowseCars({
 
   useEffect(() => {
     fetchVehicles();
-  }, [currentPage, selectedCategory, selectedStatus, selectedLocation]);
+  }, [currentPage, selectedCategory, selectedStatus, selectedLocation, selectedType]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -248,16 +268,22 @@ export default function BrowseCars({
       ) {
         setShowLocationDropdown(false);
       }
+      if (
+        typeDropdownRef.current &&
+        !typeDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowTypeDropdown(false);
+      }
     };
 
-    if (showCategoryDropdown || showStatusDropdown || showLocationDropdown) {
+    if (showCategoryDropdown || showStatusDropdown || showLocationDropdown || showTypeDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showCategoryDropdown, showStatusDropdown, showLocationDropdown]);
+  }, [showCategoryDropdown, showStatusDropdown, showLocationDropdown, showTypeDropdown]);
 
   // Filter vehicles by search term (client-side)
   const filteredVehicles = vehicles.filter(
@@ -303,6 +329,10 @@ export default function BrowseCars({
     return locations.find((l) => l.value === selectedLocation) || locations[0];
   };
 
+  const getSelectedTypeOption = () => {
+    return vehicleTypes.find((t) => t.value === selectedType) || vehicleTypes[0];
+  };
+
   return (
     <div className='space-y-6'>
       {/* Header */}
@@ -330,7 +360,7 @@ export default function BrowseCars({
             Filter Vehicles
           </h3>
 
-          <div className='grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4'>
+          <div className='grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-5 gap-4'>
             {/* Enhanced Search */}
             <div className='relative'>
               <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4' />
@@ -496,6 +526,56 @@ export default function BrowseCars({
                 </div>
               )}
             </div>
+
+            {/* Custom Vehicle Type Dropdown */}
+            <div className='relative' ref={typeDropdownRef}>
+              <Car className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10' />
+              <button
+                onClick={() => setShowTypeDropdown(!showTypeDropdown)}
+                className='pl-10 pr-10 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm bg-white text-gray-900 text-left hover:border-emerald-400 transition-colors duration-200'
+              >
+                {getSelectedTypeOption().label}
+              </button>
+              <ChevronDown
+                className={`absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 transition-transform duration-200 ${
+                  showTypeDropdown ? 'rotate-180' : ''
+                }`}
+              />
+              <label className='absolute -top-2 left-3 bg-white px-1 text-xs text-gray-600'>
+                Vehicle Type
+              </label>
+
+              {/* Dropdown Menu */}
+              {showTypeDropdown && (
+                <div className='absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto'>
+                  {vehicleTypes.map((type) => (
+                    <button
+                      key={type.value}
+                      onClick={() => {
+                        setSelectedType(type.value);
+                        setCurrentPage(1);
+                        setShowTypeDropdown(false);
+                      }}
+                      className={`w-full px-3 py-2 text-left hover:bg-emerald-50 transition-colors duration-150 flex items-center text-sm ${
+                        selectedType === type.value
+                          ? 'bg-emerald-100 border-l-2 border-emerald-500'
+                          : 'hover:border-l-2 hover:border-emerald-300'
+                      }`}
+                    >
+                      <div className='h-4 w-4 mr-3'>
+                        {type.value === 'all' && '🚗'}
+                        {type.value === 'rental' && '🔑'}
+                        {type.value === 'transfer' && '🚐'}
+                      </div>
+                      <span className='text-gray-800'>{type.label}</span>
+                      {selectedType === type.value && (
+                        <CheckCircle className='ml-auto h-4 w-4 text-emerald-500' />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -512,13 +592,15 @@ export default function BrowseCars({
           {(searchTerm ||
             selectedCategory !== 'all' ||
             selectedStatus !== 'all' ||
-            selectedLocation !== 'all') && (
+            selectedLocation !== 'all' ||
+            selectedType !== 'all') && (
             <button
               onClick={() => {
                 setSearchTerm('');
                 setSelectedCategory('all');
                 setSelectedStatus('all');
                 setSelectedLocation('all');
+                setSelectedType('all');
                 setCurrentPage(1);
               }}
               className='text-emerald-600 hover:text-emerald-700 font-medium flex items-center'
@@ -572,7 +654,12 @@ export default function BrowseCars({
                     <Car className='h-12 w-12 text-gray-400' />
                   </div>
                 )}
-                <div className='absolute top-2 right-2'>
+                <div className='absolute top-2 right-2 flex gap-2'>
+                  {vehicle.type === 'transfer' && (
+                    <span className='px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800'>
+                      Transfer
+                    </span>
+                  )}
                   <span
                     className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
                       vehicle.status

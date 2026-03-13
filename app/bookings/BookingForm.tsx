@@ -107,7 +107,7 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
   const [pickupLocation, setPickupLocation] = useState('');
   const [returnLocation, setReturnLocation] = useState('');
   const [rentalDays, setRentalDays] = useState(0);
-  const [cdwCoverage, setCdwCoverage] = useState<'basic' | 'full'>('basic');
+  const [cdwCoverage, setCdwCoverage] = useState<'none' | 'basic' | 'full'>('none');
   const [locations, setLocations] = useState<string[]>([]);
   const [addOns, setAddOns] = useState<AddOns>({
     additionalDriver: false,
@@ -295,8 +295,15 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
     if (!selectedVehicle || !rentalDays) return { totalCost: 0, breakdown: {} };
 
     const baseCost = selectedVehicle.dailyRate * rentalDays;
+    const basicCoverageRate = insurancePricing?.dailyPrice || 0;
     const fullCoverageRate = insurancePricing?.fullCoveragePrice || 9.95;
-    const cdwCost = cdwCoverage === 'full' ? fullCoverageRate * rentalDays : 0;
+
+    let cdwCost = 0;
+    if (cdwCoverage === 'basic') {
+      cdwCost = basicCoverageRate * rentalDays;
+    } else if (cdwCoverage === 'full') {
+      cdwCost = fullCoverageRate * rentalDays;
+    }
 
     let addOnsCost = 0;
     Object.entries(addOns).forEach(([key, selected]) => {
@@ -427,7 +434,7 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
     setPickupLocation('');
     setReturnLocation('');
     setRentalDays(0);
-    setCdwCoverage('basic');
+    setCdwCoverage('none');
     setAddOns({
       additionalDriver: false,
       wifiHotspot: false,
@@ -809,11 +816,39 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
               <label className='block text-sm font-medium text-gray-700 mb-3'>
                 Collision Damage Waiver (CDW)
               </label>
-              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                <label
+                  className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                    cdwCoverage === 'none'
+                      ? 'border-red-500 bg-red-50'
+                      : 'border-gray-300'
+                  }`}
+                >
+                  <input
+                    type='radio'
+                    name='cdw'
+                    value='none'
+                    checked={cdwCoverage === 'none'}
+                    onChange={() => setCdwCoverage('none')}
+                    className='sr-only'
+                  />
+                  <div className='flex items-center justify-between mb-2'>
+                    <span className='font-medium text-gray-900'>
+                      No Coverage
+                    </span>
+                    {cdwCoverage === 'none' && (
+                      <CheckCircle className='h-5 w-5 text-red-500' />
+                    )}
+                  </div>
+                  <p className='text-sm text-gray-600'>
+                    €0/day - Full liability
+                  </p>
+                </label>
+
                 <label
                   className={`border rounded-lg p-4 cursor-pointer transition-colors ${
                     cdwCoverage === 'basic'
-                      ? 'border-emerald-500 bg-emerald-50'
+                      ? 'border-blue-500 bg-blue-50'
                       : 'border-gray-300'
                   }`}
                 >
@@ -827,14 +862,14 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
                   />
                   <div className='flex items-center justify-between mb-2'>
                     <span className='font-medium text-gray-900'>
-                      Basic Coverage
+                      CDW (Basic)
                     </span>
                     {cdwCoverage === 'basic' && (
-                      <CheckCircle className='h-5 w-5 text-emerald-500' />
+                      <CheckCircle className='h-5 w-5 text-blue-500' />
                     )}
                   </div>
                   <p className='text-sm text-gray-600'>
-                    Included at no additional cost
+                    +€{insurancePricing?.dailyPrice?.toFixed(2) || '0'} per day
                   </p>
                 </label>
 
@@ -855,7 +890,7 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
                   />
                   <div className='flex items-center justify-between mb-2'>
                     <span className='font-medium text-gray-900'>
-                      Full Coverage
+                      SCDW (Full)
                     </span>
                     {cdwCoverage === 'full' && (
                       <CheckCircle className='h-5 w-5 text-emerald-500' />

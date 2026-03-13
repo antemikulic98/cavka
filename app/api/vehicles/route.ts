@@ -166,6 +166,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category');
     const location = searchParams.get('location');
     const status = searchParams.get('status');
+    const type = searchParams.get('type');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '12');
 
@@ -182,6 +183,10 @@ export async function GET(request: NextRequest) {
 
     if (status && status !== 'all') {
       query.status = status;
+    }
+
+    if (type && type !== 'all') {
+      query.type = type;
     }
 
     // Get vehicles with pagination

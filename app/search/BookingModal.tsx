@@ -77,7 +77,7 @@ export default function BookingModal({
   });
   const [showPriceDetails, setShowPriceDetails] = useState(false);
   const [selectedDetail, setSelectedDetail] = useState<string | null>(null);
-  const [cdwCoverage, setCdwCoverage] = useState<'basic' | 'full'>('basic');
+  const [cdwCoverage, setCdwCoverage] = useState<'none' | 'basic' | 'full'>('none');
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [isBookingLoading, setIsBookingLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'pay_later' | 'pay_now'>('pay_later');
@@ -85,6 +85,16 @@ export default function BookingModal({
   const [insurancePricing, setInsurancePricing] = useState<{
     dailyPrice: number;
     fullCoveragePrice: number;
+  } | null>(null);
+  const [addOnPricing, setAddOnPricing] = useState<{
+    additionalDriver: number;
+    wifiHotspot: number;
+    roadsideAssistance: number;
+    tireProtection: number;
+    personalAccident: number;
+    theftProtection: number;
+    extendedTheft: number;
+    interiorProtection: number;
   } | null>(null);
   const [clientInfo, setClientInfo] = useState({
     firstName: '',
@@ -98,58 +108,113 @@ export default function BookingModal({
     promoCode: '',
   });
 
-  // Fetch insurance pricing based on vehicle's ACRISS code
+  // Fetch insurance and add-on pricing based on vehicle's ACRISS code
   useEffect(() => {
-    const fetchInsurancePricing = async () => {
+    const fetchPricing = async () => {
       console.log('Vehicle ACRISS Code:', vehicle?.acrissCode);
 
       if (!vehicle || !vehicle.acrissCode) {
         console.log('No ACRISS code found, using default pricing');
         // If no ACRISS code, use default pricing
         setInsurancePricing({ dailyPrice: 0, fullCoveragePrice: 15 });
+        setAddOnPricing({
+          additionalDriver: 4.75,
+          wifiHotspot: 4.6,
+          roadsideAssistance: 1.2,
+          tireProtection: 1.99,
+          personalAccident: 2.39,
+          theftProtection: 5.99,
+          extendedTheft: 10.95,
+          interiorProtection: 2.1,
+        });
         return;
       }
 
       try {
-        const response = await fetch('/api/settings/insurance');
+        // Fetch both insurance and add-on pricing
+        const [insuranceRes, addOnRes] = await Promise.all([
+          fetch('/api/settings/insurance'),
+          fetch(`/api/settings/addons?acrissCode=${vehicle.acrissCode}`),
+        ]);
 
-        if (response.ok) {
-          const data = await response.json();
-          console.log('All insurance pricing:', data.pricing);
-
+        // Handle insurance pricing
+        if (insuranceRes.ok) {
+          const data = await insuranceRes.json();
           const pricing = data.pricing.find(
             (p: any) => p.acrissCode === vehicle.acrissCode
           );
-
-          console.log('Matched pricing for', vehicle.acrissCode, ':', pricing);
 
           if (pricing) {
             setInsurancePricing({
               dailyPrice: pricing.dailyPrice || 0,
               fullCoveragePrice: pricing.fullCoveragePrice || 15,
             });
-            console.log('Set insurance pricing:', {
-              dailyPrice: pricing.dailyPrice || 0,
-              fullCoveragePrice: pricing.fullCoveragePrice || 15,
-            });
           } else {
-            console.log('No pricing found for this ACRISS code, using defaults');
-            // No pricing found for this ACRISS code, use defaults
             setInsurancePricing({ dailyPrice: 0, fullCoveragePrice: 15 });
           }
         } else {
-          console.error('Failed to fetch insurance pricing, status:', response.status);
           setInsurancePricing({ dailyPrice: 0, fullCoveragePrice: 15 });
         }
+
+        // Handle add-on pricing
+        if (addOnRes.ok) {
+          const data = await addOnRes.json();
+          if (data.pricing) {
+            setAddOnPricing({
+              additionalDriver: data.pricing.additionalDriver || 4.75,
+              wifiHotspot: data.pricing.wifiHotspot || 4.6,
+              roadsideAssistance: data.pricing.roadsideAssistance || 1.2,
+              tireProtection: data.pricing.tireProtection || 1.99,
+              personalAccident: data.pricing.personalAccident || 2.39,
+              theftProtection: data.pricing.theftProtection || 5.99,
+              extendedTheft: data.pricing.extendedTheft || 10.95,
+              interiorProtection: data.pricing.interiorProtection || 2.1,
+            });
+          } else {
+            // Use defaults
+            setAddOnPricing({
+              additionalDriver: 4.75,
+              wifiHotspot: 4.6,
+              roadsideAssistance: 1.2,
+              tireProtection: 1.99,
+              personalAccident: 2.39,
+              theftProtection: 5.99,
+              extendedTheft: 10.95,
+              interiorProtection: 2.1,
+            });
+          }
+        } else {
+          // Use defaults
+          setAddOnPricing({
+            additionalDriver: 4.75,
+            wifiHotspot: 4.6,
+            roadsideAssistance: 1.2,
+            tireProtection: 1.99,
+            personalAccident: 2.39,
+            theftProtection: 5.99,
+            extendedTheft: 10.95,
+            interiorProtection: 2.1,
+          });
+        }
       } catch (error) {
-        console.error('Error fetching insurance pricing:', error);
+        console.error('Error fetching pricing:', error);
         // Fallback to default pricing
         setInsurancePricing({ dailyPrice: 0, fullCoveragePrice: 15 });
+        setAddOnPricing({
+          additionalDriver: 4.75,
+          wifiHotspot: 4.6,
+          roadsideAssistance: 1.2,
+          tireProtection: 1.99,
+          personalAccident: 2.39,
+          theftProtection: 5.99,
+          extendedTheft: 10.95,
+          interiorProtection: 2.1,
+        });
       }
     };
 
     if (isOpen && vehicle) {
-      fetchInsurancePricing();
+      fetchPricing();
     }
   }, [isOpen, vehicle]);
 
@@ -206,7 +271,7 @@ export default function BookingModal({
   const handleClose = () => {
     setCurrentStep(1); // Reset to step 1 when closing
     setSelectedDetail(null); // Clear any open details
-    setCdwCoverage('basic'); // Reset CDW to basic
+    setCdwCoverage('none'); // Reset CDW to none
     setShowCountryDropdown(false); // Close country dropdown
     setClientInfo({
       firstName: '',
@@ -230,59 +295,70 @@ export default function BookingModal({
   };
 
   const getAddOnDetails = () => {
+    const pricing = addOnPricing || {
+      additionalDriver: 4.75,
+      wifiHotspot: 4.6,
+      roadsideAssistance: 1.2,
+      tireProtection: 1.99,
+      personalAccident: 2.39,
+      theftProtection: 5.99,
+      extendedTheft: 10.95,
+      interiorProtection: 2.1,
+    };
+
     return {
       additionalDriver: {
         name: 'Additional driver',
-        price: 4.75,
+        price: pricing.additionalDriver,
         unit: '/day & driver',
         description:
           'Allow an additional person to drive your rental car. The additional driver must meet the same age and license requirements as the primary driver and must be present at the time of rental with a valid driving license.',
       },
       wifiHotspot: {
         name: 'WiFi Hotspot',
-        price: 4.6,
+        price: pricing.wifiHotspot,
         unit: '/day',
         description:
           'Stay connected on the go with unlimited WiFi access for up to 10 devices. Perfect for business trips, navigation, and entertainment during your journey.',
       },
       roadsideAssistance: {
         name: 'Roadside Assistance',
-        price: 1.2,
+        price: pricing.roadsideAssistance,
         unit: '/day',
         description:
           '24/7 roadside assistance including battery jump-start, flat tire service, lockout assistance, and emergency fuel delivery. Get help whenever and wherever you need it.',
       },
       tireProtection: {
         name: 'Tire and Windshield Protection',
-        price: 1.99,
+        price: pricing.tireProtection,
         unit: '/day',
         description:
           'Protection against tire damage and windshield chips or cracks. Covers repair or replacement costs for damage that occurs during your rental period.',
       },
       personalAccident: {
         name: 'Personal Accident Protection',
-        price: 2.39,
+        price: pricing.personalAccident,
         unit: '/day',
         description:
           'Provides accident medical expense coverage and accidental death & dismemberment benefits for the driver and passengers while operating or riding in the rental vehicle.',
       },
       theftProtection: {
         name: 'Theft Protection',
-        price: 5.99,
+        price: pricing.theftProtection,
         unit: '/day',
         description:
           'Reduces your financial responsibility in case of vehicle theft. With this protection, your maximum liability is limited to €825.00 instead of the full vehicle value.',
       },
       extendedTheft: {
         name: 'Extended Theft Protection',
-        price: 10.95,
+        price: pricing.extendedTheft,
         unit: '/day',
         description:
           'Enhanced theft protection with maximum financial responsibility of only €200.00. Provides peace of mind with minimal out-of-pocket costs in case of vehicle theft.',
       },
       interiorProtection: {
         name: 'Interior Protection',
-        price: 2.1,
+        price: pricing.interiorProtection,
         unit: '/day',
         description:
           'Covers interior damage including stains, tears, or burns to seats, carpets, and other interior surfaces. Protects against costly cleaning or repair fees.',
@@ -357,6 +433,12 @@ export default function BookingModal({
     // Transfer vehicles don't have insurance costs
     if (vehicle?.type === 'transfer') {
       return 0;
+    }
+    if (cdwCoverage === 'none') {
+      return 0;
+    }
+    if (cdwCoverage === 'basic' && insurancePricing) {
+      return insurancePricing.dailyPrice;
     }
     if (cdwCoverage === 'full' && insurancePricing) {
       return insurancePricing.fullCoveragePrice;
@@ -641,12 +723,50 @@ export default function BookingModal({
 
           {/* CDW Options */}
           <div className='space-y-3'>
+            {/* No Coverage */}
+            <div
+              onClick={() => setCdwCoverage('none')}
+              className={`border-2 rounded-xl p-4 cursor-pointer transition-colors ${
+                cdwCoverage === 'none'
+                  ? 'border-red-400 bg-red-50'
+                  : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+              }`}
+            >
+              <div className='flex items-center justify-between mb-3'>
+                <div className='flex items-center'>
+                  <div
+                    className={`w-4 h-4 border-2 rounded-full mr-3 bg-white flex items-center justify-center ${
+                      cdwCoverage === 'none'
+                        ? 'border-red-500'
+                        : 'border-gray-300'
+                    }`}
+                  >
+                    {cdwCoverage === 'none' && (
+                      <div className='w-2 h-2 bg-red-500 rounded-full'></div>
+                    )}
+                  </div>
+                  <div>
+                    <h4 className='font-medium text-gray-900'>
+                      No Coverage
+                    </h4>
+                    <p className='text-xs text-red-600'>Full liability on damages</p>
+                  </div>
+                </div>
+                <span className='bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-semibold'>
+                  €0/day
+                </span>
+              </div>
+              <p className='text-sm text-gray-600 ml-7'>
+                You will be fully responsible for any damage to the vehicle
+              </p>
+            </div>
+
             {/* Basic CDW */}
             <div
               onClick={() => setCdwCoverage('basic')}
               className={`border-2 rounded-xl p-4 cursor-pointer transition-colors ${
                 cdwCoverage === 'basic'
-                  ? 'border-gray-400 bg-gray-100'
+                  ? 'border-blue-400 bg-blue-50'
                   : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
               }`}
             >
@@ -655,23 +775,23 @@ export default function BookingModal({
                   <div
                     className={`w-4 h-4 border-2 rounded-full mr-3 bg-white flex items-center justify-center ${
                       cdwCoverage === 'basic'
-                        ? 'border-gray-500'
+                        ? 'border-blue-500'
                         : 'border-gray-300'
                     }`}
                   >
                     {cdwCoverage === 'basic' && (
-                      <div className='w-2 h-2 bg-gray-500 rounded-full'></div>
+                      <div className='w-2 h-2 bg-blue-500 rounded-full'></div>
                     )}
                   </div>
                   <div>
                     <h4 className='font-medium text-gray-900'>
-                      Basic Coverage
+                      CDW (Basic Coverage)
                     </h4>
-                    <p className='text-xs text-gray-500'>€2,500 deductible</p>
+                    <p className='text-xs text-blue-600'>€2,500 deductible</p>
                   </div>
                 </div>
-                <span className='bg-gray-600 text-white px-3 py-1 rounded-full text-sm font-semibold'>
-                  Included
+                <span className='bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold'>
+                  +€{insurancePricing?.dailyPrice || 0}/day
                 </span>
               </div>
               <p className='text-sm text-gray-600 ml-7'>
@@ -702,7 +822,7 @@ export default function BookingModal({
                     )}
                   </div>
                   <div>
-                    <h4 className='font-medium text-gray-900'>Full Coverage</h4>
+                    <h4 className='font-medium text-gray-900'>SCDW (Full Coverage)</h4>
                     <p className='text-xs text-green-600'>€0 deductible</p>
                   </div>
                 </div>
@@ -1743,21 +1863,22 @@ export default function BookingModal({
                     {currentStep >= 2 && vehicle?.type !== 'transfer' && (
                       <div className='flex justify-between'>
                         <span className='text-sm text-gray-700'>
-                          CDW -{' '}
-                          {cdwCoverage === 'basic'
-                            ? 'Basic Coverage'
-                            : 'Full Coverage'}
+                          {cdwCoverage === 'none' && 'Insurance - No Coverage'}
+                          {cdwCoverage === 'basic' && 'CDW (Basic Coverage)'}
+                          {cdwCoverage === 'full' && 'SCDW (Full Coverage)'}
                         </span>
                         <span
                           className={`text-sm font-medium ${
-                            cdwCoverage === 'basic'
-                              ? 'text-green-600'
+                            cdwCoverage === 'none'
+                              ? 'text-red-600'
+                              : cdwCoverage === 'basic'
+                              ? 'text-gray-900'
                               : 'text-gray-900'
                           }`}
                         >
-                          {cdwCoverage === 'basic'
-                            ? 'Included'
-                            : `€${((insurancePricing?.fullCoveragePrice || 15) * rentalDays).toFixed(2)}`}
+                          {cdwCoverage === 'none' && '€0.00'}
+                          {cdwCoverage === 'basic' && `€${((insurancePricing?.dailyPrice || 0) * rentalDays).toFixed(2)}`}
+                          {cdwCoverage === 'full' && `€${((insurancePricing?.fullCoveragePrice || 15) * rentalDays).toFixed(2)}`}
                         </span>
                       </div>
                     )}

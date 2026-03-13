@@ -1,15 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { Shield, Settings, MapPin } from 'lucide-react';
+import { Shield, Settings, MapPin, Package } from 'lucide-react';
 import InsurancePricing from './InsurancePricing';
+import AddOnPricing from './AddOnPricing';
 import LocationsManagement from './LocationsManagement';
 
 export default function SettingsContent() {
-  const [activeTab, setActiveTab] = useState<'insurance' | 'locations' | 'general'>('insurance');
+  const [activeTab, setActiveTab] = useState<'insurance' | 'addons' | 'locations' | 'general'>('insurance');
 
   const tabs = [
     { id: 'insurance' as const, label: 'Insurance Pricing', icon: Shield },
+    { id: 'addons' as const, label: 'Add-on Pricing', icon: Package },
     { id: 'locations' as const, label: 'Locations', icon: MapPin },
     { id: 'general' as const, label: 'General Settings', icon: Settings },
   ];
@@ -47,6 +49,7 @@ export default function SettingsContent() {
 
         <div className='p-6'>
           {activeTab === 'insurance' && <InsurancePricing />}
+          {activeTab === 'addons' && <AddOnPricing />}
           {activeTab === 'locations' && <LocationsManagement />}
           {activeTab === 'general' && (
             <div className='text-center py-12'>
