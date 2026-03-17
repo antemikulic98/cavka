@@ -1,5 +1,8 @@
 import type { Metadata } from 'next';
 
+// Force dynamic rendering - search page uses URL params
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Search Available Cars | Find Your Perfect Rental Vehicle',
   description: 'Browse and search available rental cars in Croatia. Filter by location, dates, and vehicle type. Find the perfect car for your trip with HIT Rent a Car.',

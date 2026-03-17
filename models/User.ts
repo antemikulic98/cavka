@@ -42,11 +42,39 @@ const UserSchema = new Schema<IUser>(
   }
 );
 
-// Hash password before saving
+// Hash password before saving + validate complexity
 UserSchema.pre<IUser>('save', async function (next) {
   if (!this.isModified('password')) return next();
 
   try {
+    // SECURITY: Validate password complexity
+    const password = this.password;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>_\-+=]/.test(password);
+    const isLongEnough = password.length >= 8;
+
+    if (!isLongEnough) {
+      return next(new Error('Password must be at least 8 characters long'));
+    }
+
+    if (!hasUpperCase) {
+      return next(new Error('Password must contain at least one uppercase letter'));
+    }
+
+    if (!hasLowerCase) {
+      return next(new Error('Password must contain at least one lowercase letter'));
+    }
+
+    if (!hasNumber) {
+      return next(new Error('Password must contain at least one number'));
+    }
+
+    if (!hasSpecialChar) {
+      return next(new Error('Password must contain at least one special character (!@#$%^&*(),.?":{}|<>_-+=)'));
+    }
+
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
     next();

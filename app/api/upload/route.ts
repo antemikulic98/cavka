@@ -1,13 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadToSpaces } from '@/lib/spaces';
+import { getCurrentUser } from '@/lib/auth';
+import { rateLimit } from '@/lib/security';
 
 export async function POST(request: NextRequest) {
   try {
+    // SECURITY: Require authentication
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // SECURITY: Rate limiting - max 10 uploads per hour
+    const rateLimitResponse = await rateLimit({
+      windowMs: 60 * 60 * 1000, // 1 hour
+      maxRequests: 10,
+    })(request);
+
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
     const formData = await request.formData();
     const files = formData.getAll('images') as File[];
 
     if (!files || files.length === 0) {
       return NextResponse.json({ error: 'No files provided' }, { status: 400 });
+    }
+
+    // SECURITY: Limit number of files per request
+    if (files.length > 10) {
+      return NextResponse.json(
+        { error: 'Maximum 10 files per upload' },
+        { status: 400 }
+      );
     }
 
     // Validate file types
@@ -75,12 +104,16 @@ export async function POST(request: NextRequest) {
 
 // Handle OPTIONS request for CORS
 export async function OPTIONS() {
+  // SECURITY: Only allow requests from your app domain
+  const allowedOrigin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': allowedOrigin, // Changed from '*'
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Credentials': 'true',
     },
   });
 }

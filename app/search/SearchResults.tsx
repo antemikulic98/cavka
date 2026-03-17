@@ -62,16 +62,16 @@ export default function SearchResults() {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
-  // Get search criteria from URL
-  const pickupLocation = searchParams.get('pickupLocation') || '';
-  const returnLocation = searchParams.get('returnLocation') || '';
-  const pickupDate = searchParams.get('pickupDate') || '';
-  const returnDate = searchParams.get('returnDate') || '';
-  const pickupTime = searchParams.get('pickupTime') || '';
-  const returnTime = searchParams.get('returnTime') || '';
-  const vehicleType = searchParams.get('vehicleType') || 'car';
-  const vehicleId = searchParams.get('vehicleId') || '';
-  const expandSearch = searchParams.get('expandSearch') === 'true';
+  // Get search criteria from URL (with safety check for SSR)
+  const pickupLocation = searchParams?.get('pickupLocation') || '';
+  const returnLocation = searchParams?.get('returnLocation') || '';
+  const pickupDate = searchParams?.get('pickupDate') || '';
+  const returnDate = searchParams?.get('returnDate') || '';
+  const pickupTime = searchParams?.get('pickupTime') || '';
+  const returnTime = searchParams?.get('returnTime') || '';
+  const vehicleType = searchParams?.get('vehicleType') || 'car';
+  const vehicleId = searchParams?.get('vehicleId') || '';
+  const expandSearch = searchParams?.get('expandSearch') === 'true';
 
   // Fetch vehicles based on search criteria
   useEffect(() => {
@@ -241,37 +241,15 @@ export default function SearchResults() {
 
   // Get price for a specific date string (YYYY-MM-DD), checking custom pricing first
   const getPriceForDateString = (vehicle: Vehicle, dateStr: string): number => {
-    // Debug logging
-    const customDates = vehicle.customPricing?.map(p => p.date) || [];
-    console.log('🔍 getPriceForDate DEBUG:', {
-      vehicleName: `${vehicle.make} ${vehicle.model}`,
-      lookingForDate: dateStr,
-      hasCustomPricing: !!vehicle.customPricing,
-      customPricingCount: vehicle.customPricing?.length || 0,
-      customPricingDates: customDates,
-      customPricingFull: vehicle.customPricing, // Show full pricing objects
-      dailyRate: vehicle.dailyRate,
-    });
-
-    console.log('🎯 Exact date comparison:', {
-      lookingFor: dateStr,
-      availableDates: customDates,
-      matches: customDates.map(d => ({ date: d, matches: d === dateStr })),
-    });
-
     // Check if there's custom pricing for this date
     if (vehicle.customPricing && vehicle.customPricing.length > 0) {
       const customPrice = vehicle.customPricing.find(p => p.date === dateStr);
       if (customPrice) {
-        console.log('✅ Found custom price:', customPrice.price, 'for date:', dateStr);
         return customPrice.price;
-      } else {
-        console.log('❌ No custom price found for date:', dateStr);
       }
     }
 
     // Fall back to daily rate
-    console.log('📊 Using daily rate:', vehicle.dailyRate);
     return vehicle.dailyRate;
   };
 
@@ -574,6 +552,7 @@ export default function SearchResults() {
           pickupDate={pickupDate}
           returnDate={returnDate}
           pickupLocation={pickupLocation}
+          returnLocation={returnLocation}
           rentalDays={calculateRentalDays()}
           totalPrice={
             selectedVehicle

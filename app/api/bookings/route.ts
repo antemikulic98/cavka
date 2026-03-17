@@ -4,9 +4,16 @@ import Booking from '@/models/Booking';
 import Vehicle from '@/models/Vehicle';
 import { sendBookingConfirmation } from '@/lib/email';
 import { validators, logSecurityEvent, rateLimit } from '@/lib/security';
+import { csrfProtection } from '@/lib/csrf';
 
 // POST - Create a new booking
 export async function POST(request: NextRequest) {
+  // SECURITY: CSRF Protection
+  const csrfError = csrfProtection(request);
+  if (csrfError) {
+    return csrfError;
+  }
+
   // Security: Rate limiting - max 5 bookings per 15 minutes per IP
   const rateLimitResponse = await rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -154,49 +161,37 @@ export async function POST(request: NextRequest) {
       }));
     }
 
-    // Calculate pricing
-    const cdwCost = bookingData.cdwCoverage === 'full' ? 15 : 0;
+    // SECURITY: Calculate pricing SERVER-SIDE using pricing library
+    const { calculateBookingPrice } = await import('@/lib/pricing');
 
-    // Calculate add-ons cost
-    const addOnsPricing = {
-      additionalDriver: 4.75,
-      wifiHotspot: 4.6,
-      roadsideAssistance: 1.2,
-      tireProtection: 1.99,
-      personalAccident: 2.39,
-      theftProtection: 5.99,
-      extendedTheft: 10.95,
-      interiorProtection: 2.1,
-    };
+    const pricing = await calculateBookingPrice({
+      vehicleId: bookingData.vehicleId,
+      pickupDate: bookingData.pickupDate,
+      returnDate: bookingData.returnDate,
+      pickupLocation: bookingData.pickupLocation,
+      returnLocation: bookingData.returnLocation,
+      rentalDays: bookingData.rentalDays,
+      cdwCoverage: bookingData.cdwCoverage,
+      addOns: bookingData.addOns,
+    });
 
-    let addOnsCost = 0;
-    if (bookingData.addOns) {
-      for (const [addon, selected] of Object.entries(bookingData.addOns)) {
-        if (selected && addOnsPricing[addon as keyof typeof addOnsPricing]) {
-          addOnsCost += addOnsPricing[addon as keyof typeof addOnsPricing];
-        }
-      }
-    }
-
-    const totalDailyRate = vehicle.dailyRate + cdwCost + addOnsCost;
-    const totalCost = totalDailyRate * bookingData.rentalDays;
-
-    // Generate booking reference
+    // Generate booking reference (SECURITY: Use crypto for randomness)
+    const crypto = await import('crypto');
     const generateBookingReference = (): string => {
       const prefix = 'CAR';
-      const timestamp = Date.now().toString().slice(-6);
-      const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-      return `${prefix}${timestamp}${random}`;
+      const secureRandom = crypto.randomBytes(6).toString('hex').toUpperCase();
+      const timestamp = Date.now().toString(36).toUpperCase();
+      return `${prefix}${timestamp}${secureRandom}`;
     };
 
     // Create booking
     const booking = new Booking({
-      bookingReference: generateBookingReference(), // Explicitly set booking reference
+      bookingReference: generateBookingReference(),
       clientInfo: bookingData.clientInfo,
       vehicleId: bookingData.vehicleId,
       vehicleInfo: {
         make: vehicle.make,
-        model: vehicle.vehicleModel, // Use vehicleModel from schema
+        model: vehicle.vehicleModel,
         category: vehicle.category,
         dailyRate: vehicle.dailyRate,
         currency: vehicle.currency,
@@ -208,11 +203,11 @@ export async function POST(request: NextRequest) {
       cdwCoverage: bookingData.cdwCoverage || 'basic',
       addOns: bookingData.addOns || {},
       pricing: {
-        baseDailyRate: vehicle.dailyRate,
-        cdwCost,
-        addOnsCost,
-        totalDailyRate,
-        totalCost,
+        baseDailyRate: pricing.baseVehicleCost / bookingData.rentalDays,
+        cdwCost: pricing.cdwCost,
+        addOnsCost: pricing.addOnsCost,
+        totalDailyRate: pricing.totalBeforeDiscount / bookingData.rentalDays,
+        totalCost: pricing.totalAfterDiscount, // Use discounted price
       },
       // Overbooking fields
       isOverbooking,
@@ -289,6 +284,16 @@ export async function POST(request: NextRequest) {
 // GET - Retrieve bookings (by email and optional booking reference)
 export async function GET(request: NextRequest) {
   try {
+    // SECURITY: Rate limiting for GET requests
+    const rateLimitResponse = await rateLimit({
+      windowMs: 5 * 60 * 1000, // 5 minutes
+      maxRequests: 10, // Max 10 booking queries per 5 minutes
+    })(request);
+
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
     await connectMongoDB();
 
     const searchParams = request.nextUrl.searchParams;
@@ -302,7 +307,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let query: any = { 'clientInfo.email': email };
+    // SECURITY: Sanitize email input to prevent injection
+    const sanitizedEmail = validators.sanitizeString(email.toLowerCase().trim());
+
+    // Validate email format
+    if (!validators.email(sanitizedEmail)) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
+        { status: 400 }
+      );
+    }
+
+    let query: any = { 'clientInfo.email': sanitizedEmail };
 
     // If booking reference is provided, add it to query
     if (bookingReference) {

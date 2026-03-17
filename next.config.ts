@@ -1,15 +1,9 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // Ensure environment variables are available at runtime
-  env: {
-    MONGODB_URI: process.env.MONGODB_URI,
-    JWT_SECRET: process.env.JWT_SECRET,
-    DO_SPACES_REGION: process.env.DO_SPACES_REGION,
-    DO_SPACES_KEY: process.env.DO_SPACES_KEY,
-    DO_SPACES_SECRET: process.env.DO_SPACES_SECRET,
-    DO_SPACES_BUCKET: process.env.DO_SPACES_BUCKET,
-  },
+  // SECURITY: Server secrets are automatically kept server-side by Next.js
+  // Only variables prefixed with NEXT_PUBLIC_ are exposed to the browser
+  // Do NOT add server secrets (DB, JWT, API keys) to env config
 
   // SEO & Performance Optimizations
   images: {
@@ -31,6 +25,9 @@ const nextConfig: NextConfig = {
   // Enable server external packages for better performance
   serverExternalPackages: ['mongoose'],
 
+  // Skip static generation for dynamic routes that use search params
+  skipTrailingSlashRedirect: false,
+
   // Add webpack config for handling mongoose in production
   webpack: (config) => {
     config.externals.push({
@@ -47,12 +44,28 @@ const nextConfig: NextConfig = {
         source: '/:path*',
         headers: [
           {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://maps.googleapis.com",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "img-src 'self' data: https: blob:",
+              "font-src 'self' data: https://fonts.gstatic.com",
+              "connect-src 'self' https://api.stripe.com https://*.digitaloceanspaces.com",
+              "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+              "frame-ancestors 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "upgrade-insecure-requests",
+            ].join('; '),
+          },
+          {
             key: 'X-DNS-Prefetch-Control',
             value: 'on',
           },
           {
             key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
+            value: 'DENY',
           },
           {
             key: 'X-Content-Type-Options',
@@ -60,7 +73,15 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
+            value: 'strict-origin-when-cross-origin',
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=(), payment=(self)',
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
           },
         ],
       },

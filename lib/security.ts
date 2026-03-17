@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from './auth';
+import validator from 'validator';
 
 /**
  * Simple in-memory rate limiter (use Redis in production)
@@ -114,13 +115,16 @@ export async function requireAdmin(request: NextRequest) {
  */
 export const validators = {
   email: (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+    return validator.isEmail(email, {
+      allow_utf8_local_part: false,
+      require_tld: true,
+      allow_ip_domain: false,
+    });
   },
 
   phone: (phone: string): boolean => {
-    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-    return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''));
+    const cleaned = phone.replace(/[\s\-\(\)]/g, '');
+    return validator.isMobilePhone(cleaned, 'any', { strictMode: false });
   },
 
   bookingReference: (ref: string): boolean => {

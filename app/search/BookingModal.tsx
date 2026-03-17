@@ -11,6 +11,7 @@ import {
   Info,
   ChevronDown,
 } from 'lucide-react';
+import { sanitizeText } from '@/lib/xss';
 
 interface Vehicle {
   _id: string;
@@ -32,6 +33,13 @@ interface Vehicle {
     label?: string;
     type?: string;
   }[];
+  trips?: {
+    from: string;
+    to: string;
+    price: number;
+    duration?: string;
+    distance?: string;
+  }[];
   currency: string;
   status: string;
   location: string;
@@ -50,6 +58,7 @@ interface BookingModalProps {
   pickupDate: string;
   returnDate: string;
   pickupLocation: string;
+  returnLocation: string;
   rentalDays: number;
   totalPrice: string;
 }
@@ -61,6 +70,7 @@ export default function BookingModal({
   pickupDate,
   returnDate,
   pickupLocation,
+  returnLocation,
   rentalDays,
   totalPrice,
 }: BookingModalProps) {
@@ -111,10 +121,7 @@ export default function BookingModal({
   // Fetch insurance and add-on pricing based on vehicle's ACRISS code
   useEffect(() => {
     const fetchPricing = async () => {
-      console.log('Vehicle ACRISS Code:', vehicle?.acrissCode);
-
       if (!vehicle || !vehicle.acrissCode) {
-        console.log('No ACRISS code found, using default pricing');
         // If no ACRISS code, use default pricing
         setInsurancePricing({ dailyPrice: 0, fullCoveragePrice: 15 });
         setAddOnPricing({
@@ -381,6 +388,22 @@ export default function BookingModal({
     return getSelectedAddOns().reduce((total, addon) => total + addon.price, 0);
   };
 
+  // Get matching trip price for transfer vehicles
+  const getMatchingTrip = () => {
+    if (!vehicle || vehicle.type !== 'transfer' || !vehicle.trips || vehicle.trips.length === 0) {
+      return null;
+    }
+
+    // Find a trip that matches the pickup and return locations
+    const matchingTrip = vehicle.trips.find(
+      (trip) =>
+        trip.from.toLowerCase() === pickupLocation.toLowerCase() &&
+        trip.to.toLowerCase() === returnLocation.toLowerCase()
+    );
+
+    return matchingTrip || vehicle.trips[0]; // Return first trip if no match
+  };
+
   // Get price for a specific date string (YYYY-MM-DD), checking custom pricing first
   const getPriceForDateString = (dateStr: string): number => {
     if (!vehicle) return 0;
@@ -401,9 +424,10 @@ export default function BookingModal({
   const getBaseVehicleCost = (): number => {
     if (!vehicle || !pickupDate || !returnDate) return 0;
 
-    // For transfers, use simple daily rate
+    // For transfers, use trip price from matching trip
     if (vehicle.type === 'transfer') {
-      return vehicle.dailyRate;
+      const trip = getMatchingTrip();
+      return trip ? trip.price : vehicle.dailyRate;
     }
 
     // For rentals, sum up prices for each day
@@ -447,9 +471,9 @@ export default function BookingModal({
   };
 
   const getTotalDailyRate = () => {
-    // For transfer vehicles, only base cost (no insurance or add-ons)
+    // For transfer vehicles, return the trip price (not multiplied by days)
     if (vehicle?.type === 'transfer') {
-      return vehicle.dailyRate;
+      return getBaseVehicleCost(); // This returns trip.price
     }
     // For rental vehicles, get average daily rate including insurance and add-ons
     const baseVehicleCost = getBaseVehicleCost();
@@ -464,6 +488,11 @@ export default function BookingModal({
   };
 
   const getTotalPrice = () => {
+    // For transfers, don't multiply by rental days - it's a fixed trip price
+    if (vehicle?.type === 'transfer') {
+      return getTotalDailyRate(); // Returns the trip price
+    }
+    // For rentals, multiply daily rate by rental days
     return getTotalDailyRate() * rentalDays;
   };
 
@@ -529,7 +558,7 @@ export default function BookingModal({
       if (paymentMethod === 'pay_now') {
         const checkoutData = {
           vehicleId: vehicle._id,
-          vehicleName: `${vehicle.make} ${vehicle.model}`,
+          vehicleName: `${sanitizeText(vehicle.make)} ${sanitizeText(vehicle.model)}`,
           vehicleImage: vehicle.mainImage,
           vehicleType: vehicle?.type || 'rental',
           pickupDate,
@@ -1569,7 +1598,7 @@ export default function BookingModal({
               {/* Car Info - Right */}
               <div className='flex-1 min-w-0'>
                 <h1 className='text-base font-bold text-gray-900 mb-0.5 truncate'>
-                  {vehicle.make.toUpperCase()} {vehicle.model.toUpperCase()}
+                  {sanitizeText(vehicle.make).toUpperCase()} {sanitizeText(vehicle.model).toUpperCase()}
                 </h1>
                 <p className='text-xs text-gray-600 mb-1'>
                   {getCategoryDisplayName(vehicle.category)} • {vehicle.transmission}
@@ -1617,7 +1646,7 @@ export default function BookingModal({
               {/* Car Name - Top Left */}
               <div className='absolute top-8 left-8 text-white z-10'>
                 <h1 className='text-3xl font-bold mb-1'>
-                  {vehicle.make.toUpperCase()} {vehicle.model.toUpperCase()}
+                  {sanitizeText(vehicle.make).toUpperCase()} {sanitizeText(vehicle.model).toUpperCase()}
                   <span className='font-normal text-lg ml-2'>or similar</span>
                 </h1>
                 <p className='text-lg opacity-90'>
@@ -1831,7 +1860,7 @@ export default function BookingModal({
                     {/* Base Car Price */}
                     <div className='flex justify-between'>
                       <span className='text-sm text-gray-700'>
-                        {vehicle.make} {vehicle.model} ({rentalDays}{' '}
+                        {sanitizeText(vehicle.make)} {sanitizeText(vehicle.model)} ({rentalDays}{' '}
                         {rentalDays === 1 ? 'day' : 'days'})
                       </span>
                       <span className='text-sm font-medium text-gray-900'>
