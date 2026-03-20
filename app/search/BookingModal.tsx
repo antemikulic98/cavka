@@ -1798,7 +1798,7 @@ export default function BookingModal({
                   </div>
                   <div>
                     <span className='text-xl font-bold text-gray-800'>
-                      €{(getTotalDailyRate() * rentalDays).toFixed(2)} total
+                      €{(vehicle?.type === 'transfer' ? getTotalDailyRate() : getTotalDailyRate() * rentalDays).toFixed(2)} total
                     </span>
                   </div>
                 </div>
@@ -1860,8 +1860,7 @@ export default function BookingModal({
                     {/* Base Car Price */}
                     <div className='flex justify-between'>
                       <span className='text-sm text-gray-700'>
-                        {sanitizeText(vehicle.make)} {sanitizeText(vehicle.model)} ({rentalDays}{' '}
-                        {rentalDays === 1 ? 'day' : 'days'})
+                        {sanitizeText(vehicle.make)} {sanitizeText(vehicle.model)} {vehicle?.type === 'transfer' ? '(one-way trip)' : `(${rentalDays} ${rentalDays === 1 ? 'day' : 'days'})`}
                       </span>
                       <span className='text-sm font-medium text-gray-900'>
                         €{getBaseVehicleCost().toFixed(2)}
@@ -1935,7 +1934,7 @@ export default function BookingModal({
                         Total
                       </span>
                       <span className='text-base font-bold text-gray-900'>
-                        €{(getTotalDailyRate() * rentalDays).toFixed(2)}
+                        €{(vehicle?.type === 'transfer' ? getTotalDailyRate() : getTotalDailyRate() * rentalDays).toFixed(2)}
                       </span>
                     </div>
                   </div>
