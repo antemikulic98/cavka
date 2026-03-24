@@ -120,6 +120,7 @@ export default function VehicleDetails({
         body: JSON.stringify({
           trips: [...routes, newRoute],
         }),
+        credentials: 'include',
       });
 
       if (response.ok) {
@@ -147,6 +148,7 @@ export default function VehicleDetails({
         body: JSON.stringify({
           trips: updatedRoutes,
         }),
+        credentials: 'include',
       });
 
       if (response.ok) {

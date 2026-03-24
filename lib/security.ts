@@ -128,8 +128,8 @@ export const validators = {
   },
 
   bookingReference: (ref: string): boolean => {
-    // Format: CAR followed by digits and letters
-    const refRegex = /^CAR[0-9A-Z]{8,12}$/;
+    // Format: CAR or TRF followed by digits and letters
+    const refRegex = /^(CAR|TRF)[0-9A-Z]{6,16}$/;
     return refRegex.test(ref);
   },
 

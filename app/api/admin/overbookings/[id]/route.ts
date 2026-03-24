@@ -162,7 +162,7 @@ export async function PATCH(
         supplierContact: data.supplierContact,
         costFromSupplier: data.costFromSupplier,
         sellingPrice: data.sellingPrice,
-        currency: data.currency || booking.vehicleInfo.currency || 'EUR',
+        currency: data.currency || booking.vehicleInfo?.currency || 'EUR',
         status: data.status || 'arranged',
         notes: data.notes || '',
         arrangedBy: data.arrangedBy,

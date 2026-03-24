@@ -244,7 +244,7 @@ export default function AddCarModal({
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const response = await fetch('/api/settings/locations?activeOnly=true');
+        const response = await fetch('/api/settings/locations?activeOnly=true', { credentials: 'include' });
         const data = await response.json();
         if (data.success) {
           const allOptions = data.locations.map((loc: any) => ({
@@ -481,6 +481,7 @@ export default function AddCarModal({
           const uploadResponse = await fetch('/api/upload', {
             method: 'POST',
             body: formData,
+            credentials: 'include',
           });
 
           if (!uploadResponse.ok) {
@@ -532,6 +533,7 @@ export default function AddCarModal({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(vehicleData),
+        credentials: 'include',
       });
 
       if (response.ok) {
@@ -662,6 +664,7 @@ export default function AddCarModal({
           const uploadResponse = await fetch('/api/upload', {
             method: 'POST',
             body: formData,
+            credentials: 'include',
           });
 
           if (!uploadResponse.ok) {
@@ -704,6 +707,7 @@ export default function AddCarModal({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(vehicleData),
+        credentials: 'include',
       });
 
       if (response.ok) {

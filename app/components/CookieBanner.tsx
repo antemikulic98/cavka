@@ -29,13 +29,20 @@ export default function CookieBanner() {
       // Load saved preferences
       try {
         const saved = JSON.parse(cookieConsent);
-        setPreferences(saved);
-        // Initialize analytics if accepted
-        if (saved.analytics) {
-          initializeAnalytics();
+        if (saved && typeof saved === 'object' && 'necessary' in saved) {
+          setPreferences(saved);
+          if (saved.analytics) {
+            initializeAnalytics();
+          }
+        } else {
+          // Legacy cookie value (e.g. "accepted") - treat as accept all, re-save properly
+          Cookies.remove('cookie-consent');
+          setTimeout(() => setShowBanner(true), 1000);
         }
       } catch (e) {
-        console.error('Error parsing cookie preferences:', e);
+        // Invalid cookie value (not JSON) - remove and show banner again
+        Cookies.remove('cookie-consent');
+        setTimeout(() => setShowBanner(true), 1000);
       }
     }
   }, []);

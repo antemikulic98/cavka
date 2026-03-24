@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
 
       // Coverage & Add-ons
       cdwCoverage: metadata.cdwCoverage || 'none',
-      addOns: metadata.addOns ? JSON.parse(metadata.addOns) : {},
+      addOns: (() => { try { return metadata.addOns ? JSON.parse(metadata.addOns) : {}; } catch { return {}; } })(),
 
       // Pricing
       pricing: {

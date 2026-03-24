@@ -252,7 +252,7 @@ export default function EditVehicleModal({
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const response = await fetch('/api/settings/locations?activeOnly=true');
+        const response = await fetch('/api/settings/locations?activeOnly=true', { credentials: 'include' });
         const data = await response.json();
         if (data.success) {
           const allOptions = data.locations.map((loc: any) => ({
@@ -490,6 +490,7 @@ export default function EditVehicleModal({
           const uploadResponse = await fetch('/api/upload', {
             method: 'POST',
             body: formDataImages,
+            credentials: 'include',
           });
 
           if (!uploadResponse.ok) {

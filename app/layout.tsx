@@ -298,6 +298,25 @@ export default function RootLayout({
       >
         {children}
         <CookieBanner />
+        {/* Unregister stale service workers that break font/image loading */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                  registrations.forEach(function(registration) {
+                    registration.unregister();
+                  });
+                });
+                if ('caches' in window) {
+                  caches.keys().then(function(names) {
+                    names.forEach(function(name) { caches.delete(name); });
+                  });
+                }
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );

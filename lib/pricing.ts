@@ -132,7 +132,7 @@ async function calculateVehicleCost(
       // Return first trip price (matching logic can be added later)
       return vehicle.trips[0].price;
     }
-    return vehicle.dailyRate; // Fallback
+    return vehicle.dailyRate || 0; // Fallback - dailyRate may be undefined for transfers
   }
 
   // For rental vehicles, calculate with custom pricing
