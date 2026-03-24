@@ -75,9 +75,9 @@ export default function BookingLookup() {
     setError('');
 
     try {
-      const params = new URLSearchParams({ email: email.trim() });
+      const params = new URLSearchParams({ email: email.trim().toLowerCase() });
       if (bookingReference.trim()) {
-        params.append('reference', bookingReference.trim());
+        params.append('reference', bookingReference.trim().toUpperCase());
       }
 
       const response = await fetch(`/api/bookings?${params}`);

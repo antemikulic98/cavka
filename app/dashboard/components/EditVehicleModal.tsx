@@ -12,12 +12,14 @@ import {
   Image as ImageIcon,
   Check,
   Edit,
+  Plus,
 } from 'lucide-react';
 import CustomSelect from '@/app/components/CustomSelect';
 import ColorSelect from '@/app/components/ColorSelect';
 
 interface Vehicle {
   _id: string;
+  type?: 'rental' | 'transfer';
   make: string;
   model: string;
   year: number;
@@ -38,6 +40,13 @@ interface Vehicle {
   description?: string;
   images?: string[];
   mainImage?: string;
+  trips?: {
+    from: string;
+    to: string;
+    price: number;
+    duration?: string;
+    distance?: string;
+  }[];
 }
 
 interface EditVehicleModalProps {
@@ -71,6 +80,15 @@ interface CarFormData {
   // Pricing
   dailyRate: number;
   currency: string;
+
+  // Transfer trips
+  trips: {
+    from: string;
+    to: string;
+    price: number;
+    duration?: string;
+    distance?: string;
+  }[];
 
   // Location & Description
   location: string;
@@ -115,32 +133,51 @@ const ACRISS_FUEL_AIRCON = [
 
 // Convert arrays to select options format
 const makeOptions = [
+  'Acura',
+  'Alfa Romeo',
   'Audi',
   'BMW',
-  'Mercedes-Benz',
-  'Volkswagen',
-  'Toyota',
-  'Honda',
-  'Nissan',
-  'Ford',
+  'Buick',
+  'Cadillac',
   'Chevrolet',
-  'Hyundai',
-  'Kia',
-  'Mazda',
-  'Subaru',
-  'Volvo',
-  'Peugeot',
-  'Renault',
-  'Opel',
-  'Skoda',
-  'Seat',
+  'Chrysler',
+  'Citroën',
+  'Dacia',
+  'Dodge',
+  'DS',
   'Fiat',
-  'Alfa Romeo',
-  'Jeep',
-  'Land Rover',
+  'Ford',
+  'Genesis',
+  'GMC',
+  'Honda',
+  'Hyundai',
+  'Infiniti',
   'Jaguar',
+  'Jeep',
+  'Kia',
+  'Land Rover',
+  'Lexus',
+  'Lincoln',
+  'Mazda',
+  'Mercedes-Benz',
+  'MG',
+  'Mini',
+  'Mitsubishi',
+  'Nissan',
+  'Opel',
+  'Peugeot',
   'Porsche',
+  'Ram',
+  'Renault',
+  'Seat',
+  'Skoda',
+  'Smart',
+  'Subaru',
+  'Suzuki',
   'Tesla',
+  'Toyota',
+  'Volkswagen',
+  'Volvo',
   'Other',
 ].map((make) => ({ value: make, label: make }));
 
@@ -171,17 +208,7 @@ const currencyOptions = [
   { value: 'HRK', label: 'HRK (kn)' },
 ];
 
-const locationOptions = [
-  { value: 'Split Airport', label: 'Split Airport' },
-  { value: 'Split Downtown', label: 'Split Downtown' },
-  { value: 'Zagreb Airport', label: 'Zagreb Airport' },
-  { value: 'Zagreb Downtown', label: 'Zagreb Downtown' },
-  { value: 'Rijeka', label: 'Rijeka' },
-  { value: 'Zadar Downtown', label: 'Zadar Downtown' },
-  { value: 'Zadar Airport', label: 'Zadar Airport' },
-  { value: 'Dubrovnik Airport', label: 'Dubrovnik Airport' },
-  { value: 'Dubrovnik Downtown', label: 'Dubrovnik Downtown' },
-];
+// locationOptions will be fetched dynamically from the API inside the component
 
 // Generate year options
 const currentYear = new Date().getFullYear();
@@ -218,6 +245,36 @@ export default function EditVehicleModal({
   const [loading, setLoading] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [locationOptions, setLocationOptions] = useState<{ value: string; label: string }[]>([]);
+  const [transferLocationOptions, setTransferLocationOptions] = useState<{ value: string; label: string }[]>([]);
+
+  // Fetch locations from settings API
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const response = await fetch('/api/settings/locations?activeOnly=true');
+        const data = await response.json();
+        if (data.success) {
+          const allOptions = data.locations.map((loc: any) => ({
+            value: loc.name,
+            label: loc.name,
+          }));
+          setLocationOptions(allOptions);
+
+          const transferOptions = data.locations
+            .filter((loc: any) => loc.serviceType === 'transfer' || loc.serviceType === 'both')
+            .map((loc: any) => ({
+              value: loc.name,
+              label: loc.name,
+            }));
+          setTransferLocationOptions(transferOptions);
+        }
+      } catch (error) {
+        console.error('Error fetching locations:', error);
+      }
+    };
+    fetchLocations();
+  }, []);
   const [formData, setFormData] = useState<CarFormData>({
     make: '',
     model: '',
@@ -235,7 +292,8 @@ export default function EditVehicleModal({
     features: [],
     dailyRate: 50,
     currency: 'EUR',
-    location: 'Zagreb Downtown',
+    trips: [],
+    location: '',
     description: '',
   });
 
@@ -261,6 +319,7 @@ export default function EditVehicleModal({
         features: vehicle.features,
         dailyRate: vehicle.dailyRate,
         currency: vehicle.currency,
+        trips: vehicle.trips || [],
         location: vehicle.location,
         description: vehicle.description || '',
       });
@@ -308,7 +367,7 @@ export default function EditVehicleModal({
         if (!formData.model) errors.push('Model is required');
         if (!formData.year) errors.push('Year is required');
         if (!formData.color) errors.push('Color is required');
-        if (!formData.licensePlate) errors.push('License plate is required');
+        if (vehicle.type !== 'transfer' && !formData.licensePlate) errors.push('License plate is required for rental vehicles');
         break;
 
       case 2:
@@ -374,7 +433,7 @@ export default function EditVehicleModal({
     if (!formData.model) errors.push('Model is required');
     if (!formData.year) errors.push('Year is required');
     if (!formData.color) errors.push('Color is required');
-    if (!formData.licensePlate) errors.push('License plate is required');
+    if (vehicle.type !== 'transfer' && !formData.licensePlate) errors.push('License plate is required for rental vehicles');
 
     // ACRISS Classification validation
     if (!formData.category) errors.push('Category is required');
@@ -463,7 +522,7 @@ export default function EditVehicleModal({
         acrissCode: generateAcrissCode(),
         ...(imageUrls.length > 0 && {
           images: [...(vehicle.images || []), ...imageUrls],
-          mainImage: imageUrls[0] || vehicle.mainImage,
+          mainImage: vehicle.mainImage || imageUrls[0],
         }),
       };
 
@@ -976,6 +1035,120 @@ export default function EditVehicleModal({
                 searchable={true}
               />
             </div>
+
+            {/* Transfer Routes - only for transfer vehicles */}
+            {vehicle.type === 'transfer' && (
+              <div>
+                <div className='flex items-center justify-between mb-3'>
+                  <label className='block text-sm font-semibold text-gray-900'>
+                    Transfer Routes & Pricing
+                  </label>
+                  <button
+                    type='button'
+                    onClick={() => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        trips: [...prev.trips, { from: '', to: '', price: 0, duration: '', distance: '' }],
+                      }));
+                    }}
+                    className='flex items-center px-3 py-1 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm'
+                  >
+                    <Plus className='h-4 w-4 mr-1' />
+                    Add Route
+                  </button>
+                </div>
+
+                {formData.trips.length === 0 ? (
+                  <div className='border-2 border-dashed border-gray-300 rounded-lg p-6 text-center'>
+                    <p className='text-gray-500 text-sm'>
+                      No routes added yet. Click &quot;Add Route&quot; to define transfer routes and prices.
+                    </p>
+                  </div>
+                ) : (
+                  <div className='space-y-3'>
+                    {formData.trips.map((trip, index) => (
+                      <div key={index} className='border border-gray-300 rounded-lg p-4 bg-gray-50'>
+                        <div className='flex items-start justify-between mb-3'>
+                          <span className='text-sm font-medium text-gray-700'>Route #{index + 1}</span>
+                          <button
+                            type='button'
+                            onClick={() => {
+                              setFormData((prev) => ({
+                                ...prev,
+                                trips: prev.trips.filter((_, i) => i !== index),
+                              }));
+                            }}
+                            className='text-red-600 hover:text-red-700'
+                          >
+                            <X className='h-4 w-4' />
+                          </button>
+                        </div>
+                        <div className='grid grid-cols-2 gap-3'>
+                          <div>
+                            <label className='block text-xs font-medium text-gray-600 mb-1'>From *</label>
+                            <CustomSelect
+                              options={transferLocationOptions}
+                              value={trip.from}
+                              onChange={(value) => {
+                                const newTrips = [...formData.trips];
+                                newTrips[index].from = String(value);
+                                setFormData((prev) => ({ ...prev, trips: newTrips }));
+                              }}
+                              placeholder='Select location'
+                              searchable={true}
+                            />
+                          </div>
+                          <div>
+                            <label className='block text-xs font-medium text-gray-600 mb-1'>To *</label>
+                            <CustomSelect
+                              options={transferLocationOptions}
+                              value={trip.to}
+                              onChange={(value) => {
+                                const newTrips = [...formData.trips];
+                                newTrips[index].to = String(value);
+                                setFormData((prev) => ({ ...prev, trips: newTrips }));
+                              }}
+                              placeholder='Select location'
+                              searchable={true}
+                            />
+                          </div>
+                          <div>
+                            <label className='block text-xs font-medium text-gray-600 mb-1'>Price (€) *</label>
+                            <input
+                              type='number'
+                              value={trip.price === 0 ? '' : trip.price}
+                              onChange={(e) => {
+                                const newTrips = [...formData.trips];
+                                newTrips[index].price = parseFloat(e.target.value) || 0;
+                                setFormData((prev) => ({ ...prev, trips: newTrips }));
+                              }}
+                              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
+                              placeholder='150'
+                              min='0'
+                              step='0.01'
+                            />
+                          </div>
+                          <div>
+                            <label className='block text-xs font-medium text-gray-600 mb-1'>Duration</label>
+                            <input
+                              type='text'
+                              value={trip.duration || ''}
+                              onChange={(e) => {
+                                const newTrips = [...formData.trips];
+                                newTrips[index].duration = e.target.value;
+                                setFormData((prev) => ({ ...prev, trips: newTrips }));
+                              }}
+                              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 text-sm'
+                              placeholder='e.g., 2 hours'
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div>
               <label className='block text-sm font-semibold text-gray-900 mb-2'>

@@ -81,6 +81,9 @@ export default function SearchBar({
   }, []);
 
   const handleSearch = () => {
+    if (!pickupLocation || !pickupDate || !returnDate) {
+      return;
+    }
     const searchParams = new URLSearchParams();
     searchParams.set('pickupLocation', pickupLocation);
     if (showReturnLocation && returnLocation) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
 import Booking from '@/models/Booking';
+import BlockedDate from '@/models/BlockedDate';
 import Vehicle from '@/models/Vehicle';
 
 // GET - Check vehicle availability for specific dates
@@ -69,6 +70,21 @@ export async function GET(request: NextRequest) {
     const vehiclesWithAvailability = [];
 
     for (const vehicle of vehicles) {
+      // Check for blocked dates that overlap with the requested period
+      const blockedDateConflicts = await BlockedDate.find({
+        vehicleId: vehicle._id,
+        $or: [
+          { startDate: { $lte: pickup }, endDate: { $gte: pickup } },
+          { startDate: { $lte: returnD }, endDate: { $gte: returnD } },
+          { startDate: { $gte: pickup }, endDate: { $lte: returnD } },
+        ],
+      });
+
+      // Skip vehicles that have blocked dates in the requested period
+      if (blockedDateConflicts.length > 0) {
+        continue;
+      }
+
       const conflictingBookings = await Booking.find({
         vehicleId: vehicle._id,
         status: { $in: ['confirmed', 'in_progress'] },

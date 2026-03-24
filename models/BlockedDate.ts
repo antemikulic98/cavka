@@ -48,7 +48,7 @@ BlockedDateSchema.index({ vehicleId: 1, startDate: 1, endDate: 1 });
 // Validation: endDate must be >= startDate
 BlockedDateSchema.pre('save', function (next) {
   if (this.endDate < this.startDate) {
-    next(new Error('End date must be greater than or equal to start date'));
+    return next(new Error('End date must be greater than or equal to start date'));
   }
   next();
 });

@@ -150,6 +150,7 @@ export async function POST(request: NextRequest) {
         customerEmail,
         rentalDays: rentalDays?.toString() || '1',
         cdwCoverage: cdwCoverage || 'none',
+        addOns: addOns ? JSON.stringify(addOns) : '{}',
       },
     });
 

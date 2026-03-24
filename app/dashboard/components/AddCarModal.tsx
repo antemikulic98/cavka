@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Upload,
@@ -177,17 +177,7 @@ const currencyOptions = [
   { value: 'HRK', label: 'HRK (kn)' },
 ];
 
-const locationOptions = [
-  { value: 'Split Airport', label: 'Split Airport' },
-  { value: 'Split Downtown', label: 'Split Downtown' },
-  { value: 'Zagreb Airport', label: 'Zagreb Airport' },
-  { value: 'Zagreb Downtown', label: 'Zagreb Downtown' },
-  { value: 'Rijeka', label: 'Rijeka' },
-  { value: 'Zadar Downtown', label: 'Zadar Downtown' },
-  { value: 'Zadar Airport', label: 'Zadar Airport' },
-  { value: 'Dubrovnik Airport', label: 'Dubrovnik Airport' },
-  { value: 'Dubrovnik Downtown', label: 'Dubrovnik Downtown' },
-];
+// locationOptions will be fetched dynamically from the API inside the component
 
 // Generate year options
 const currentYear = new Date().getFullYear();
@@ -223,6 +213,8 @@ export default function AddCarModal({
   const [loading, setLoading] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [locationOptions, setLocationOptions] = useState<{ value: string; label: string }[]>([]);
+  const [transferLocationOptions, setTransferLocationOptions] = useState<{ value: string; label: string }[]>([]);
   const [formData, setFormData] = useState<CarFormData>({
     type: 'rental', // Default to rental
     make: '',
@@ -247,6 +239,34 @@ export default function AddCarModal({
   });
 
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
+
+  // Fetch locations from settings API
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const response = await fetch('/api/settings/locations?activeOnly=true');
+        const data = await response.json();
+        if (data.success) {
+          const allOptions = data.locations.map((loc: any) => ({
+            value: loc.name,
+            label: loc.name,
+          }));
+          setLocationOptions(allOptions);
+
+          const transferOptions = data.locations
+            .filter((loc: any) => loc.serviceType === 'transfer' || loc.serviceType === 'both')
+            .map((loc: any) => ({
+              value: loc.name,
+              label: loc.name,
+            }));
+          setTransferLocationOptions(transferOptions);
+        }
+      } catch (error) {
+        console.error('Error fetching locations:', error);
+      }
+    };
+    fetchLocations();
+  }, []);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -1268,14 +1288,9 @@ export default function AddCarModal({
                   <button
                     type='button'
                     onClick={() => {
-                      const newTrips = [
-                        ...formData.trips,
-                        { from: '', to: '', price: 0, duration: '', distance: '' },
-                      ];
-                      console.log('➕ Adding route, new trips array:', newTrips);
                       setFormData((prev) => ({
                         ...prev,
-                        trips: newTrips,
+                        trips: [...prev.trips, { from: '', to: '', price: 0, duration: '', distance: '' }],
                       }));
                     }}
                     className='flex items-center px-3 py-1 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm'
@@ -1322,7 +1337,7 @@ export default function AddCarModal({
                               From *
                             </label>
                             <CustomSelect
-                              options={locationOptions}
+                              options={transferLocationOptions}
                               value={trip.from}
                               onChange={(value) => {
                                 const newTrips = [...formData.trips];
@@ -1339,7 +1354,7 @@ export default function AddCarModal({
                               To *
                             </label>
                             <CustomSelect
-                              options={locationOptions}
+                              options={transferLocationOptions}
                               value={trip.to}
                               onChange={(value) => {
                                 const newTrips = [...formData.trips];

@@ -96,6 +96,11 @@ export default function SearchResults() {
           apiSearchParams.set('type', type);
         }
 
+        // Add location filter
+        if (pickupLocation) {
+          apiSearchParams.set('location', pickupLocation);
+        }
+
         // Use availability endpoint to check vehicle availability
         const response = await fetch(
           `/api/vehicles/availability?${apiSearchParams.toString()}`
@@ -127,7 +132,7 @@ export default function SearchResults() {
     };
 
     fetchVehicles();
-  }, [pickupLocation, pickupDate, returnDate, vehicleType, vehicleId]);
+  }, [pickupLocation, returnLocation, pickupDate, returnDate, vehicleType, vehicleId]);
 
   const getCategoryDisplayName = (category: string) => {
     const categoryMap: { [key: string]: string } = {

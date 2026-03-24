@@ -434,12 +434,12 @@ export async function sendBookingConfirmation(
     // Send email to admin
     await transporter.sendMail({
       from: `"HIT Rent System" <${process.env.GMAIL_USER}>`,
-      to: 'booking@hit-rent.com',
+      to: process.env.ADMIN_EMAIL || 'booking@hit-rent.com',
       subject: `New Booking: ${bookingData.vehicleName} - ${bookingData.customerName}`,
       html: generateAdminEmailHTML(bookingData),
     });
 
-    console.log('✅ Admin notification email sent to: booking@hit-rent.com');
+    console.log('✅ Admin notification email sent to:', process.env.ADMIN_EMAIL || 'booking@hit-rent.com');
   } catch (error) {
     console.error('❌ Error sending booking confirmation emails:', error);
     throw error;

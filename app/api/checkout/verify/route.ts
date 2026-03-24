@@ -111,11 +111,13 @@ export async function POST(request: NextRequest) {
       console.log('Conflicting bookings:', conflictingBookings.map(b => b.bookingReference));
     }
 
-    const discountedAmount = Math.round(parseFloat(metadata.discountedAmount) * 100) / 100;
-    const originalAmount = Math.round(parseFloat(metadata.totalAmount) * 100) / 100;
-    const discount = Math.round(parseFloat(metadata.discount) * 100) / 100;
+    const discountedAmount = Math.round(parseFloat(metadata.totalAfterDiscount || metadata.discountedAmount || '0') * 100) / 100;
+    const originalAmount = Math.round(parseFloat(metadata.totalBeforeDiscount || metadata.totalAmount || '0') * 100) / 100;
+    const discount = Math.round(parseFloat(metadata.discountAmount || metadata.discount || '0') * 100) / 100;
+    const cdwCost = Math.round(parseFloat(metadata.cdwCost || '0') * 100) / 100;
+    const addOnsCost = Math.round(parseFloat(metadata.addOnsCost || '0') * 100) / 100;
     const rentalDays = parseInt(metadata.rentalDays || '1');
-    const dailyRate = Math.round((discountedAmount / rentalDays) * 100) / 100;
+    const dailyRate = Math.round((discountedAmount / Math.max(rentalDays, 1)) * 100) / 100;
 
     // Generate booking reference
     const generateBookingReference = (): string => {
@@ -176,11 +178,15 @@ export async function POST(request: NextRequest) {
       returnLocation: metadata.returnLocation || metadata.pickupLocation,
       rentalDays: rentalDays,
 
+      // Coverage & Add-ons
+      cdwCoverage: metadata.cdwCoverage || 'none',
+      addOns: metadata.addOns ? JSON.parse(metadata.addOns) : {},
+
       // Pricing
       pricing: {
         baseDailyRate: dailyRate,
-        cdwCost: 0,
-        addOnsCost: 0,
+        cdwCost: cdwCost,
+        addOnsCost: addOnsCost,
         totalDailyRate: dailyRate,
         totalCost: discountedAmount,
         discount: discount,
@@ -210,7 +216,7 @@ export async function POST(request: NextRequest) {
     try {
       const vehicleName = `${vehicle.make} ${vehicle.vehicleModel}`;
       await sendBookingConfirmation({
-        bookingId: booking._id.toString(),
+        bookingId: booking.bookingReference,
         customerName: bookingData.customerName,
         customerEmail: bookingData.customerEmail,
         customerPhone: fullPhoneNumber,

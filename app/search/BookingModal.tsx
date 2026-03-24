@@ -564,7 +564,7 @@ export default function BookingModal({
           pickupDate,
           returnDate,
           pickupLocation,
-          returnLocation: pickupLocation, // Will be updated if different
+          returnLocation: returnLocation || pickupLocation,
           totalAmount: getTotalPrice(),
           discountedAmount: getDiscountedPrice(),
           discount: getDiscountAmount(),
@@ -572,6 +572,8 @@ export default function BookingModal({
           customerName: `${clientInfo.firstName} ${clientInfo.lastName}`,
           customerPhone: `${clientInfo.countryCode}${clientInfo.phoneNumber}`,
           rentalDays,
+          cdwCoverage,
+          addOns,
         };
 
         const response = await fetch('/api/checkout', {
@@ -600,9 +602,11 @@ export default function BookingModal({
         pickupDate,
         returnDate,
         pickupLocation,
+        returnLocation: returnLocation || pickupLocation,
         rentalDays,
         cdwCoverage,
         addOns,
+        paymentMethod: 'pay_later',
       };
 
       const response = await fetch('/api/bookings', {
@@ -1726,20 +1730,22 @@ export default function BookingModal({
                   </span>
                 </div>
               </div>
-              <div className='flex justify-center'>
-                <div className='flex items-center'>
-                  <svg
-                    className='h-4 w-4 mr-2 text-white'
-                    fill='currentColor'
-                    viewBox='0 0 24 24'
-                  >
-                    <path d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7 7h1c.55 0 1 .45 1 1s-.45 1-1 1H7c-.55 0-1-.45-1-1s.45-1 1-1zm4 3c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm6 0h-3c-.55 0-1-.45-1-1s.45-1 1-1h3c.55 0 1 .45 1 1s-.45 1-1 1zm0 3H7c-.55 0-1-.45-1-1s.45-1 1-1h10c.55 0 1 .45 1 1s-.45 1-1 1zm0 3H7c-.55 0-1-.45-1-1s.45-1 1-1h10c.55 0 1 .45 1 1s-.45 1-1 1z' />
-                  </svg>
-                  <span className='text-sm font-medium text-white'>
-                    Minimum age of the youngest driver: 21
-                  </span>
+              {vehicle.type !== 'transfer' && (
+                <div className='flex justify-center'>
+                  <div className='flex items-center'>
+                    <svg
+                      className='h-4 w-4 mr-2 text-white'
+                      fill='currentColor'
+                      viewBox='0 0 24 24'
+                    >
+                      <path d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7 7h1c.55 0 1 .45 1 1s-.45 1-1 1H7c-.55 0-1-.45-1-1s.45-1 1-1zm4 3c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm6 0h-3c-.55 0-1-.45-1-1s.45-1 1-1h3c.55 0 1 .45 1 1s-.45 1-1 1zm0 3H7c-.55 0-1-.45-1-1s.45-1 1-1h10c.55 0 1 .45 1 1s-.45 1-1 1zm0 3H7c-.55 0-1-.45-1-1s.45-1 1-1h10c.55 0 1 .45 1 1s-.45 1-1 1z' />
+                    </svg>
+                    <span className='text-sm font-medium text-white'>
+                      Minimum age of the youngest driver: 21
+                    </span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -1765,12 +1771,16 @@ export default function BookingModal({
                 <div className='flex items-center text-sm text-gray-600'>
                   <Calendar className='h-4 w-4 mr-2' />
                   <span>
-                    {formatDate(pickupDate)} - {formatDate(returnDate)}
+                    {formatDate(pickupDate)}{vehicle.type !== 'transfer' && <> - {formatDate(returnDate)}</>}
                   </span>
-                  <span className='mx-2'>•</span>
-                  <span>
-                    {rentalDays} {rentalDays === 1 ? 'day' : 'days'}
-                  </span>
+                  {vehicle.type !== 'transfer' && (
+                    <>
+                      <span className='mx-2'>•</span>
+                      <span>
+                        {rentalDays} {rentalDays === 1 ? 'day' : 'days'}
+                      </span>
+                    </>
+                  )}
                 </div>
               )}
             </div>

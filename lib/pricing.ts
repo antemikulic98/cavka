@@ -6,6 +6,8 @@
  */
 
 import Vehicle from '@/models/Vehicle';
+import InsurancePricing from '@/models/InsurancePricing';
+import AddOnPricing from '@/models/AddOnPricing';
 import mongoose from 'mongoose';
 
 export interface PricingInput {
@@ -100,11 +102,11 @@ export async function calculateBookingPrice(
     discountAmount,
     totalAfterDiscount,
     priceBreakdown: {
-      vehicleCostPerDay: vehicle.type !== 'transfer'
+      vehicleCostPerDay: vehicle.type !== 'transfer' && input.rentalDays > 0
         ? baseVehicleCost / input.rentalDays
         : undefined,
       vehicleTotalCost: baseVehicleCost,
-      cdwCostPerDay: vehicle.type !== 'transfer' && cdwCost > 0
+      cdwCostPerDay: vehicle.type !== 'transfer' && cdwCost > 0 && input.rentalDays > 0
         ? cdwCost / input.rentalDays
         : undefined,
       cdwTotalCost: cdwCost,
@@ -167,12 +169,18 @@ async function calculateCDWCost(
     return 0;
   }
 
-  // Fetch insurance pricing from database (or use defaults)
-  // TODO: Create InsurancePricing model and fetch from DB
-  const insurancePricing = {
-    dailyPrice: 5, // Basic CDW
-    fullCoveragePrice: 10, // Full coverage
-  };
+  // Fetch insurance pricing from database based on vehicle's ACRISS code
+  const acrissCode = vehicle.acrissCode || '';
+  let insurancePricing = { dailyPrice: 5, fullCoveragePrice: 10 };
+  if (acrissCode) {
+    const dbPricing = await InsurancePricing.findOne({ acrissCode });
+    if (dbPricing) {
+      insurancePricing = {
+        dailyPrice: dbPricing.dailyPrice,
+        fullCoveragePrice: dbPricing.fullCoveragePrice || 10,
+      };
+    }
+  }
 
   const dailyRate =
     coverage === 'basic'
@@ -196,18 +204,33 @@ async function calculateAddOnsCost(
     return { total: 0, details: [] };
   }
 
-  // Fetch add-on pricing from database (or use defaults)
-  // TODO: Create AddOnPricing model and fetch from DB
-  const addOnsPricing: Record<string, number> = {
+  // Fetch add-on pricing from database based on vehicle's ACRISS code
+  const addOnAcrissCode = vehicle.acrissCode || '';
+  let addOnsPricing: Record<string, number> = {
     additionalDriver: 4.75,
     wifiHotspot: 4.6,
     roadsideAssistance: 1.2,
-    tireProtection: 2.5,
-    personalAccident: 3.0,
-    theftProtection: 4.0,
-    extendedTheft: 5.5,
-    interiorProtection: 3.5,
+    tireProtection: 1.99,
+    personalAccident: 2.39,
+    theftProtection: 5.99,
+    extendedTheft: 10.95,
+    interiorProtection: 2.1,
   };
+  if (addOnAcrissCode) {
+    const dbAddOns = await AddOnPricing.findOne({ acrissCode: addOnAcrissCode });
+    if (dbAddOns) {
+      addOnsPricing = {
+        additionalDriver: dbAddOns.additionalDriver ?? 4.75,
+        wifiHotspot: dbAddOns.wifiHotspot ?? 4.6,
+        roadsideAssistance: dbAddOns.roadsideAssistance ?? 1.2,
+        tireProtection: dbAddOns.tireProtection ?? 1.99,
+        personalAccident: dbAddOns.personalAccident ?? 2.39,
+        theftProtection: dbAddOns.theftProtection ?? 5.99,
+        extendedTheft: dbAddOns.extendedTheft ?? 10.95,
+        interiorProtection: dbAddOns.interiorProtection ?? 2.1,
+      };
+    }
+  }
 
   const details: Array<{ name: string; price: number }> = [];
   let totalPerDay = 0;

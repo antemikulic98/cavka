@@ -44,8 +44,8 @@ const BookingSchema = new mongoose.Schema({
   // Coverage & Add-ons
   cdwCoverage: {
     type: String,
-    enum: ['basic', 'full'],
-    default: 'basic',
+    enum: ['none', 'basic', 'full'],
+    default: 'none',
   },
   addOns: {
     additionalDriver: { type: Boolean, default: false },
@@ -137,7 +137,7 @@ function generateBookingReference(): string {
 }
 
 // Indexes for performance
-BookingSchema.index({ email: 1, bookingReference: 1 });
+BookingSchema.index({ 'clientInfo.email': 1, bookingReference: 1 });
 BookingSchema.index({ status: 1 });
 BookingSchema.index({ pickupDate: 1 });
 BookingSchema.index({ createdAt: -1 });

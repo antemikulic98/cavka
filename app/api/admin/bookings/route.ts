@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
+import { getCurrentUser } from '@/lib/auth';
 import Booking from '@/models/Booking';
 
 // GET - Retrieve all bookings (admin only)
@@ -7,8 +8,10 @@ export async function GET(request: NextRequest) {
   try {
     await connectMongoDB();
 
-    // In production, you should add proper authentication here
-    // For now, we'll assume this is only accessible to admin users
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get('status');
@@ -55,6 +58,10 @@ export async function GET(request: NextRequest) {
       addOns: booking.addOns,
       pricing: booking.pricing,
       status: booking.status,
+      isOverbooking: booking.isOverbooking,
+      overbookingStatus: booking.overbookingStatus,
+      paymentMethod: booking.paymentMethod,
+      paymentStatus: booking.paymentStatus,
       createdAt: booking.createdAt,
       updatedAt: booking.updatedAt,
     }));
@@ -85,6 +92,11 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     await connectMongoDB();
+
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const { bookingIds, updates } = await request.json();
 
