@@ -273,8 +273,10 @@ export default function EditVehicleModal({
         console.error('Error fetching locations:', error);
       }
     };
-    fetchLocations();
-  }, []);
+    if (isOpen) {
+      fetchLocations();
+    }
+  }, [isOpen]);
   const [formData, setFormData] = useState<CarFormData>({
     make: '',
     model: '',

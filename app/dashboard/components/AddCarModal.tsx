@@ -265,8 +265,10 @@ export default function AddCarModal({
         console.error('Error fetching locations:', error);
       }
     };
-    fetchLocations();
-  }, []);
+    if (isOpen) {
+      fetchLocations();
+    }
+  }, [isOpen]);
 
   const handleInputChange = (
     e: React.ChangeEvent<
