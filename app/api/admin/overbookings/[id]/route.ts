@@ -1,16 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
+import { getCurrentUser } from '@/lib/auth';
 import Booking from '@/models/Booking';
 import ExternalCarSource from '@/models/ExternalCarSource';
 import Vehicle from '@/models/Vehicle';
 
-// GET - Get a specific overbooking with external source details
+// GET - Get a specific overbooking with external source details (admin only)
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectMongoDB();
+
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     // Ensure models are registered
     Vehicle;
@@ -65,13 +71,18 @@ export async function GET(
   }
 }
 
-// PATCH - Update external car source for an overbooking
+// PATCH - Update external car source for an overbooking (admin only)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectMongoDB();
+
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     // Ensure models are registered
     Vehicle;

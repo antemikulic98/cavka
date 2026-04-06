@@ -129,10 +129,16 @@ async function calculateVehicleCost(
   // For transfer vehicles, return trip price
   if (vehicle.type === 'transfer') {
     if (vehicle.trips && vehicle.trips.length > 0) {
-      // Return first trip price (matching logic can be added later)
-      return vehicle.trips[0].price;
+      const price = vehicle.trips[0].price;
+      if (!price || price <= 0) {
+        throw new Error('Transfer vehicle has no valid trip price configured');
+      }
+      return price;
     }
-    return vehicle.dailyRate || 0; // Fallback - dailyRate may be undefined for transfers
+    if (!vehicle.dailyRate || vehicle.dailyRate <= 0) {
+      throw new Error('Transfer vehicle has no trips or daily rate configured');
+    }
+    return vehicle.dailyRate;
   }
 
   // For rental vehicles, calculate with custom pricing

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
+import { getCurrentUser } from '@/lib/auth';
 import Booking from '@/models/Booking';
 
 // GET - Retrieve specific booking by ID
@@ -52,13 +53,18 @@ export async function GET(
   }
 }
 
-// PUT - Update booking status or details
+// PUT - Update booking status or details (admin only)
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectMongoDB();
+
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const { id } = await params;
     const updateData = await request.json();
@@ -115,13 +121,18 @@ export async function PUT(
   }
 }
 
-// DELETE - Cancel booking
+// DELETE - Cancel booking (admin only)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectMongoDB();
+
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const { id } = await params;
 
