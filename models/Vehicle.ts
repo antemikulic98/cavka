@@ -76,9 +76,9 @@ export interface IVehicle {
 
 const VehicleSchema = new Schema<IVehicle & Document>(
   {
-    // Vehicle Type
+    // Vehicle Type - this is an actual field named "type"
     type: {
-      type: String,
+      $type: String,
       enum: ['rental', 'transfer'],
       default: 'rental',
       required: [true, 'Vehicle type is required'],
@@ -86,28 +86,28 @@ const VehicleSchema = new Schema<IVehicle & Document>(
 
     // Basic Information
     make: {
-      type: String,
+      $type: String,
       required: [true, 'Make is required'],
       trim: true,
     },
     vehicleModel: {
-      type: String,
+      $type: String,
       required: [true, 'Model is required'],
       trim: true,
     },
     year: {
-      type: Number,
+      $type: Number,
       required: [true, 'Year is required'],
       min: 1980,
       max: new Date().getFullYear() + 1,
     },
     color: {
-      type: String,
+      $type: String,
       required: [true, 'Color is required'],
       trim: true,
     },
     licensePlate: {
-      type: String,
+      $type: String,
       required: function(this: IVehicle & Document) {
         return this.type === 'rental'; // Only required for rental vehicles
       },
@@ -119,70 +119,70 @@ const VehicleSchema = new Schema<IVehicle & Document>(
 
     // ACRISS Classification (backward compatible)
     acrissCode: {
-      type: String,
+      $type: String,
       trim: true,
     },
     category: {
-      type: String,
+      $type: String,
       required: [true, 'Category is required'],
       trim: true,
     },
     bodyType: {
-      type: String,
+      $type: String,
       trim: true,
     },
     transmission: {
-      type: String,
+      $type: String,
       required: [true, 'Transmission type is required'],
       trim: true,
     },
     fuelAirCon: {
-      type: String,
+      $type: String,
       trim: true,
     },
 
     // Backward compatibility - old schema fields
     fuelType: {
-      type: String,
+      $type: String,
       enum: ['Petrol', 'Diesel', 'Electric', 'Hybrid'],
       trim: true,
     },
     airConditioning: {
-      type: Boolean,
+      $type: Boolean,
     },
 
     // Capacity & Features
     passengerCapacity: {
-      type: Number,
+      $type: Number,
       required: [true, 'Passenger capacity is required'],
       min: 1,
       max: 9,
     },
     doorCount: {
-      type: Number,
+      $type: Number,
       required: [true, 'Door count is required'],
       min: 2,
       max: 5,
     },
     bigSuitcases: {
-      type: Number,
+      $type: Number,
       min: 0,
       max: 10,
     },
     smallSuitcases: {
-      type: Number,
+      $type: Number,
       min: 0,
       max: 10,
     },
 
     // Backward compatibility - old schema field
     luggageCapacity: {
-      type: Number,
+      $type: Number,
       min: 0,
     },
     features: [
       {
-        type: String,
+        $type: String,
         trim: true,
       },
     ],
@@ -190,25 +190,25 @@ const VehicleSchema = new Schema<IVehicle & Document>(
     // Images
     images: [
       {
-        type: String,
+        $type: String,
         trim: true,
       },
     ],
     mainImage: {
-      type: String,
+      $type: String,
       trim: true,
     },
 
     // Pricing
     dailyRate: {
-      type: Number,
+      $type: Number,
       required: function(this: IVehicle & Document) {
         return this.type === 'rental'; // Only required for rental vehicles
       },
       min: 0,
     },
     currency: {
-      type: String,
+      $type: String,
       default: 'EUR',
       enum: ['EUR', 'USD', 'GBP', 'HRK'],
     },
@@ -217,26 +217,26 @@ const VehicleSchema = new Schema<IVehicle & Document>(
     trips: [
       {
         from: {
-          type: String,
+          $type: String,
           required: true,
           trim: true,
         },
         to: {
-          type: String,
+          $type: String,
           required: true,
           trim: true,
         },
         price: {
-          type: Number,
+          $type: Number,
           required: true,
           min: 0,
         },
         duration: {
-          type: String,
+          $type: String,
           trim: true,
         },
         distance: {
-          type: String,
+          $type: String,
           trim: true,
         },
       },
@@ -244,19 +244,19 @@ const VehicleSchema = new Schema<IVehicle & Document>(
 
     // Availability & Status
     status: {
-      type: String,
+      $type: String,
       default: 'Available',
       enum: ['Available', 'Booked', 'Maintenance', 'Inactive'],
     },
     location: {
-      type: String,
+      $type: String,
       required: [true, 'Location is required'],
       trim: true,
     },
 
     // Description
     description: {
-      type: String,
+      $type: String,
       trim: true,
     },
 
@@ -264,20 +264,20 @@ const VehicleSchema = new Schema<IVehicle & Document>(
     customPricing: [
       {
         date: {
-          type: String,
+          $type: String,
           required: true,
         },
         price: {
-          type: Number,
+          $type: Number,
           required: true,
           min: 0,
         },
         label: {
-          type: String,
+          $type: String,
           default: 'Custom Price',
         },
         type: {
-          type: String,
+          $type: String,
           default: 'custom',
         },
       },
@@ -285,20 +285,21 @@ const VehicleSchema = new Schema<IVehicle & Document>(
 
     // Display Order
     order: {
-      type: Number,
+      $type: Number,
       default: 0,
       index: true, // Index for sorting
     },
 
     // Metadata
     addedBy: {
-      type: Schema.Types.ObjectId,
+      $type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
   },
   {
     timestamps: true,
+    typeKey: '$type',
   }
 );
 

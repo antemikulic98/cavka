@@ -66,8 +66,8 @@ export default function BookingLookup() {
   const [searched, setSearched] = useState(false);
 
   const handleSearch = async () => {
-    if (!email.trim() || !bookingReference.trim()) {
-      setError('Please enter both your booking reference and email address');
+    if (!email.trim()) {
+      setError('Please enter your email address');
       return;
     }
 

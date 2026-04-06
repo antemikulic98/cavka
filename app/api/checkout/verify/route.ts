@@ -114,10 +114,11 @@ export async function POST(request: NextRequest) {
     const discountedAmount = Math.round(parseFloat(metadata.totalAfterDiscount || metadata.discountedAmount || '0') * 100) / 100;
     const originalAmount = Math.round(parseFloat(metadata.totalBeforeDiscount || metadata.totalAmount || '0') * 100) / 100;
     const discount = Math.round(parseFloat(metadata.discountAmount || metadata.discount || '0') * 100) / 100;
+    const baseVehicleCost = Math.round(parseFloat(metadata.baseVehicleCost || '0') * 100) / 100;
     const cdwCost = Math.round(parseFloat(metadata.cdwCost || '0') * 100) / 100;
     const addOnsCost = Math.round(parseFloat(metadata.addOnsCost || '0') * 100) / 100;
     const rentalDays = parseInt(metadata.rentalDays || '1');
-    const dailyRate = Math.round((discountedAmount / Math.max(rentalDays, 1)) * 100) / 100;
+    const baseDailyRate = Math.round((baseVehicleCost / Math.max(rentalDays, 1)) * 100) / 100;
 
     // Generate booking reference
     const generateBookingReference = (): string => {
@@ -130,18 +131,20 @@ export async function POST(request: NextRequest) {
     // Parse customer phone from metadata or session
     const fullPhoneNumber = metadata.customerPhone || session.customer_details?.phone || '';
 
-    // Extract country code and phone number
-    let countryCode = '+385';
+    // Use stored country code if available, otherwise extract from phone
+    let countryCode = metadata.customerCountryCode || '+385';
     let phoneNumber = fullPhoneNumber;
 
-    // If phone starts with +, extract country code
-    if (fullPhoneNumber.startsWith('+')) {
-      // Find where country code ends (typically 1-3 digits after +)
+    // If no stored country code, try to extract from full phone number
+    if (!metadata.customerCountryCode && fullPhoneNumber.startsWith('+')) {
       const match = fullPhoneNumber.match(/^(\+\d{1,3})(.+)$/);
       if (match) {
         countryCode = match[1];
         phoneNumber = match[2];
       }
+    } else if (metadata.customerCountryCode) {
+      // Strip country code from phone number if it's included
+      phoneNumber = fullPhoneNumber.replace(countryCode, '');
     }
 
     const bookingData = {
@@ -149,6 +152,7 @@ export async function POST(request: NextRequest) {
 
       // Vehicle Information
       vehicleId: metadata.vehicleId,
+      vehicleType: metadata.vehicleType || vehicle.type || 'rental',
       vehicleInfo: {
         make: vehicle.make,
         model: vehicle.vehicleModel,
@@ -162,13 +166,15 @@ export async function POST(request: NextRequest) {
       customerEmail: session.customer_email || session.customer_details?.email || metadata.customerEmail,
       customerPhone: fullPhoneNumber,
 
-      // For compatibility with old booking schema that uses clientInfo
+      // Client info - use stored first/last name fields, fallback to splitting full name
       clientInfo: {
-        firstName: metadata.customerName?.split(' ')[0] || '',
-        lastName: metadata.customerName?.split(' ').slice(1).join(' ') || '',
+        firstName: metadata.customerFirstName || metadata.customerName?.split(' ')[0] || '',
+        lastName: metadata.customerLastName || metadata.customerName?.split(' ').slice(1).join(' ') || '',
         email: session.customer_email || session.customer_details?.email || metadata.customerEmail,
         phoneNumber: phoneNumber,
         countryCode: countryCode,
+        company: metadata.customerCompany || '',
+        flightNumber: metadata.customerFlightNumber || '',
       },
 
       // Rental Details
@@ -184,10 +190,10 @@ export async function POST(request: NextRequest) {
 
       // Pricing
       pricing: {
-        baseDailyRate: dailyRate,
+        baseDailyRate: baseDailyRate,
         cdwCost: cdwCost,
         addOnsCost: addOnsCost,
-        totalDailyRate: dailyRate,
+        totalDailyRate: Math.round((originalAmount / Math.max(rentalDays, 1)) * 100) / 100,
         totalCost: discountedAmount,
         discount: discount,
         originalAmount: originalAmount,

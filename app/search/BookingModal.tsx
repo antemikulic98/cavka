@@ -12,6 +12,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { sanitizeText } from '@/lib/xss';
+import { useCSRF } from '@/hooks/useCSRF';
 
 interface Vehicle {
   _id: string;
@@ -74,6 +75,7 @@ export default function BookingModal({
   rentalDays,
   totalPrice,
 }: BookingModalProps) {
+  const { getHeaders } = useCSRF();
   const [currentStep, setCurrentStep] = useState(1);
   const [addOns, setAddOns] = useState({
     additionalDriver: false,
@@ -280,6 +282,17 @@ export default function BookingModal({
     setSelectedDetail(null); // Clear any open details
     setCdwCoverage('none'); // Reset CDW to none
     setShowCountryDropdown(false); // Close country dropdown
+    setPaymentMethod('pay_later'); // Reset payment method
+    setAddOns({ // Reset add-ons
+      additionalDriver: false,
+      wifiHotspot: false,
+      roadsideAssistance: false,
+      tireProtection: false,
+      personalAccident: false,
+      theftProtection: false,
+      extendedTheft: false,
+      interiorProtection: false,
+    });
     setClientInfo({
       firstName: '',
       lastName: '',
@@ -514,13 +527,15 @@ export default function BookingModal({
   };
 
   const isFormValid = () => {
+    const phoneDigits = clientInfo.phoneNumber.replace(/[\s\-()]/g, '');
     return (
       clientInfo.firstName.trim() !== '' &&
       clientInfo.lastName.trim() !== '' &&
       clientInfo.email.trim() !== '' &&
       clientInfo.phoneNumber.trim() !== '' &&
       clientInfo.ageConfirmed &&
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientInfo.email)
+      /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(clientInfo.email) &&
+      /^\d{6,15}$/.test(phoneDigits) // Phone: 6-15 digits only
     );
   };
 
@@ -534,8 +549,30 @@ export default function BookingModal({
     { code: '+386', name: 'Slovenia', flag: '🇸🇮' },
     { code: '+381', name: 'Serbia', flag: '🇷🇸' },
     { code: '+387', name: 'Bosnia and Herzegovina', flag: '🇧🇦' },
-    { code: '+1', name: 'USA/Canada', flag: '🇺🇸' },
+    { code: '+382', name: 'Montenegro', flag: '🇲🇪' },
+    { code: '+389', name: 'North Macedonia', flag: '🇲🇰' },
+    { code: '+355', name: 'Albania', flag: '🇦🇱' },
+    { code: '+30', name: 'Greece', flag: '🇬🇷' },
+    { code: '+36', name: 'Hungary', flag: '🇭🇺' },
+    { code: '+420', name: 'Czech Republic', flag: '🇨🇿' },
+    { code: '+421', name: 'Slovakia', flag: '🇸🇰' },
+    { code: '+48', name: 'Poland', flag: '🇵🇱' },
+    { code: '+40', name: 'Romania', flag: '🇷🇴' },
+    { code: '+359', name: 'Bulgaria', flag: '🇧🇬' },
+    { code: '+31', name: 'Netherlands', flag: '🇳🇱' },
+    { code: '+32', name: 'Belgium', flag: '🇧🇪' },
+    { code: '+34', name: 'Spain', flag: '🇪🇸' },
+    { code: '+351', name: 'Portugal', flag: '🇵🇹' },
+    { code: '+46', name: 'Sweden', flag: '🇸🇪' },
+    { code: '+47', name: 'Norway', flag: '🇳🇴' },
+    { code: '+45', name: 'Denmark', flag: '🇩🇰' },
+    { code: '+358', name: 'Finland', flag: '🇫🇮' },
+    { code: '+353', name: 'Ireland', flag: '🇮🇪' },
     { code: '+44', name: 'United Kingdom', flag: '🇬🇧' },
+    { code: '+1', name: 'USA/Canada', flag: '🇺🇸' },
+    { code: '+61', name: 'Australia', flag: '🇦🇺' },
+    { code: '+972', name: 'Israel', flag: '🇮🇱' },
+    { code: '+90', name: 'Turkey', flag: '🇹🇷' },
   ];
 
   const getSelectedCountry = () => {
@@ -571,6 +608,11 @@ export default function BookingModal({
           customerEmail: clientInfo.email,
           customerName: `${clientInfo.firstName} ${clientInfo.lastName}`,
           customerPhone: `${clientInfo.countryCode}${clientInfo.phoneNumber}`,
+          customerFirstName: clientInfo.firstName,
+          customerLastName: clientInfo.lastName,
+          customerCountryCode: clientInfo.countryCode,
+          customerCompany: clientInfo.company || '',
+          customerFlightNumber: clientInfo.flightNumber || '',
           rentalDays,
           cdwCoverage,
           addOns,
@@ -578,9 +620,7 @@ export default function BookingModal({
 
         const response = await fetch('/api/checkout', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: getHeaders(),
           body: JSON.stringify(checkoutData),
         });
 
@@ -611,9 +651,7 @@ export default function BookingModal({
 
       const response = await fetch('/api/bookings', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getHeaders(),
         body: JSON.stringify(bookingData),
       });
 
@@ -1764,7 +1802,9 @@ export default function BookingModal({
                     : 'Your information'}
                 </h2>
                 <span className='text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full'>
-                  Step {currentStep} of 4
+                  {vehicle?.type === 'transfer'
+                    ? `Step ${currentStep === 1 ? 1 : 2} of 2`
+                    : `Step ${currentStep} of 4`}
                 </span>
               </div>
               {currentStep !== 3 && (

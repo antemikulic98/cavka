@@ -158,7 +158,7 @@ function PaymentCancelContent() {
           <p className='text-gray-600 text-sm'>
             Having trouble with payment?{' '}
             <a
-              href='mailto:support@example.com'
+              href='mailto:booking@hit-rent.com'
               className='text-green-600 hover:text-green-700 font-medium'
             >
               Contact our support team

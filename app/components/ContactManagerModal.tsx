@@ -31,7 +31,7 @@ export default function ContactManagerModal({
   };
 
   const handleCall = () => {
-    window.location.href = 'tel:+385123456789';
+    window.location.href = 'tel:+385917224138';
   };
 
   if (!isOpen) return null;
@@ -83,7 +83,7 @@ export default function ContactManagerModal({
                 Call Manager Now
               </button>
               <p className='text-center text-xs text-gray-500 mt-2'>
-                +385 1 234 5678
+                +385 91 722 4138
               </p>
             </div>
 

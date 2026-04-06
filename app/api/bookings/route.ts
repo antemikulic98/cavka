@@ -187,6 +187,7 @@ export async function POST(request: NextRequest) {
     const booking = new Booking({
       clientInfo: bookingData.clientInfo,
       vehicleId: bookingData.vehicleId,
+      vehicleType: vehicle.type || 'rental',
       vehicleInfo: {
         make: vehicle.make,
         model: vehicle.vehicleModel,
@@ -207,7 +208,9 @@ export async function POST(request: NextRequest) {
         cdwCost: pricing.cdwCost,
         addOnsCost: pricing.addOnsCost,
         totalDailyRate: pricing.totalBeforeDiscount / bookingData.rentalDays,
-        totalCost: pricing.totalAfterDiscount, // Use discounted price
+        totalCost: pricing.totalAfterDiscount,
+        discount: pricing.discountAmount,
+        originalAmount: pricing.totalBeforeDiscount,
       },
       // Overbooking fields
       isOverbooking,

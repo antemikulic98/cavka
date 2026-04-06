@@ -90,12 +90,20 @@ function PaymentSuccessContent() {
             Payment Verification Failed
           </h1>
           <p className='text-gray-600 mb-6'>{error}</p>
-          <Link
-            href='/'
-            className='inline-block bg-green-800 hover:bg-green-900 text-white font-semibold py-3 px-8 rounded-xl transition-colors'
-          >
-            Return to Home
-          </Link>
+          <div className='flex flex-col sm:flex-row gap-3 justify-center'>
+            <button
+              onClick={() => window.location.reload()}
+              className='inline-block bg-green-800 hover:bg-green-900 text-white font-semibold py-3 px-8 rounded-xl transition-colors'
+            >
+              Try Again
+            </button>
+            <Link
+              href='/'
+              className='inline-block bg-white hover:bg-gray-50 text-gray-800 font-semibold py-3 px-8 rounded-xl transition-colors border-2 border-gray-300'
+            >
+              Return to Home
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -239,17 +247,17 @@ function PaymentSuccessContent() {
           <p className='text-gray-600 text-sm'>
             Need help? Contact us at{' '}
             <a
-              href='mailto:support@example.com'
+              href='mailto:booking@hit-rent.com'
               className='text-green-600 hover:text-green-700 font-medium'
             >
-              support@example.com
+              booking@hit-rent.com
             </a>
             {' '}or call{' '}
             <a
-              href='tel:+385123456789'
+              href='tel:+385917224138'
               className='text-green-600 hover:text-green-700 font-medium'
             >
-              +385 123 456 789
+              +385 91 722 4138
             </a>
           </p>
         </div>

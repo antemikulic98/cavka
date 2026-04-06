@@ -34,6 +34,13 @@ const BookingSchema = new mongoose.Schema({
     currency: { type: String, required: true, default: 'EUR' },
   },
 
+  // Vehicle Type (rental or transfer)
+  vehicleType: {
+    type: String,
+    enum: ['rental', 'transfer'],
+    default: 'rental',
+  },
+
   // Rental Details
   pickupDate: { type: Date, required: true },
   returnDate: { type: Date, required: true },
@@ -114,7 +121,7 @@ const BookingSchema = new mongoose.Schema({
 // Generate booking reference before saving
 BookingSchema.pre('save', function (next) {
   if (!this.bookingReference) {
-    this.bookingReference = generateBookingReference();
+    this.bookingReference = generateBookingReference(this.vehicleType);
   }
   this.updatedAt = new Date();
   next();
@@ -123,14 +130,14 @@ BookingSchema.pre('save', function (next) {
 // Validate that booking reference exists after pre-save
 BookingSchema.pre('validate', function (next) {
   if (!this.bookingReference) {
-    this.bookingReference = generateBookingReference();
+    this.bookingReference = generateBookingReference(this.vehicleType);
   }
   next();
 });
 
 // Generate unique booking reference
-function generateBookingReference(): string {
-  const prefix = 'CAR';
+function generateBookingReference(vehicleType?: string): string {
+  const prefix = vehicleType === 'transfer' ? 'TRF' : 'CAR';
   const timestamp = Date.now().toString().slice(-6);
   const random = Math.random().toString(36).substring(2, 8).toUpperCase();
   return `${prefix}${timestamp}${random}`;

@@ -19,6 +19,7 @@ import {
   Clock,
   AlertCircle,
 } from 'lucide-react';
+import { useCSRF } from '@/hooks/useCSRF';
 
 // Types
 interface Vehicle {
@@ -98,6 +99,7 @@ const addOnsLabels = {
 };
 
 export default function BookingForm({ onBookingCreated }: BookingFormProps) {
+  const { getHeaders } = useCSRF();
   // State
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
@@ -390,9 +392,7 @@ export default function BookingForm({ onBookingCreated }: BookingFormProps) {
 
       const response = await fetch('/api/bookings', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getHeaders(),
         body: JSON.stringify(bookingData),
       });
 

@@ -215,7 +215,7 @@ function generateCustomerEmailHTML(data: BookingEmailData): string {
 
       <div style="background: #1f2937; color: #9ca3af; padding: 20px; text-align: center; border-radius: 0 0 10px 10px;">
         <p style="margin: 0; font-size: 14px;">
-          HIT Rent | Email: booking@hit-rent.com | Phone: +385 123 456 789
+          HIT Rent | Email: booking@hit-rent.com | Phone: +385 91 722 4138
         </p>
         <p style="margin: 10px 0 0 0; font-size: 12px;">
           © ${new Date().getFullYear()} HIT Rent. All rights reserved.
