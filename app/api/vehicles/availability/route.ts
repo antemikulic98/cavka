@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
     const returnDate = searchParams.get('returnDate');
     const type = searchParams.get('type'); // Optional: filter by vehicle type (rental/transfer)
     const location = searchParams.get('location'); // Optional: filter by location
+    const returnLocation = searchParams.get('returnLocation'); // Optional: filter transfer vehicles by route destination
 
     if (!pickupDate || !returnDate) {
       return NextResponse.json(
@@ -51,6 +52,18 @@ export async function GET(request: NextRequest) {
     // Filter by location if provided
     if (location) {
       query.location = location;
+    }
+
+    // For transfer vehicles, filter by matching trip route (from/to)
+    if (type === 'transfer' && location && returnLocation) {
+      query['trips'] = {
+        $elemMatch: {
+          from: { $regex: new RegExp(`^${location.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+          to: { $regex: new RegExp(`^${returnLocation.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+        },
+      };
+      // Remove the location filter since we're now filtering by trips.from
+      delete query.location;
     }
 
     // Find vehicles (both available and potentially overbooked)

@@ -97,6 +97,8 @@ export default function BookingModal({
   const [insurancePricing, setInsurancePricing] = useState<{
     dailyPrice: number;
     fullCoveragePrice: number;
+    basicDeductible: number;
+    fullDeductible: number;
   } | null>(null);
   const [addOnPricing, setAddOnPricing] = useState<{
     additionalDriver: number;
@@ -125,7 +127,7 @@ export default function BookingModal({
     const fetchPricing = async () => {
       if (!vehicle || !vehicle.acrissCode) {
         // If no ACRISS code, use default pricing
-        setInsurancePricing({ dailyPrice: 0, fullCoveragePrice: 15 });
+        setInsurancePricing({ dailyPrice: 0, fullCoveragePrice: 15, basicDeductible: 0, fullDeductible: 0 });
         setAddOnPricing({
           additionalDriver: 4.75,
           wifiHotspot: 4.6,
@@ -157,12 +159,14 @@ export default function BookingModal({
             setInsurancePricing({
               dailyPrice: pricing.dailyPrice || 0,
               fullCoveragePrice: pricing.fullCoveragePrice || 15,
+              basicDeductible: pricing.basicDeductible ?? 0,
+              fullDeductible: pricing.fullDeductible ?? 0,
             });
           } else {
-            setInsurancePricing({ dailyPrice: 0, fullCoveragePrice: 15 });
+            setInsurancePricing({ dailyPrice: 0, fullCoveragePrice: 15, basicDeductible: 0, fullDeductible: 0 });
           }
         } else {
-          setInsurancePricing({ dailyPrice: 0, fullCoveragePrice: 15 });
+          setInsurancePricing({ dailyPrice: 0, fullCoveragePrice: 15, basicDeductible: 0, fullDeductible: 0 });
         }
 
         // Handle add-on pricing
@@ -208,7 +212,7 @@ export default function BookingModal({
       } catch (error) {
         console.error('Error fetching pricing:', error);
         // Fallback to default pricing
-        setInsurancePricing({ dailyPrice: 0, fullCoveragePrice: 15 });
+        setInsurancePricing({ dailyPrice: 0, fullCoveragePrice: 15, basicDeductible: 0, fullDeductible: 0 });
         setAddOnPricing({
           additionalDriver: 4.75,
           wifiHotspot: 4.6,
@@ -858,7 +862,7 @@ export default function BookingModal({
                     <h4 className='font-medium text-gray-900'>
                       CDW (Basic Coverage)
                     </h4>
-                    <p className='text-xs text-blue-600'>€2,500 deductible</p>
+                    <p className='text-xs text-blue-600'>€{(insurancePricing?.basicDeductible || 0).toLocaleString()} deductible</p>
                   </div>
                 </div>
                 <span className='bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold'>
@@ -894,7 +898,7 @@ export default function BookingModal({
                   </div>
                   <div>
                     <h4 className='font-medium text-gray-900'>SCDW (Full Coverage)</h4>
-                    <p className='text-xs text-green-600'>€0 deductible</p>
+                    <p className='text-xs text-green-600'>€{(insurancePricing?.fullDeductible || 0).toLocaleString()} deductible</p>
                   </div>
                 </div>
                 <span className='bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold'>
@@ -902,7 +906,9 @@ export default function BookingModal({
                 </span>
               </div>
               <p className='text-sm text-gray-600 ml-7'>
-                Maximum protection with no deductible - drive worry-free
+                {(insurancePricing?.fullDeductible || 0) === 0
+                  ? 'Maximum protection with no deductible - drive worry-free'
+                  : `Maximum protection with reduced €${(insurancePricing?.fullDeductible || 0).toLocaleString()} deductible`}
               </p>
             </div>
           </div>

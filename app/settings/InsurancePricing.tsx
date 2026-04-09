@@ -8,6 +8,8 @@ interface InsurancePrice {
   acrissCode: string;
   dailyPrice: number;
   fullCoveragePrice?: number;
+  basicDeductible?: number;
+  fullDeductible?: number;
   description?: string;
   currency: string;
 }
@@ -58,6 +60,8 @@ export default function InsurancePricing() {
         acrissCode,
         dailyPrice: 0,
         fullCoveragePrice: 0,
+        basicDeductible: 0,
+        fullDeductible: 0,
         currency: 'EUR',
       }
     );
@@ -77,6 +81,8 @@ export default function InsurancePricing() {
             acrissCode,
             dailyPrice: 0,
             fullCoveragePrice: 0,
+            basicDeductible: 0,
+            fullDeductible: 0,
             currency: 'EUR',
             [field]: value,
           },
@@ -228,7 +234,7 @@ export default function InsurancePricing() {
                   </div>
                 </div>
 
-                <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4'>
                   {/* Basic CDW Price */}
                   <div>
                     <label className='block text-sm text-gray-600 mb-2'>
@@ -254,6 +260,31 @@ export default function InsurancePricing() {
                     </div>
                   </div>
 
+                  {/* Basic CDW Deductible */}
+                  <div>
+                    <label className='block text-sm text-gray-600 mb-2'>
+                      Basic Deductible
+                    </label>
+                    <div className='relative'>
+                      <Euro className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400' />
+                      <input
+                        type='number'
+                        value={price.basicDeductible === 0 ? '' : price.basicDeductible || ''}
+                        onChange={(e) =>
+                          updatePrice(
+                            code,
+                            'basicDeductible',
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
+                        placeholder='0'
+                        step='1'
+                        min='0'
+                        className='w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
+                      />
+                    </div>
+                  </div>
+
                   {/* Full Coverage Price */}
                   <div>
                     <label className='block text-sm text-gray-600 mb-2'>
@@ -273,6 +304,31 @@ export default function InsurancePricing() {
                         }
                         placeholder='0.00'
                         step='0.01'
+                        min='0'
+                        className='w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
+                      />
+                    </div>
+                  </div>
+
+                  {/* Full Coverage Deductible */}
+                  <div>
+                    <label className='block text-sm text-gray-600 mb-2'>
+                      Full Deductible
+                    </label>
+                    <div className='relative'>
+                      <Euro className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400' />
+                      <input
+                        type='number'
+                        value={price.fullDeductible === 0 ? '' : price.fullDeductible || ''}
+                        onChange={(e) =>
+                          updatePrice(
+                            code,
+                            'fullDeductible',
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
+                        placeholder='0'
+                        step='1'
                         min='0'
                         className='w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
                       />
@@ -321,6 +377,7 @@ export default function InsurancePricing() {
         <ul className='text-sm text-gray-600 space-y-1'>
           <li>• Basic CDW: Standard Collision Damage Waiver coverage</li>
           <li>• Full Coverage: Comprehensive coverage with lower excess</li>
+          <li>• Deductible: The amount the customer pays out-of-pocket in case of damage (shown during booking)</li>
           <li>• Prices are calculated per day and added to the total rental cost</li>
           <li>• Each ACRISS code represents a specific vehicle class and configuration</li>
           <li>• ACRISS codes are automatically detected from your vehicles</li>

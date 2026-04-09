@@ -4,6 +4,8 @@ export interface IInsurancePricing extends Document {
   acrissCode: string; // Full 4-letter ACRISS code (e.g., EDMR, CDMR)
   dailyPrice: number; // Price per day for basic CDW
   fullCoveragePrice?: number; // Optional full coverage price
+  basicDeductible?: number; // Deductible amount for basic CDW (e.g., 2500)
+  fullDeductible?: number; // Deductible amount for full coverage (e.g., 0)
   currency: string;
   description?: string;
   createdAt: Date;
@@ -30,6 +32,16 @@ const InsurancePricingSchema = new Schema<IInsurancePricing>(
     fullCoveragePrice: {
       type: Number,
       min: 0,
+    },
+    basicDeductible: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+    fullDeductible: {
+      type: Number,
+      min: 0,
+      default: 0,
     },
     currency: {
       type: String,

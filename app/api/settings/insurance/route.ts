@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('Received insurance pricing data:', body);
 
-    const { acrissCode, dailyPrice, fullCoveragePrice, description } = body;
+    const { acrissCode, dailyPrice, fullCoveragePrice, basicDeductible, fullDeductible, description } = body;
 
     // Validate
     if (!acrissCode || dailyPrice === undefined) {
@@ -65,6 +65,8 @@ export async function POST(request: NextRequest) {
       console.log('Updating existing pricing for', acrissCode);
       existing.dailyPrice = dailyPrice;
       existing.fullCoveragePrice = fullCoveragePrice;
+      existing.basicDeductible = basicDeductible;
+      existing.fullDeductible = fullDeductible;
       existing.description = description;
       await existing.save();
 
@@ -80,6 +82,8 @@ export async function POST(request: NextRequest) {
         acrissCode: acrissCode.toUpperCase(),
         dailyPrice,
         fullCoveragePrice,
+        basicDeductible,
+        fullDeductible,
         description,
         currency: 'EUR',
       });

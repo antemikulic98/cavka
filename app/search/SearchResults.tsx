@@ -101,6 +101,11 @@ export default function SearchResults() {
           apiSearchParams.set('location', pickupLocation);
         }
 
+        // Add return location for transfer route matching
+        if (returnLocation) {
+          apiSearchParams.set('returnLocation', returnLocation);
+        }
+
         // Use availability endpoint to check vehicle availability
         const response = await fetch(
           `/api/vehicles/availability?${apiSearchParams.toString()}`
