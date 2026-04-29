@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import {
   MapPin,
   ChevronDown,
@@ -313,12 +314,17 @@ export default function Hero() {
   return (
     <section className='relative text-gray-900 min-h-[88vh] lg:min-h-screen rounded-b-2xl pb-0'>
       {/* Hero Background Image */}
-      <div
-        className='absolute inset-0 bg-cover bg-center bg-no-repeat rounded-b-2xl'
-        style={{
-          backgroundImage: 'url(/img/hero.png)',
-        }}
-      ></div>
+      <div className='absolute inset-0 rounded-b-2xl overflow-hidden'>
+        <Image
+          src='/img/hero.png'
+          alt='Premium car rental hero background'
+          fill
+          sizes='100vw'
+          className='object-cover object-center'
+          priority
+          quality={85}
+        />
+      </div>
 
       <div className={`container mx-auto px-4 lg:px-6 relative pt-24 ${showCalendar ? 'z-[100]' : 'z-20'}`}>
         <div className='max-w-screen-2xl mx-auto'>

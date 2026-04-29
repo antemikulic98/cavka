@@ -23,6 +23,7 @@ interface CreateVehicleRequest {
   images: string[];
   mainImage: string;
   dailyRate: number;
+  pricePerKm?: number;
   currency: string;
   location: string;
   description?: string;

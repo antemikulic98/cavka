@@ -5,6 +5,8 @@ export interface ILocation extends Document {
   type: 'pickup' | 'both'; // pickup only or both pickup/return
   serviceType: 'rental' | 'transfer' | 'both'; // for car rental, transfer service, or both
   city?: string; // e.g., "Zagreb", "Split"
+  lat?: number; // GPS latitude for distance calculation
+  lng?: number; // GPS longitude for distance calculation
   active: boolean;
   order: number; // for sorting in dropdowns
   createdAt: Date;
@@ -32,6 +34,12 @@ const LocationSchema = new Schema<ILocation>(
     city: {
       type: String,
       trim: true,
+    },
+    lat: {
+      type: Number,
+    },
+    lng: {
+      type: Number,
     },
     active: {
       type: Boolean,

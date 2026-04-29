@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   Dialog,
@@ -129,10 +130,13 @@ export default function DashboardLayout({
                 <div className='flex-1 h-0 pt-5 pb-4 overflow-y-auto'>
                   <div className='flex-shrink-0 flex items-center px-4'>
                     <a href='/'>
-                      <img
+                      <Image
                         src='/img/logo-black.svg'
                         alt='Logo'
+                        width={120}
+                        height={40}
                         className='h-10 w-auto'
+                        priority
                       />
                     </a>
                   </div>
@@ -172,10 +176,13 @@ export default function DashboardLayout({
             <div className='flex-1 flex flex-col pt-5 pb-4 overflow-y-auto'>
               <div className='flex items-center flex-shrink-0 px-4 mb-8'>
                 <a href='/'>
-                  <img
+                  <Image
                     src='/img/logo-black.svg'
                     alt='Logo'
+                    width={150}
+                    height={48}
                     className='h-12 w-auto'
+                    priority
                   />
                 </a>
               </div>

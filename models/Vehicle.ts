@@ -39,6 +39,7 @@ export interface IVehicle {
 
   // Pricing
   dailyRate: number; // Used for rental vehicles
+  pricePerKm?: number; // Used for transfer vehicles - price per kilometer
   currency: string;
 
   // Transfer-specific: Trip-based pricing
@@ -205,6 +206,10 @@ const VehicleSchema = new Schema<IVehicle & Document>(
       required: function(this: IVehicle & Document) {
         return this.type === 'rental'; // Only required for rental vehicles
       },
+      min: 0,
+    },
+    pricePerKm: {
+      $type: Number,
       min: 0,
     },
     currency: {

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import {
   Car,
@@ -450,10 +451,13 @@ export default function DashboardContent({ user }: DashboardContentProps) {
                             {activity.vehicle && (
                               <div className='flex items-center mt-2'>
                                 {activity.vehicle.image && (
-                                  <img
+                                  <Image
                                     src={activity.vehicle.image}
                                     alt={`${activity.vehicle.make} ${activity.vehicle.model}`}
+                                    width={48}
+                                    height={32}
                                     className='h-8 w-12 object-cover rounded mr-2'
+                                    loading='lazy'
                                   />
                                 )}
                                 <span className='text-xs text-gray-500'>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import {
   X,
   Users,
@@ -41,6 +42,7 @@ interface Vehicle {
     duration?: string;
     distance?: string;
   }[];
+  pricePerKm?: number;
   currency: string;
   status: string;
   location: string;
@@ -61,6 +63,7 @@ interface BookingModalProps {
   pickupLocation: string;
   returnLocation: string;
   rentalDays: number;
+  distanceKm?: number | null;
   totalPrice: string;
 }
 
@@ -73,6 +76,7 @@ export default function BookingModal({
   pickupLocation,
   returnLocation,
   rentalDays,
+  distanceKm,
   totalPrice,
 }: BookingModalProps) {
   const { getHeaders } = useCSRF();
@@ -405,20 +409,30 @@ export default function BookingModal({
     return getSelectedAddOns().reduce((total, addon) => total + addon.price, 0);
   };
 
-  // Get matching trip price for transfer vehicles
-  const getMatchingTrip = () => {
-    if (!vehicle || vehicle.type !== 'transfer' || !vehicle.trips || vehicle.trips.length === 0) {
-      return null;
+  // Get transfer price: trips[] override first, then km * pricePerKm
+  const getTransferPrice = (): number => {
+    if (!vehicle || vehicle.type !== 'transfer') return 0;
+
+    // Check for matching trip override first
+    if (vehicle.trips && vehicle.trips.length > 0) {
+      const matchingTrip = vehicle.trips.find(
+        (trip) =>
+          trip.from.toLowerCase() === pickupLocation.toLowerCase() &&
+          trip.to.toLowerCase() === returnLocation.toLowerCase()
+      );
+      if (matchingTrip) return matchingTrip.price;
     }
 
-    // Find a trip that matches the pickup and return locations
-    const matchingTrip = vehicle.trips.find(
-      (trip) =>
-        trip.from.toLowerCase() === pickupLocation.toLowerCase() &&
-        trip.to.toLowerCase() === returnLocation.toLowerCase()
-    );
+    // Calculate from km * pricePerKm
+    if (distanceKm && vehicle.pricePerKm) {
+      return Math.round(distanceKm * vehicle.pricePerKm * 100) / 100;
+    }
 
-    return matchingTrip || vehicle.trips[0]; // Return first trip if no match
+    // Fallback to first trip or dailyRate
+    if (vehicle.trips && vehicle.trips.length > 0) {
+      return vehicle.trips[0].price;
+    }
+    return vehicle.dailyRate;
   };
 
   // Get price for a specific date string (YYYY-MM-DD), checking custom pricing first
@@ -441,10 +455,9 @@ export default function BookingModal({
   const getBaseVehicleCost = (): number => {
     if (!vehicle || !pickupDate || !returnDate) return 0;
 
-    // For transfers, use trip price from matching trip
+    // For transfers, use km-based or trip override pricing
     if (vehicle.type === 'transfer') {
-      const trip = getMatchingTrip();
-      return trip ? trip.price : vehicle.dailyRate;
+      return getTransferPrice();
     }
 
     // For rentals, sum up prices for each day
@@ -1629,12 +1642,15 @@ export default function BookingModal({
             {/* Mobile Layout - Horizontal */}
             <div className='sm:hidden flex items-start p-4 gap-3 bg-white border-b border-gray-200'>
               {/* Car Image - Small Left */}
-              <div className='w-24 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100'>
+              <div className='w-24 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 relative'>
                 {vehicle.mainImage ? (
-                  <img
+                  <Image
                     src={vehicle.mainImage}
                     alt={vehicle.fullName}
-                    className='w-full h-full object-cover'
+                    fill
+                    sizes='96px'
+                    className='object-cover'
+                    loading='lazy'
                   />
                 ) : (
                   <div className='w-full h-full flex items-center justify-center'>
@@ -1677,10 +1693,13 @@ export default function BookingModal({
               {/* Car Image - Full Background */}
               {vehicle.mainImage ? (
                 <div className='absolute inset-0'>
-                  <img
+                  <Image
                     src={vehicle.mainImage}
                     alt={vehicle.fullName}
-                    className='w-full h-full object-cover'
+                    fill
+                    sizes='50vw'
+                    className='object-cover'
+                    priority
                   />
                   {/* Dark overlay for text readability */}
                   <div className='absolute inset-0 bg-gradient-to-br from-black/30 via-transparent to-black/50'></div>

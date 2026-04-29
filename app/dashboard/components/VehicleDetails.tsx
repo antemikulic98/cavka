@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { Users, Car, Luggage, MapPin, Settings, Calendar, Route, Plus, X } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
+import { Users, Car, Luggage, MapPin, Settings, Calendar, Route, Plus, X, Loader2, Zap } from 'lucide-react';
 import CustomSelect from '@/app/components/CustomSelect';
 
 interface Vehicle {
@@ -25,6 +26,7 @@ interface Vehicle {
   location: string;
   description?: string;
   features: string[];
+  pricePerKm?: number;
   trips?: {
     from: string;
     to: string;
@@ -53,17 +55,12 @@ interface VehicleDetailsProps {
   dayPricing: DayPricing[];
 }
 
-const locationOptions = [
-  { value: 'Split Airport', label: 'Split Airport' },
-  { value: 'Split Downtown', label: 'Split Downtown' },
-  { value: 'Zagreb Airport', label: 'Zagreb Airport' },
-  { value: 'Zagreb Downtown', label: 'Zagreb Downtown' },
-  { value: 'Rijeka', label: 'Rijeka' },
-  { value: 'Zadar Downtown', label: 'Zadar Downtown' },
-  { value: 'Zadar Airport', label: 'Zadar Airport' },
-  { value: 'Dubrovnik Airport', label: 'Dubrovnik Airport' },
-  { value: 'Dubrovnik Downtown', label: 'Dubrovnik Downtown' },
-];
+interface LocationOption {
+  _id: string;
+  name: string;
+  lat?: number;
+  lng?: number;
+}
 
 const getCategoryLabel = (category: string) => {
   const categoryMap: { [key: string]: string } = {
@@ -94,16 +91,70 @@ export default function VehicleDetails({
     duration: '',
     distance: '',
   });
+  const [locations, setLocations] = useState<LocationOption[]>([]);
+  const [calculatingDistance, setCalculatingDistance] = useState(false);
+  const [generatingAll, setGeneratingAll] = useState(false);
 
-  // Debug logging
-  console.log('🚙 VehicleDetails received:', {
-    vehicleId: vehicle._id,
-    type: vehicle.type,
-    trips: vehicle.trips,
-    tripsCount: vehicle.trips?.length || 0,
-    routesState: routes,
-    routesStateCount: routes.length,
-  });
+  // Fetch transfer locations
+  useEffect(() => {
+    if (vehicle.type === 'transfer') {
+      fetch('/api/settings/locations?activeOnly=true&serviceType=transfer', { credentials: 'include' })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) setLocations(data.locations);
+        })
+        .catch(err => console.error('Error fetching locations:', err));
+    }
+  }, [vehicle.type]);
+
+  const locationOptions = locations.map(loc => ({ value: loc.name, label: loc.name }));
+
+  // Calculate distance between two locations via Google Maps API
+  const calculateDistance = useCallback(async (fromName: string, toName: string) => {
+    const fromLoc = locations.find(l => l.name === fromName);
+    const toLoc = locations.find(l => l.name === toName);
+
+    if (!fromLoc?.lat || !fromLoc?.lng || !toLoc?.lat || !toLoc?.lng) {
+      return null;
+    }
+
+    try {
+      const res = await fetch(
+        `/api/settings/distance?from=${fromLoc.lat},${fromLoc.lng}&to=${toLoc.lat},${toLoc.lng}`,
+        { credentials: 'include' }
+      );
+      const data = await res.json();
+      if (data.success) {
+        return { distanceKm: data.distanceKm, durationText: data.durationText };
+      }
+    } catch (err) {
+      console.error('Distance API error:', err);
+    }
+    return null;
+  }, [locations]);
+
+  // Auto-calculate when from/to change
+  useEffect(() => {
+    if (!newRoute.from || !newRoute.to || newRoute.from === newRoute.to) return;
+
+    const calc = async () => {
+      setCalculatingDistance(true);
+      const result = await calculateDistance(newRoute.from, newRoute.to);
+      if (result) {
+        const autoPrice = vehicle.pricePerKm
+          ? Math.round(result.distanceKm * vehicle.pricePerKm * 100) / 100
+          : 0;
+        setNewRoute(prev => ({
+          ...prev,
+          distance: `${result.distanceKm} km`,
+          duration: result.durationText,
+          price: prev.price || autoPrice,
+        }));
+      }
+      setCalculatingDistance(false);
+    };
+    calc();
+  }, [newRoute.from, newRoute.to, calculateDistance, vehicle.pricePerKm]);
 
   const handleAddRoute = async () => {
     if (!newRoute.from || !newRoute.to || !newRoute.price) {
@@ -114,12 +165,8 @@ export default function VehicleDetails({
     try {
       const response = await fetch(`/api/vehicles/${vehicle._id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          trips: [...routes, newRoute],
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trips: [...routes, newRoute] }),
         credentials: 'include',
       });
 
@@ -142,12 +189,8 @@ export default function VehicleDetails({
     try {
       const response = await fetch(`/api/vehicles/${vehicle._id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          trips: updatedRoutes,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trips: updatedRoutes }),
         credentials: 'include',
       });
 
@@ -162,6 +205,66 @@ export default function VehicleDetails({
     }
   };
 
+  // Generate all routes for all location pairs
+  const handleGenerateAllRoutes = async () => {
+    if (!vehicle.pricePerKm) {
+      alert('Please set a Price per KM on this vehicle first (edit vehicle).');
+      return;
+    }
+
+    const transferLocs = locations.filter(l => l.lat && l.lng);
+    if (transferLocs.length < 2) {
+      alert('Need at least 2 locations with coordinates to generate routes.');
+      return;
+    }
+
+    if (!confirm(`This will generate routes for all ${transferLocs.length} locations (${transferLocs.length * (transferLocs.length - 1)} routes). Existing routes will be replaced. Continue?`)) {
+      return;
+    }
+
+    setGeneratingAll(true);
+    const newTrips: typeof routes = [];
+
+    for (const from of transferLocs) {
+      for (const to of transferLocs) {
+        if (from.name === to.name) continue;
+
+        const result = await calculateDistance(from.name, to.name);
+        if (result) {
+          const price = Math.round(result.distanceKm * vehicle.pricePerKm * 100) / 100;
+          newTrips.push({
+            from: from.name,
+            to: to.name,
+            price,
+            distance: `${result.distanceKm} km`,
+            duration: result.durationText,
+          });
+        }
+      }
+    }
+
+    try {
+      const response = await fetch(`/api/vehicles/${vehicle._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trips: newTrips }),
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        setRoutes(newTrips);
+        alert(`Generated ${newTrips.length} routes successfully!`);
+      } else {
+        alert('Failed to save generated routes');
+      }
+    } catch (error) {
+      console.error('Error generating routes:', error);
+      alert('Failed to generate routes');
+    } finally {
+      setGeneratingAll(false);
+    }
+  };
+
   return (
     <div className='bg-white rounded-lg shadow-sm border p-6'>
       <div className='grid grid-cols-1 lg:grid-cols-5 gap-6'>
@@ -169,10 +272,13 @@ export default function VehicleDetails({
         <div className='lg:col-span-1'>
           <div className='aspect-square bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl relative overflow-hidden mb-6 shadow-sm border'>
             {vehicle.mainImage ? (
-              <img
+              <Image
                 src={vehicle.mainImage}
                 alt={`${vehicle.make} ${vehicle.model}`}
-                className='w-full h-full object-cover'
+                fill
+                sizes='(max-width: 1024px) 100vw, 20vw'
+                className='object-cover'
+                loading='lazy'
               />
             ) : (
               <div className='flex items-center justify-center h-full'>
@@ -358,16 +464,37 @@ export default function VehicleDetails({
             {showRoutes && (
               <div className='p-6'>
                 <div className='flex items-center justify-between mb-4'>
-                  <h3 className='text-lg font-semibold text-gray-900'>
-                    Transfer Routes
-                  </h3>
-                  <button
-                    onClick={() => setIsAddingRoute(true)}
-                    className='flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors'
-                  >
-                    <Plus className='h-4 w-4' />
-                    Add Route
-                  </button>
+                  <div>
+                    <h3 className='text-lg font-semibold text-gray-900'>
+                      Transfer Routes
+                    </h3>
+                    {vehicle.pricePerKm ? (
+                      <p className='text-sm text-gray-500 mt-1'>
+                        Rate: €{vehicle.pricePerKm}/km
+                      </p>
+                    ) : (
+                      <p className='text-sm text-yellow-600 mt-1'>
+                        Set Price per KM on vehicle to enable auto-pricing
+                      </p>
+                    )}
+                  </div>
+                  <div className='flex gap-2'>
+                    <button
+                      onClick={handleGenerateAllRoutes}
+                      disabled={generatingAll}
+                      className='flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50'
+                    >
+                      {generatingAll ? <Loader2 className='h-4 w-4 animate-spin' /> : <Zap className='h-4 w-4' />}
+                      {generatingAll ? 'Generating...' : 'Generate All Routes'}
+                    </button>
+                    <button
+                      onClick={() => setIsAddingRoute(true)}
+                      className='flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors'
+                    >
+                      <Plus className='h-4 w-4' />
+                      Add Route
+                    </button>
+                  </div>
                 </div>
 
                   {/* Add Route Form */}
@@ -431,26 +558,26 @@ export default function VehicleDetails({
                         </div>
                         <div>
                           <label className='block text-sm font-semibold text-gray-900 mb-2'>
-                            Duration
+                            Duration {calculatingDistance && <Loader2 className='inline h-3 w-3 animate-spin ml-1' />}
                           </label>
                           <input
                             type='text'
                             value={newRoute.duration}
                             onChange={(e) => setNewRoute({ ...newRoute, duration: e.target.value })}
                             className='w-full px-4 py-3 border-2 border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 hover:border-emerald-400 text-gray-900 placeholder-gray-500 bg-white font-medium transition-all duration-200'
-                            placeholder='e.g., 2 hours'
+                            placeholder='Auto-calculated'
                           />
                         </div>
-                        <div className='col-span-2'>
+                        <div>
                           <label className='block text-sm font-semibold text-gray-900 mb-2'>
-                            Distance
+                            Distance {calculatingDistance && <Loader2 className='inline h-3 w-3 animate-spin ml-1' />}
                           </label>
                           <input
                             type='text'
                             value={newRoute.distance}
                             onChange={(e) => setNewRoute({ ...newRoute, distance: e.target.value })}
                             className='w-full px-4 py-3 border-2 border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 hover:border-emerald-400 text-gray-900 placeholder-gray-500 bg-white font-medium transition-all duration-200'
-                            placeholder='e.g., 150 km'
+                            placeholder='Auto-calculated'
                           />
                         </div>
                       </div>

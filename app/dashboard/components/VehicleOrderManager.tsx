@@ -18,6 +18,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import Image from 'next/image';
 import { GripVertical, Car, Save, RotateCcw, CheckCircle } from 'lucide-react';
 
 interface Vehicle {
@@ -85,12 +86,15 @@ function SortableVehicleItem({ vehicle }: SortableVehicleItemProps) {
         </div>
 
         {/* Vehicle Image */}
-        <div className='w-24 h-16 flex-shrink-0 bg-gray-200 rounded overflow-hidden'>
+        <div className='w-24 h-16 flex-shrink-0 bg-gray-200 rounded overflow-hidden relative'>
           {vehicle.mainImage ? (
-            <img
+            <Image
               src={vehicle.mainImage}
               alt={`${vehicle.make} ${vehicle.model}`}
-              className='w-full h-full object-cover'
+              fill
+              sizes='96px'
+              className='object-cover'
+              loading='lazy'
             />
           ) : (
             <div className='flex items-center justify-center h-full'>

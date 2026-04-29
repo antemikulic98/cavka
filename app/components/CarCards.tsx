@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Users, Fuel, Settings, Star, MapPin } from 'lucide-react';
 import ContactManagerModal from './ContactManagerModal';
 
@@ -207,10 +208,13 @@ export default function CarCards() {
                   {/* Image Container with Overlay */}
                   <div className='relative h-[28rem] overflow-hidden'>
                     {vehicle.mainImage ? (
-                      <img
+                      <Image
                         src={vehicle.mainImage}
                         alt={vehicle.fullName}
-                        className='w-full h-full object-cover group-hover:scale-105 transition-transform duration-300'
+                        fill
+                        sizes='(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw'
+                        className='object-cover group-hover:scale-105 transition-transform duration-300'
+                        loading='lazy'
                       />
                     ) : (
                       <div className='w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center'>

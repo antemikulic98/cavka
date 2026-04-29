@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import sharp from 'sharp';
 import { uploadToSpaces } from '@/lib/spaces';
 import { getCurrentUser } from '@/lib/auth';
 import { rateLimit } from '@/lib/security';
+
+const MAX_WIDTH = 1920;
+const MAX_HEIGHT = 1080;
+const JPEG_QUALITY = 80;
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,19 +66,31 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Upload files to DigitalOcean Spaces
+    // Optimize and upload files to DigitalOcean Spaces
     const uploadPromises = files.map(async (file) => {
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const fileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_'); // Sanitize filename
+      const originalBuffer = Buffer.from(await file.arrayBuffer());
+      const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      // Always output as WebP for best compression
+      const fileName = sanitizedName.replace(/\.(jpg|jpeg|png)$/i, '.webp');
 
       try {
-        const url = await uploadToSpaces(buffer, fileName, file.type);
+        // Optimize image with sharp: resize if too large, convert to WebP
+        const optimizedBuffer = await sharp(originalBuffer)
+          .resize(MAX_WIDTH, MAX_HEIGHT, {
+            fit: 'inside',
+            withoutEnlargement: true,
+          })
+          .webp({ quality: JPEG_QUALITY })
+          .toBuffer();
+
+        const url = await uploadToSpaces(optimizedBuffer, fileName, 'image/webp');
         return {
           originalName: file.name,
           fileName: fileName,
           url: url,
-          size: file.size,
-          type: file.type,
+          originalSize: file.size,
+          optimizedSize: optimizedBuffer.length,
+          type: 'image/webp',
         };
       } catch (error) {
         console.error(`Failed to upload ${file.name}:`, error);

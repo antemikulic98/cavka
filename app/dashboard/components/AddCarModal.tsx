@@ -48,6 +48,7 @@ interface CarFormData {
 
   // Pricing
   dailyRate: number;
+  pricePerKm: number;
   currency: string;
 
   // Transfer-specific: Trip-based pricing
@@ -232,6 +233,7 @@ export default function AddCarModal({
     smallSuitcases: 0,
     features: [],
     dailyRate: 50,
+    pricePerKm: 0,
     currency: 'EUR',
     trips: [],
     location: 'Zagreb Downtown',
@@ -561,6 +563,7 @@ export default function AddCarModal({
           smallSuitcases: 0,
           features: [],
           dailyRate: 50,
+          pricePerKm: 0,
           currency: 'EUR',
           trips: [],
           location: 'Zagreb Downtown',
@@ -734,6 +737,7 @@ export default function AddCarModal({
           smallSuitcases: 0,
           features: [],
           dailyRate: 50,
+          pricePerKm: 0,
           currency: 'EUR',
           trips: [],
           location: 'Zagreb Downtown',
@@ -1287,6 +1291,45 @@ export default function AddCarModal({
               </div>
             ) : (
               <div>
+                <div className='grid grid-cols-2 gap-4 mb-6'>
+                  <div>
+                    <label className='block text-sm font-semibold text-gray-900 mb-2'>
+                      Price per KM
+                    </label>
+                    <div className='relative'>
+                      <div className='absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none'>
+                        <span className='text-gray-600 text-lg font-semibold'>€</span>
+                      </div>
+                      <input
+                        type='number'
+                        name='pricePerKm'
+                        value={formData.pricePerKm === 0 ? '' : formData.pricePerKm}
+                        onChange={handleInputChange}
+                        onFocus={(e) => { if (e.target.value === '0') e.target.value = ''; }}
+                        onBlur={(e) => { if (e.target.value === '') setFormData((prev) => ({ ...prev, pricePerKm: 0 })); }}
+                        min='0'
+                        step='0.01'
+                        className='w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-xl shadow-sm transition-all duration-200 ease-out focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 hover:border-emerald-400 hover:shadow-md text-gray-900 placeholder-gray-500 bg-white font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
+                        placeholder='1.20'
+                      />
+                      <div className='absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none'>
+                        <span className='text-gray-500 text-sm'>per km</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className='block text-sm font-semibold text-gray-900 mb-2'>
+                      Currency
+                    </label>
+                    <CustomSelect
+                      options={currencyOptions}
+                      value={formData.currency}
+                      onChange={handleSelectChange('currency')}
+                      placeholder='Select Currency'
+                    />
+                  </div>
+                </div>
+
                 <div className='flex items-center justify-between mb-3'>
                   <label className='block text-sm font-semibold text-gray-900'>
                     Transfer Routes & Pricing

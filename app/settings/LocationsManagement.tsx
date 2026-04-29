@@ -9,6 +9,8 @@ interface Location {
   type: 'pickup' | 'both';
   serviceType: 'rental' | 'transfer' | 'both';
   city?: string;
+  lat?: number;
+  lng?: number;
   active: boolean;
   order: number;
 }
@@ -94,6 +96,8 @@ export default function LocationsManagement() {
         type: 'both',
         serviceType: 'both',
         city: '',
+        lat: undefined,
+        lng: undefined,
         active: true,
         order: 0,
       }
@@ -187,6 +191,38 @@ export default function LocationsManagement() {
               }
               className='w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all'
               placeholder='0'
+            />
+          </div>
+
+          <div>
+            <label className='block text-sm font-semibold text-gray-700 mb-2'>
+              Latitude
+            </label>
+            <input
+              type='number'
+              step='any'
+              value={formData.lat ?? ''}
+              onChange={(e) =>
+                setFormData({ ...formData, lat: e.target.value ? parseFloat(e.target.value) : undefined })
+              }
+              className='w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all'
+              placeholder='e.g., 43.5081'
+            />
+          </div>
+
+          <div>
+            <label className='block text-sm font-semibold text-gray-700 mb-2'>
+              Longitude
+            </label>
+            <input
+              type='number'
+              step='any'
+              value={formData.lng ?? ''}
+              onChange={(e) =>
+                setFormData({ ...formData, lng: e.target.value ? parseFloat(e.target.value) : undefined })
+              }
+              className='w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all'
+              placeholder='e.g., 16.4402'
             />
           </div>
         </div>
@@ -307,6 +343,16 @@ export default function LocationsManagement() {
                       {!location.active && (
                         <span className='text-xs px-2.5 py-1 bg-red-100 text-red-700 rounded-full font-medium'>
                           ❌ Inactive
+                        </span>
+                      )}
+                      {location.lat && location.lng && (
+                        <span className='text-xs text-gray-500'>
+                          📍 {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+                        </span>
+                      )}
+                      {(!location.lat || !location.lng) && (
+                        <span className='text-xs px-2.5 py-1 bg-yellow-100 text-yellow-700 rounded-full font-medium'>
+                          No coordinates
                         </span>
                       )}
                       <span className='text-xs text-gray-500'>

@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { _id, name, type, serviceType, city, active, order } = body;
+    const { _id, name, type, serviceType, city, lat, lng, active, order } = body;
 
     // Validate
     if (!name) {
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       // Update existing
       const location = await Location.findByIdAndUpdate(
         _id,
-        { name, type, serviceType, city, active, order },
+        { name, type, serviceType, city, lat, lng, active, order },
         { new: true, runValidators: true }
       );
 
@@ -88,6 +88,8 @@ export async function POST(request: NextRequest) {
         type: type || 'both',
         serviceType: serviceType || 'both',
         city,
+        lat,
+        lng,
         active: active !== undefined ? active : true,
         order: order || 0,
       });

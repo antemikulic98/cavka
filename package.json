@@ -12,7 +12,8 @@
     "test:coverage": "jest --coverage",
     "create-user": "tsx scripts/create-user.ts",
     "create-sample-cars": "tsx scripts/create-sample-cars.ts",
-    "reset-password": "tsx scripts/reset-password.ts"
+    "reset-password": "tsx scripts/reset-password.ts",
+    "optimize-images": "tsx scripts/optimize-existing-images.ts"
   },
   "dependencies": {
     "@anthropic-ai/claude-code": "^2.1.81",
@@ -36,6 +37,7 @@
     "nodemailer": "^7.0.10",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "sharp": "^0.34.5",
     "stripe": "^19.2.1",
     "validator": "^13.15.26"
   },

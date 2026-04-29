@@ -6,6 +6,7 @@
  */
 
 import Vehicle from '@/models/Vehicle';
+import Location from '@/models/Location';
 import InsurancePricing from '@/models/InsurancePricing';
 import AddOnPricing from '@/models/AddOnPricing';
 import mongoose from 'mongoose';
@@ -70,7 +71,9 @@ export async function calculateBookingPrice(
   const baseVehicleCost = await calculateVehicleCost(
     vehicle,
     input.pickupDate,
-    input.rentalDays
+    input.rentalDays,
+    input.pickupLocation,
+    input.returnLocation
   );
 
   // Calculate CDW cost
@@ -117,28 +120,82 @@ export async function calculateBookingPrice(
 }
 
 /**
+ * Calculate driving distance between two locations using Google Maps API
+ */
+async function calculateDistanceKm(
+  pickupLocation: string,
+  returnLocation: string
+): Promise<number | null> {
+  try {
+    const [fromLoc, toLoc] = await Promise.all([
+      Location.findOne({ name: { $regex: new RegExp(`^${pickupLocation}$`, 'i') } }),
+      Location.findOne({ name: { $regex: new RegExp(`^${returnLocation}$`, 'i') } }),
+    ]);
+
+    if (!fromLoc?.lat || !fromLoc?.lng || !toLoc?.lat || !toLoc?.lng) {
+      return null;
+    }
+
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (!apiKey) return null;
+
+    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${fromLoc.lat},${fromLoc.lng}&destinations=${toLoc.lat},${toLoc.lng}&mode=driving&units=metric&key=${apiKey}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    const element = data.rows?.[0]?.elements?.[0];
+    if (element?.status === 'OK') {
+      return Math.round(element.distance.value / 1000);
+    }
+  } catch (err) {
+    console.error('Distance calculation error:', err);
+  }
+  return null;
+}
+
+/**
  * Calculate vehicle base cost
  * For rentals: sum of daily rates with custom pricing
- * For transfers: fixed trip price
+ * For transfers: km * pricePerKm (with trips[] override)
  */
 async function calculateVehicleCost(
   vehicle: any,
   pickupDate: string,
-  rentalDays: number
+  rentalDays: number,
+  pickupLocation?: string,
+  returnLocation?: string
 ): Promise<number> {
-  // For transfer vehicles, return trip price
+  // For transfer vehicles
   if (vehicle.type === 'transfer') {
+    // 1. Check for matching trip override
+    if (vehicle.trips && vehicle.trips.length > 0 && pickupLocation && returnLocation) {
+      const matchingTrip = vehicle.trips.find(
+        (trip: any) =>
+          trip.from.toLowerCase() === pickupLocation.toLowerCase() &&
+          trip.to.toLowerCase() === returnLocation.toLowerCase()
+      );
+      if (matchingTrip && matchingTrip.price > 0) {
+        return matchingTrip.price;
+      }
+    }
+
+    // 2. Calculate from km * pricePerKm
+    if (vehicle.pricePerKm && pickupLocation && returnLocation) {
+      const km = await calculateDistanceKm(pickupLocation, returnLocation);
+      if (km && km > 0) {
+        return Math.round(km * vehicle.pricePerKm * 100) / 100;
+      }
+    }
+
+    // 3. Fallback to first trip price or dailyRate
     if (vehicle.trips && vehicle.trips.length > 0) {
       const price = vehicle.trips[0].price;
-      if (!price || price <= 0) {
-        throw new Error('Transfer vehicle has no valid trip price configured');
-      }
-      return price;
+      if (price && price > 0) return price;
     }
-    if (!vehicle.dailyRate || vehicle.dailyRate <= 0) {
-      throw new Error('Transfer vehicle has no trips or daily rate configured');
+    if (vehicle.dailyRate && vehicle.dailyRate > 0) {
+      return vehicle.dailyRate;
     }
-    return vehicle.dailyRate;
+    throw new Error('Transfer vehicle has no pricing configured');
   }
 
   // For rental vehicles, calculate with custom pricing

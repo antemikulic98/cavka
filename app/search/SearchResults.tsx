@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import {
   ArrowLeft,
   MapPin,
@@ -36,6 +37,7 @@ interface Vehicle {
     label?: string;
     type?: string;
   }[];
+  pricePerKm?: number;
   currency: string;
   status: string;
   location: string;
@@ -61,6 +63,7 @@ export default function SearchResults() {
   const [error, setError] = useState('');
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [distanceKm, setDistanceKm] = useState<number | null>(null);
 
   // Get search criteria from URL (with safety check for SSR)
   const pickupLocation = searchParams?.get('pickupLocation') || '';
@@ -72,6 +75,24 @@ export default function SearchResults() {
   const vehicleType = searchParams?.get('vehicleType') || 'car';
   const vehicleId = searchParams?.get('vehicleId') || '';
   const expandSearch = searchParams?.get('expandSearch') === 'true';
+  const isTransfer = vehicleType === 'transfers' || vehicleType === 'transfer';
+
+  // Fetch distance for transfer searches
+  useEffect(() => {
+    if (!isTransfer || !pickupLocation || !returnLocation) return;
+    const fetchDistance = async () => {
+      try {
+        const res = await fetch(`/api/distance?from=${encodeURIComponent(pickupLocation)}&to=${encodeURIComponent(returnLocation)}`);
+        const data = await res.json();
+        if (data.success) {
+          setDistanceKm(data.distanceKm);
+        }
+      } catch (err) {
+        console.error('Failed to fetch distance:', err);
+      }
+    };
+    fetchDistance();
+  }, [isTransfer, pickupLocation, returnLocation]);
 
   // Fetch vehicles based on search criteria
   useEffect(() => {
@@ -233,20 +254,30 @@ export default function SearchResults() {
     setSelectedVehicle(null);
   };
 
-  // Get matching trip price for transfer vehicles
-  const getMatchingTrip = (vehicle: Vehicle) => {
-    if (vehicle.type !== 'transfer' || !vehicle.trips || vehicle.trips.length === 0) {
-      return null;
+  // Get transfer price: trips[] override first, then km * pricePerKm
+  const getTransferPrice = (vehicle: Vehicle): number => {
+    if (vehicle.type !== 'transfer') return 0;
+
+    // Check for matching trip override first
+    if (vehicle.trips && vehicle.trips.length > 0) {
+      const matchingTrip = vehicle.trips.find(
+        (trip) =>
+          trip.from.toLowerCase() === pickupLocation.toLowerCase() &&
+          trip.to.toLowerCase() === returnLocation.toLowerCase()
+      );
+      if (matchingTrip) return matchingTrip.price;
     }
 
-    // Find a trip that matches the pickup and return locations
-    const matchingTrip = vehicle.trips.find(
-      (trip) =>
-        trip.from.toLowerCase() === pickupLocation.toLowerCase() &&
-        trip.to.toLowerCase() === returnLocation.toLowerCase()
-    );
+    // Calculate from km * pricePerKm
+    if (distanceKm && vehicle.pricePerKm) {
+      return Math.round(distanceKm * vehicle.pricePerKm * 100) / 100;
+    }
 
-    return matchingTrip || vehicle.trips[0]; // Return first trip if no match
+    // Fallback to first trip or dailyRate
+    if (vehicle.trips && vehicle.trips.length > 0) {
+      return vehicle.trips[0].price;
+    }
+    return vehicle.dailyRate;
   };
 
   // Get price for a specific date string (YYYY-MM-DD), checking custom pricing first
@@ -266,8 +297,7 @@ export default function SearchResults() {
   // Calculate average daily rate with custom pricing
   const getAverageDailyRate = (vehicle: Vehicle): number => {
     if (vehicle.type === 'transfer') {
-      const trip = getMatchingTrip(vehicle);
-      return trip ? trip.price : vehicle.dailyRate;
+      return getTransferPrice(vehicle);
     }
 
     const totalPrice = calculateTotalPriceValue(vehicle);
@@ -277,10 +307,9 @@ export default function SearchResults() {
 
   // Calculate total price value (number only)
   const calculateTotalPriceValue = (vehicle: Vehicle): number => {
-    // For transfers, show trip price
+    // For transfers, calculate from km or use trip override
     if (vehicle.type === 'transfer') {
-      const trip = getMatchingTrip(vehicle);
-      return trip ? trip.price : vehicle.dailyRate;
+      return getTransferPrice(vehicle);
     }
 
     // For rentals, calculate based on days with custom pricing
@@ -420,10 +449,13 @@ export default function SearchResults() {
                   {/* Image Container with Overlay */}
                   <div className='relative h-[28rem] overflow-hidden'>
                     {vehicle.mainImage ? (
-                      <img
+                      <Image
                         src={vehicle.mainImage}
                         alt={vehicle.fullName}
-                        className='w-full h-full object-cover group-hover:scale-105 transition-transform duration-300'
+                        fill
+                        sizes='(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw'
+                        className='object-cover group-hover:scale-105 transition-transform duration-300'
+                        loading='lazy'
                       />
                     ) : (
                       <div className='w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center'>
@@ -506,7 +538,7 @@ export default function SearchResults() {
                                 {
                                   formatPriceWithCents(
                                     vehicle.type === 'transfer'
-                                      ? (getMatchingTrip(vehicle)?.price || vehicle.dailyRate)
+                                      ? (getTransferPrice(vehicle))
                                       : vehicle.dailyRate,
                                     vehicle.currency
                                   ).symbol
@@ -564,6 +596,7 @@ export default function SearchResults() {
           pickupLocation={pickupLocation}
           returnLocation={returnLocation}
           rentalDays={calculateRentalDays()}
+          distanceKm={distanceKm}
           totalPrice={
             selectedVehicle
               ? calculateTotalPrice(selectedVehicle).formatted

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { Globe, Calendar, ChevronDown } from 'lucide-react';
 
 export default function Header() {
@@ -18,12 +19,13 @@ export default function Header() {
           {/* Logo */}
           <div className='flex items-center'>
             <a href='/' className='flex items-center' aria-label='Hit Rent Croatia - Home'>
-              <img
+              <Image
                 src='/img/logo.svg'
                 alt='Hit Rent Croatia - Premium Car Rental Service'
+                width={150}
+                height={48}
                 className='h-12 w-auto'
-                width='150'
-                height='48'
+                priority
               />
             </a>
           </div>

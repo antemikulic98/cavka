@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import {
   Search,
   Car,
@@ -644,10 +645,13 @@ export default function BrowseCars({
               {/* Vehicle Image */}
               <div className='aspect-video bg-gray-200 relative'>
                 {vehicle.mainImage ? (
-                  <img
+                  <Image
                     src={vehicle.mainImage}
                     alt={`${vehicle.make} ${vehicle.model}`}
-                    className='w-full h-full object-cover'
+                    fill
+                    sizes='(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw'
+                    className='object-cover'
+                    loading='lazy'
                   />
                 ) : (
                   <div className='flex items-center justify-center h-full'>
