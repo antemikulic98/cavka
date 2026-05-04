@@ -387,13 +387,20 @@ export default function SearchResults() {
           </div>
           <p className='text-gray-600'>
             {loading ? 'Searching...' : `${vehicles.length} vehicles found`}
-            {pickupLocation && ` in ${pickupLocation}`}
-            {pickupDate && returnDate && (
-              <span className='ml-2'>
-                • {calculateRentalDays()}{' '}
-                {calculateRentalDays() === 1 ? 'day' : 'days'} rental
-              </span>
-            )}
+            {isTransfer
+              ? pickupLocation && returnLocation && ` • ${pickupLocation} → ${returnLocation}`
+              : (
+                <>
+                  {pickupLocation && ` in ${pickupLocation}`}
+                  {pickupDate && returnDate && (
+                    <span className='ml-2'>
+                      • {calculateRentalDays()}{' '}
+                      {calculateRentalDays() === 1 ? 'day' : 'days'} rental
+                    </span>
+                  )}
+                </>
+              )
+            }
           </p>
         </div>
 
