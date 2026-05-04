@@ -136,6 +136,7 @@ export async function GET(request: NextRequest) {
         bigSuitcases: vehicleData.bigSuitcases,
         transmission: vehicle.transmission,
         features: vehicle.features,
+        pricePerKm: vehicleData.pricePerKm, // Include pricePerKm for dynamic transfer pricing
         trips: vehicleData.trips, // Include trips array for transfer pricing
         available: isAvailable,
         wouldBeOverbooking,
