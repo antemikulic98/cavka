@@ -54,15 +54,9 @@ export async function GET(request: NextRequest) {
       query.location = location;
     }
 
-    // For transfer vehicles, filter by matching trip route (from/to)
-    if (type === 'transfer' && location && returnLocation) {
-      query['trips'] = {
-        $elemMatch: {
-          from: { $regex: new RegExp(`^${location.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
-          to: { $regex: new RegExp(`^${returnLocation.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
-        },
-      };
-      // Remove the location filter since we're now filtering by trips.from
+    // For transfer vehicles, don't filter by location or trips —
+    // pricing is calculated dynamically via Google Maps distance * pricePerKm
+    if (type === 'transfer') {
       delete query.location;
     }
 
