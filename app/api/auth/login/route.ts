@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
 import User from '@/models/User';
 import { generateToken } from '@/lib/auth';
+import { rateLimit } from '@/lib/security';
+
+const loginRateLimit = rateLimit({ windowMs: 15 * 60 * 1000, maxRequests: 5 });
 
 interface LoginRequest {
   email: string;
@@ -10,6 +13,9 @@ interface LoginRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    const rateLimitResponse = await loginRateLimit(request);
+    if (rateLimitResponse) return rateLimitResponse;
+
     await connectMongoDB();
 
     const body: LoginRequest = await request.json();

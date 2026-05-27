@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'Google Maps API key not configured' },
-        { status: 500 }
+        { error: 'Distance service unavailable' },
+        { status: 503 }
       );
     }
 
@@ -36,8 +36,9 @@ export async function GET(request: NextRequest) {
     const data = await response.json();
 
     if (data.status !== 'OK') {
+      console.error('Google Maps API error:', data.status, data.error_message);
       return NextResponse.json(
-        { error: `Google Maps API error: ${data.status}`, details: data.error_message },
+        { error: 'Distance calculation failed' },
         { status: 500 }
       );
     }

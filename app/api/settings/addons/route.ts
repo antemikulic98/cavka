@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error saving add-on pricing:', error);
     return NextResponse.json(
-      { error: `Failed to save add-on pricing: ${error.message || error}` },
+      { error: 'Failed to save add-on pricing' },
       { status: 500 }
     );
   }

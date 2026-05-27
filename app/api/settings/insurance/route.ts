@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error saving insurance pricing:', error);
     return NextResponse.json(
-      { error: `Failed to save insurance pricing: ${error.message || error}` },
+      { error: 'Failed to save insurance pricing' },
       { status: 500 }
     );
   }

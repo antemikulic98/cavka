@@ -124,7 +124,7 @@ export async function POST(
   } catch (error: any) {
     console.error('Error creating blocked date:', error);
     return NextResponse.json(
-      { error: `Failed to block dates: ${error.message || error}` },
+      { error: 'Failed to block dates' },
       { status: 500 }
     );
   }
@@ -169,7 +169,7 @@ export async function DELETE(
   } catch (error: any) {
     console.error('Error deleting blocked date:', error);
     return NextResponse.json(
-      { error: `Failed to remove blocked date: ${error.message || error}` },
+      { error: 'Failed to remove blocked date' },
       { status: 500 }
     );
   }

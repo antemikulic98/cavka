@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: `Failed to save location: ${error.message || error}` },
+      { error: 'Failed to save location' },
       { status: 500 }
     );
   }

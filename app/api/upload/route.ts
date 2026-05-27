@@ -8,8 +8,13 @@ const MAX_WIDTH = 1920;
 const MAX_HEIGHT = 1080;
 const JPEG_QUALITY = 80;
 
+const uploadRateLimit = rateLimit({ windowMs: 60 * 60 * 1000, maxRequests: 10 });
+
 export async function POST(request: NextRequest) {
   try {
+    const rateLimitResponse = await uploadRateLimit(request);
+    if (rateLimitResponse) return rateLimitResponse;
+
     // SECURITY: Require authentication
     const user = await getCurrentUser();
     if (!user) {
@@ -17,16 +22,6 @@ export async function POST(request: NextRequest) {
         { error: 'Unauthorized - Authentication required' },
         { status: 401 }
       );
-    }
-
-    // SECURITY: Rate limiting - max 10 uploads per hour
-    const rateLimitResponse = await rateLimit({
-      windowMs: 60 * 60 * 1000, // 1 hour
-      maxRequests: 10,
-    })(request);
-
-    if (rateLimitResponse) {
-      return rateLimitResponse;
     }
 
     const formData = await request.formData();

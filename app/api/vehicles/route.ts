@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
     console.error('Error creating vehicle:', error);
 
     if (error instanceof Error && error.name === 'ValidationError') {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid vehicle data' }, { status: 400 });
     }
 
     return NextResponse.json(

@@ -61,7 +61,7 @@ export async function PATCH(
   } catch (error: any) {
     console.error('Error updating overbooking status:', error);
     return NextResponse.json(
-      { error: `Failed to update overbooking status: ${error.message || error}` },
+      { error: 'Failed to update overbooking status' },
       { status: 500 }
     );
   }

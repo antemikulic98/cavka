@@ -31,18 +31,6 @@ export async function uploadToSpaces(
   contentType: string
 ): Promise<string> {
   try {
-    console.log('🔍 uploadToSpaces called with:', {
-      fileName,
-      contentType,
-      fileSize: file.length,
-      bucket: SPACES_BUCKET,
-      region: process.env.DO_SPACES_REGION,
-      hasCredentials: {
-        accessKey: !!process.env.DO_SPACES_KEY,
-        secretKey: !!process.env.DO_SPACES_SECRET,
-      },
-    });
-
     if (!SPACES_BUCKET) {
       throw new Error('DO_SPACES_BUCKET environment variable is not set');
     }
