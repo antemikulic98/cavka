@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
 import Vehicle from '@/models/Vehicle';
 import { getCurrentUser } from '@/lib/auth';
+import { csrfProtection } from '@/lib/csrf';
 
 export async function GET(
   request: NextRequest,
@@ -55,6 +56,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const csrfError = csrfProtection(request);
+    if (csrfError) return csrfError;
+
     const resolvedParams = await params;
     await connectMongoDB();
 
@@ -104,6 +108,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const csrfError = csrfProtection(request);
+    if (csrfError) return csrfError;
+
     const resolvedParams = await params;
     await connectMongoDB();
 
@@ -153,6 +160,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const csrfError = csrfProtection(request);
+    if (csrfError) return csrfError;
+
     const resolvedParams = await params;
     await connectMongoDB();
 

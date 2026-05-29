@@ -129,11 +129,12 @@ async function createBookingFromSession(session: Stripe.Checkout.Session) {
     const rentalDays = parseInt(metadata.rentalDays || '1');
     const dailyRate = Math.round((discountedAmount / Math.max(rentalDays, 1)) * 100) / 100;
 
-    // Generate booking reference
+    // Generate booking reference using crypto-secure random
     const generateBookingReference = (): string => {
+      const nodeCrypto = require('crypto');
       const prefix = metadata.vehicleType === 'transfer' ? 'TRF' : 'CAR';
-      const timestamp = Date.now().toString().slice(-6);
-      const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const timestamp = Date.now().toString(36).toUpperCase().slice(-5);
+      const random = nodeCrypto.randomBytes(4).toString('hex').toUpperCase();
       return `${prefix}${timestamp}${random}`;
     };
 

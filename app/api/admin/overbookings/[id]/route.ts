@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
 import { getCurrentUser } from '@/lib/auth';
+import { csrfProtection } from '@/lib/csrf';
 import Booking from '@/models/Booking';
 import ExternalCarSource from '@/models/ExternalCarSource';
 import Vehicle from '@/models/Vehicle';
@@ -77,6 +78,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const csrfError = csrfProtection(request);
+    if (csrfError) return csrfError;
+
     await connectMongoDB();
 
     const user = await getCurrentUser();

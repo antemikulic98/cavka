@@ -87,7 +87,7 @@ const BookingSchema = new mongoose.Schema({
     enum: ['stripe', 'cash', 'bank_transfer', 'pay_later'],
     default: 'pay_later',
   },
-  stripeSessionId: { type: String },
+  stripeSessionId: { type: String, unique: true, sparse: true },
   stripePaymentIntentId: { type: String },
 
   // Booking Status
@@ -135,11 +135,12 @@ BookingSchema.pre('validate', function (next) {
   next();
 });
 
-// Generate unique booking reference
+// Generate unique booking reference using crypto-secure random
 function generateBookingReference(vehicleType?: string): string {
+  const crypto = require('crypto');
   const prefix = vehicleType === 'transfer' ? 'TRF' : 'CAR';
-  const timestamp = Date.now().toString().slice(-6);
-  const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const timestamp = Date.now().toString(36).toUpperCase().slice(-5);
+  const random = crypto.randomBytes(4).toString('hex').toUpperCase();
   return `${prefix}${timestamp}${random}`;
 }
 

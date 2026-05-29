@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import {
   X,
@@ -80,6 +81,7 @@ export default function BookingModal({
   totalPrice,
 }: BookingModalProps) {
   const { getHeaders } = useCSRF();
+  const urlSearchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
   const [addOns, setAddOns] = useState({
     additionalDriver: false,
@@ -633,6 +635,10 @@ export default function BookingModal({
           rentalDays,
           cdwCoverage,
           addOns,
+          fromLat: urlSearchParams?.get('fromLat') || undefined,
+          fromLng: urlSearchParams?.get('fromLng') || undefined,
+          toLat: urlSearchParams?.get('toLat') || undefined,
+          toLng: urlSearchParams?.get('toLng') || undefined,
         };
 
         const response = await fetch('/api/checkout', {
@@ -664,6 +670,10 @@ export default function BookingModal({
         cdwCoverage,
         addOns,
         paymentMethod: 'pay_later',
+        fromLat: urlSearchParams?.get('fromLat') || undefined,
+        fromLng: urlSearchParams?.get('fromLng') || undefined,
+        toLat: urlSearchParams?.get('toLat') || undefined,
+        toLng: urlSearchParams?.get('toLng') || undefined,
       };
 
       const response = await fetch('/api/bookings', {

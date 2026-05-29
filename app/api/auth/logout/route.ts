@@ -1,7 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { csrfProtection } from '@/lib/csrf';
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
+    const csrfError = csrfProtection(request);
+    if (csrfError) return csrfError;
+
     // Create response
     const response = NextResponse.json({
       success: true,

@@ -20,11 +20,28 @@ export interface RateLimitConfig {
 /**
  * Rate limiting middleware
  */
+/**
+ * Extract reliable client IP.
+ * Priority: DO platform header > last X-Forwarded-For hop > X-Real-IP > fallback
+ */
+export function getClientIp(request: NextRequest): string {
+  // DigitalOcean App Platform specific header (trusted)
+  const doIp = request.headers.get('do-connecting-ip');
+  if (doIp) return doIp.trim();
+
+  // X-Forwarded-For: use the LAST entry (closest to our reverse proxy, hardest to spoof)
+  const xff = request.headers.get('x-forwarded-for');
+  if (xff) {
+    const ips = xff.split(',').map(s => s.trim()).filter(Boolean);
+    if (ips.length > 0) return ips[ips.length - 1];
+  }
+
+  return request.headers.get('x-real-ip') || 'unknown';
+}
+
 export function rateLimit(config: RateLimitConfig) {
   return async (request: NextRequest) => {
-    const ip = request.headers.get('x-forwarded-for') ||
-               request.headers.get('x-real-ip') ||
-               'unknown';
+    const ip = getClientIp(request);
 
     const key = `${ip}:${request.nextUrl.pathname}`;
     const now = Date.now();
@@ -98,14 +115,16 @@ export async function requireAuth(request: NextRequest) {
 export async function requireAdmin(request: NextRequest) {
   const userOrResponse = await requireAuth(request);
 
-  // If requireAuth returned a response (error), return it
   if (userOrResponse instanceof NextResponse) {
     return userOrResponse;
   }
 
-  // TODO: Implement role checking when role field is added to User model
-  // For now, we check if user exists (basic auth check)
-  // In future: if (userOrResponse.role !== 'admin') { return 403 }
+  if (userOrResponse.role !== 'admin') {
+    return NextResponse.json(
+      { error: 'Forbidden', message: 'Admin access required' },
+      { status: 403 }
+    );
+  }
 
   return userOrResponse;
 }

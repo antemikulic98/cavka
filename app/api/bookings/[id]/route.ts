@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
 import { getCurrentUser } from '@/lib/auth';
+import { csrfProtection } from '@/lib/csrf';
 import Booking from '@/models/Booking';
 
-// GET - Retrieve specific booking by ID
+// GET - Retrieve specific booking by ID (requires auth)
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     await connectMongoDB();
 
     const { id } = await params;
@@ -59,6 +65,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const csrfError = csrfProtection(request);
+    if (csrfError) return csrfError;
+
     await connectMongoDB();
 
     const user = await getCurrentUser();
@@ -127,6 +136,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const csrfError = csrfProtection(request);
+    if (csrfError) return csrfError;
+
     await connectMongoDB();
 
     const user = await getCurrentUser();

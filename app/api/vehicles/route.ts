@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
 import Vehicle from '@/models/Vehicle';
 import { getCurrentUser } from '@/lib/auth';
+import { csrfProtection } from '@/lib/csrf';
 
 interface CreateVehicleRequest {
   type: 'rental' | 'transfer';
@@ -38,6 +39,9 @@ interface CreateVehicleRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    const csrfError = csrfProtection(request);
+    if (csrfError) return csrfError;
+
     await connectMongoDB();
 
     // Check if user is authenticated

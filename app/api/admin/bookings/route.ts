@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
 import { getCurrentUser } from '@/lib/auth';
+import { csrfProtection } from '@/lib/csrf';
 import Booking from '@/models/Booking';
 
 // GET - Retrieve all bookings (admin only)
@@ -91,6 +92,9 @@ export async function GET(request: NextRequest) {
 // PUT - Bulk update bookings (admin only)
 export async function PUT(request: NextRequest) {
   try {
+    const csrfError = csrfProtection(request);
+    if (csrfError) return csrfError;
+
     await connectMongoDB();
 
     const user = await getCurrentUser();

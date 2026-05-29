@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
 import { getCurrentUser } from '@/lib/auth';
+import { csrfProtection } from '@/lib/csrf';
 import Location from '@/models/Location';
+import mongoose from 'mongoose';
 
 // GET - Get all locations (public endpoint)
 export async function GET(request: NextRequest) {
@@ -43,6 +45,9 @@ export async function GET(request: NextRequest) {
 // POST - Create or update location
 export async function POST(request: NextRequest) {
   try {
+    const csrfError = csrfProtection(request);
+    if (csrfError) return csrfError;
+
     await connectMongoDB();
 
     const user = await getCurrentUser();
@@ -122,6 +127,9 @@ export async function POST(request: NextRequest) {
 // DELETE - Delete location
 export async function DELETE(request: NextRequest) {
   try {
+    const csrfError = csrfProtection(request);
+    if (csrfError) return csrfError;
+
     await connectMongoDB();
 
     const user = await getCurrentUser();
@@ -132,9 +140,9 @@ export async function DELETE(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
-    if (!id) {
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json(
-        { error: 'Location ID is required' },
+        { error: 'Valid location ID is required' },
         { status: 400 }
       );
     }

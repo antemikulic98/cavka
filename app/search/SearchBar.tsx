@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { MapPin, Calendar, Search, X, Plus, ChevronDown } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import AddressAutocomplete from '../components/AddressAutocomplete';
 
 interface SearchBarProps {
   initialPickupLocation: string;
@@ -26,9 +27,24 @@ export default function SearchBar({
   initialExpanded = false,
 }: SearchBarProps) {
   const router = useRouter();
+  const currentSearchParams = useSearchParams();
   const isTransfer = initialVehicleType === 'transfer' || initialVehicleType === 'transfers';
   const [pickupLocation, setPickupLocation] = useState(initialPickupLocation);
   const [returnLocation, setReturnLocation] = useState(initialReturnLocation);
+
+  // Transfer address coordinates
+  const [pickupLat, setPickupLat] = useState<number | null>(
+    currentSearchParams ? parseFloat(currentSearchParams.get('fromLat') || '') || null : null
+  );
+  const [pickupLng, setPickupLng] = useState<number | null>(
+    currentSearchParams ? parseFloat(currentSearchParams.get('fromLng') || '') || null : null
+  );
+  const [returnLat, setReturnLat] = useState<number | null>(
+    currentSearchParams ? parseFloat(currentSearchParams.get('toLat') || '') || null : null
+  );
+  const [returnLng, setReturnLng] = useState<number | null>(
+    currentSearchParams ? parseFloat(currentSearchParams.get('toLng') || '') || null : null
+  );
   const [showReturnLocation, setShowReturnLocation] = useState(isTransfer || !!initialReturnLocation);
   const [pickupDate, setPickupDate] = useState(initialPickupDate);
   const [returnDate, setReturnDate] = useState(initialReturnDate);
@@ -94,6 +110,18 @@ export default function SearchBar({
     searchParams.set('pickupTime', pickupTime);
     searchParams.set('returnTime', returnTime);
     searchParams.set('vehicleType', initialVehicleType);
+
+    // For transfers, pass coordinates
+    if (isTransfer) {
+      if (pickupLat && pickupLng) {
+        searchParams.set('fromLat', pickupLat.toString());
+        searchParams.set('fromLng', pickupLng.toString());
+      }
+      if (returnLat && returnLng) {
+        searchParams.set('toLat', returnLat.toString());
+        searchParams.set('toLng', returnLng.toString());
+      }
+    }
 
     router.push(`/search?${searchParams.toString()}`);
     setExpanded(false);
@@ -163,6 +191,18 @@ export default function SearchBar({
                 <label className='block text-sm font-bold text-gray-800 mb-2'>
                   {isTransfer ? 'From' : 'Pickup Location'}
                 </label>
+                {isTransfer ? (
+                  <AddressAutocomplete
+                    value={pickupLocation}
+                    onChange={(val, lat, lng) => {
+                      setPickupLocation(val);
+                      setPickupLat(lat);
+                      setPickupLng(lng);
+                    }}
+                    placeholder='Enter pickup address'
+                  />
+                ) : (
+                <>
                 <button
                   onClick={() => {
                     setShowPickupDropdown(!showPickupDropdown);
@@ -199,6 +239,8 @@ export default function SearchBar({
                     ))}
                   </div>
                 )}
+                </>
+                )}
               </div>
 
               {/* Return Location / To */}
@@ -214,6 +256,16 @@ export default function SearchBar({
                     <Plus className='h-5 w-5 mr-2' />
                     Add different return
                   </button>
+                ) : isTransfer ? (
+                  <AddressAutocomplete
+                    value={returnLocation}
+                    onChange={(val, lat, lng) => {
+                      setReturnLocation(val);
+                      setReturnLat(lat);
+                      setReturnLng(lng);
+                    }}
+                    placeholder='Enter destination address'
+                  />
                 ) : (
                   <>
                     <button
@@ -226,22 +278,20 @@ export default function SearchBar({
                       <div className='flex items-center'>
                         <MapPin className='h-5 w-5 text-green-600 mr-3' />
                         <span className='text-sm font-medium text-gray-900'>
-                          {returnLocation || (isTransfer ? 'Select destination' : 'Same as pickup')}
+                          {returnLocation || 'Same as pickup'}
                         </span>
                       </div>
                       <div className='flex items-center space-x-2'>
-                        {!isTransfer && (
-                          <div
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setShowReturnLocation(false);
-                              setReturnLocation('');
-                            }}
-                            className='text-gray-400 hover:text-gray-600 cursor-pointer'
-                          >
-                            <X className='h-4 w-4' />
-                          </div>
-                        )}
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowReturnLocation(false);
+                            setReturnLocation('');
+                          }}
+                          className='text-gray-400 hover:text-gray-600 cursor-pointer'
+                        >
+                          <X className='h-4 w-4' />
+                        </div>
                         <ChevronDown
                           className={`h-4 w-4 text-green-600 transition-transform duration-200 ${
                             showReturnDropdown ? 'rotate-180' : ''
@@ -252,17 +302,15 @@ export default function SearchBar({
 
                     {showReturnDropdown && (
                       <div className='absolute top-full left-0 right-0 mt-1 bg-white border-2 border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto z-50'>
-                        {!isTransfer && (
-                          <button
-                            onClick={() => {
-                              setReturnLocation('');
-                              setShowReturnDropdown(false);
-                            }}
-                            className='w-full px-4 py-3 text-left hover:bg-green-50 hover:text-green-800 transition-colors duration-150 text-sm font-medium first:rounded-t-xl'
-                          >
-                            Same as pickup
-                          </button>
-                        )}
+                        <button
+                          onClick={() => {
+                            setReturnLocation('');
+                            setShowReturnDropdown(false);
+                          }}
+                          className='w-full px-4 py-3 text-left hover:bg-green-50 hover:text-green-800 transition-colors duration-150 text-sm font-medium first:rounded-t-xl'
+                        >
+                          Same as pickup
+                        </button>
                         {locations.map((location) => (
                           <button
                             key={location}

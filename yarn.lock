@@ -4861,6 +4861,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/google.maps@npm:^3.64.1":
+  version: 3.64.1
+  resolution: "@types/google.maps@npm:3.64.1"
+  checksum: 10/89edc42fb8dbd171f2b45b360da599cc60b0c61fdef42d916babee1a31205d3991d18c12617265ae3068588c6501be3e79d62ac3e86f20bd4cb0bb43ed4a2c59
+  languageName: node
+  linkType: hard
+
 "@types/istanbul-lib-coverage@npm:*, @types/istanbul-lib-coverage@npm:^2.0.1, @types/istanbul-lib-coverage@npm:^2.0.6":
   version: 2.0.6
   resolution: "@types/istanbul-lib-coverage@npm:2.0.6"
@@ -5962,6 +5969,7 @@ __metadata:
     "@testing-library/react": "npm:^16.3.2"
     "@testing-library/user-event": "npm:^14.6.1"
     "@types/bcryptjs": "npm:^3.0.0"
+    "@types/google.maps": "npm:^3.64.1"
     "@types/jest": "npm:^30.0.0"
     "@types/js-cookie": "npm:^3.0.6"
     "@types/jsonwebtoken": "npm:^9.0.10"

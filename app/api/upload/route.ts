@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
 import { uploadToSpaces } from '@/lib/spaces';
 import { getCurrentUser } from '@/lib/auth';
+import { csrfProtection } from '@/lib/csrf';
 import { rateLimit } from '@/lib/security';
 
 const MAX_WIDTH = 1920;
@@ -12,6 +13,9 @@ const uploadRateLimit = rateLimit({ windowMs: 60 * 60 * 1000, maxRequests: 10 })
 
 export async function POST(request: NextRequest) {
   try {
+    const csrfError = csrfProtection(request);
+    if (csrfError) return csrfError;
+
     const rateLimitResponse = await uploadRateLimit(request);
     if (rateLimitResponse) return rateLimitResponse;
 
@@ -104,11 +108,7 @@ export async function POST(request: NextRequest) {
     console.error('Upload error:', error);
 
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : 'Failed to upload images',
-        details: 'Please try again or contact support if the problem persists.',
-      },
+      { error: 'Failed to upload images' },
       { status: 500 }
     );
   }

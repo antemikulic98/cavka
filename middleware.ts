@@ -38,10 +38,11 @@ if (typeof setInterval !== 'undefined') {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const ip =
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    request.headers.get('x-real-ip') ||
-    'unknown';
+  // Use reliable IP: DO platform header > last XFF hop > X-Real-IP
+  const doIp = request.headers.get('do-connecting-ip');
+  const xff = request.headers.get('x-forwarded-for');
+  const xffLast = xff ? xff.split(',').map(s => s.trim()).filter(Boolean).pop() : null;
+  const ip = doIp?.trim() || xffLast || request.headers.get('x-real-ip') || 'unknown';
 
   // Block known dangerous paths
   for (const blocked of BLOCKED_PATHS) {

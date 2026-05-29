@@ -16,6 +16,7 @@ export interface JWTPayload {
   email: string;
   first_name: string;
   last_name: string;
+  role: 'admin' | 'user';
 }
 
 export interface UserSession {
@@ -23,6 +24,7 @@ export interface UserSession {
   email: string;
   first_name: string;
   last_name: string;
+  role: 'admin' | 'user';
   fullName: string;
 }
 
@@ -53,6 +55,7 @@ export async function getCurrentUser(): Promise<UserSession | null> {
       email: decoded.email,
       first_name: decoded.first_name,
       last_name: decoded.last_name,
+      role: decoded.role || 'user',
       fullName: `${decoded.first_name} ${decoded.last_name}`,
     };
   } catch (error) {

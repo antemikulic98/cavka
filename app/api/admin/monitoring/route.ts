@@ -23,11 +23,17 @@ export async function GET(request: NextRequest) {
     const totalMemoryMB = Math.round(currentMetrics.heapTotal / 1024 / 1024);
     const memoryPercentage = Math.round((currentMetrics.heapUsed / currentMetrics.heapTotal) * 100);
 
+    // Validate minutes param
+    const clampedMinutes = Math.max(1, Math.min(minutes, 1440));
+
     // Get average metrics
-    const avgMetrics = resourceMonitor.getAverageMetrics(minutes);
+    const avgMetrics = resourceMonitor.getAverageMetrics(clampedMinutes);
 
     // Get metrics history
     const history = resourceMonitor.getMetricsHistory();
+
+    // Run security scan
+    const securityScan = resourceMonitor.runSecurityScan();
 
     return NextResponse.json({
       success: true,
@@ -38,13 +44,13 @@ export async function GET(request: NextRequest) {
           totalMB: totalMemoryMB,
           percentage: memoryPercentage,
         },
-        uptime: Math.round(process.uptime() / 60), // minutes
+        uptime: Math.round(process.uptime() / 60),
       },
       average: avgMetrics ? {
         memoryMB: avgMetrics.memoryUsageMB,
         memoryPercentage: avgMetrics.memoryPercentage,
         cpuPercentage: avgMetrics.cpuUsage,
-        timeWindowMinutes: minutes,
+        timeWindowMinutes: clampedMinutes,
       } : null,
       history: history.map(m => ({
         timestamp: m.timestamp.toISOString(),
@@ -52,9 +58,17 @@ export async function GET(request: NextRequest) {
         memoryPercentage: m.memoryPercentage,
         cpuPercentage: m.cpuUsage,
       })),
+      security: {
+        status: securityScan.suspicious ? 'ALERT' : 'clean',
+        processFindings: securityScan.processFindings,
+        connectionFindings: securityScan.connectionFindings,
+      },
       healthCheck: {
-        status: memoryUsageMB > 512 || (avgMetrics && avgMetrics.cpuUsage > 70) ? 'warning' : 'healthy',
+        status: securityScan.suspicious ? 'compromised'
+          : (memoryUsageMB > 512 || (avgMetrics && avgMetrics.cpuUsage > 70)) ? 'warning'
+          : 'healthy',
         warnings: [
+          securityScan.suspicious && 'SUSPICIOUS PROCESSES DETECTED',
           memoryUsageMB > 512 && `High memory usage: ${memoryUsageMB}MB`,
           avgMetrics && avgMetrics.cpuUsage > 70 && `High CPU usage: ${avgMetrics.cpuUsage}%`,
         ].filter(Boolean),

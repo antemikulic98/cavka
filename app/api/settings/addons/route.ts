@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
 import { getCurrentUser } from '@/lib/auth';
+import { csrfProtection } from '@/lib/csrf';
 import AddOnPricing from '@/models/AddOnPricing';
 
 // GET - Get all add-on pricing (public endpoint for customer bookings)
@@ -62,6 +63,9 @@ export async function GET(request: NextRequest) {
 // POST - Create or update add-on pricing
 export async function POST(request: NextRequest) {
   try {
+    const csrfError = csrfProtection(request);
+    if (csrfError) return csrfError;
+
     await connectMongoDB();
 
     const user = await getCurrentUser();

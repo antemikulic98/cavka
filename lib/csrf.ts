@@ -7,7 +7,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 
-const CSRF_SECRET = process.env.CSRF_SECRET || process.env.JWT_SECRET || 'default-csrf-secret';
+const CSRF_SECRET = process.env.CSRF_SECRET || process.env.JWT_SECRET;
+if (!CSRF_SECRET) {
+  throw new Error('CRITICAL: CSRF_SECRET or JWT_SECRET must be set in environment variables');
+}
 const CSRF_TOKEN_HEADER = 'x-csrf-token';
 const CSRF_COOKIE_NAME = 'csrf-token';
 

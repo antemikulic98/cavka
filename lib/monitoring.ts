@@ -1,7 +1,9 @@
 /**
- * Resource Monitoring Utilities
- * Helps detect unusual CPU/memory usage patterns that could indicate crypto mining
+ * Resource Monitoring & Intrusion Detection
+ * Detects crypto miners, reverse shells, and suspicious processes
  */
+
+import { execSync } from 'child_process';
 
 interface ResourceMetrics {
   timestamp: Date;
@@ -19,37 +21,50 @@ interface MonitoringConfig {
 }
 
 interface ResourceAlert {
-  type: 'memory' | 'cpu' | 'sustained_high_usage';
+  type: 'memory' | 'cpu' | 'sustained_high_usage' | 'suspicious_process';
   severity: 'warning' | 'critical';
   message: string;
   metrics: ResourceMetrics;
 }
+
+// Known crypto miner and malware process names/patterns
+const SUSPICIOUS_PROCESS_NAMES = [
+  'xmrig', 'xmr-stak', 'minerd', 'minergate', 'cpuminer',
+  'ccminer', 'cgminer', 'bfgminer', 'ethminer', 'nbminer',
+  'kswapd0', 'kworkerds', 'solr', 'httpsd',
+  '/tmp/', '/dev/shm/', '/var/tmp/',
+  'nc -', 'ncat ', 'bash -i', '/bin/sh -i',
+  'python -c', 'perl -e', 'ruby -e',
+  'curl | sh', 'wget | sh', 'curl|sh', 'wget|sh',
+  '/sbin/init splash', // the exact miner found in our incident
+];
+
+// Processes that are expected to run
+const ALLOWED_PROCESSES = [
+  'node', 'next-server', 'yarn', 'npm', 'sharp', 'ps',
+];
 
 class ResourceMonitor {
   private config: Required<MonitoringConfig>;
   private metrics: ResourceMetrics[] = [];
   private monitoringInterval: NodeJS.Timeout | null = null;
   private maxMetricsHistory = 100;
+  private alertsSent = new Set<string>();
 
   constructor(config: MonitoringConfig = {}) {
     this.config = {
-      memoryThresholdMB: config.memoryThresholdMB || 512, // Alert if memory exceeds 512MB
-      cpuThresholdPercent: config.cpuThresholdPercent || 70, // Alert if CPU exceeds 70%
-      checkIntervalMs: config.checkIntervalMs || 60000, // Check every minute
+      memoryThresholdMB: config.memoryThresholdMB || 512,
+      cpuThresholdPercent: config.cpuThresholdPercent || 70,
+      checkIntervalMs: config.checkIntervalMs || 60000,
       alertCallback: config.alertCallback || this.defaultAlertHandler,
     };
   }
 
-  /**
-   * Get current resource usage
-   */
   private getCurrentMetrics(): ResourceMetrics {
     const memoryUsage = process.memoryUsage();
     const memoryUsageMB = Math.round(memoryUsage.heapUsed / 1024 / 1024);
-    const totalMemoryMB = Math.round(memoryUsage.heapTotal / 1024 / 1024);
     const memoryPercentage = Math.round((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100);
 
-    // Approximate CPU usage (simplified - use 'pidusage' package for accurate CPU monitoring)
     const cpuUsage = process.cpuUsage();
     const cpuPercentage = Math.round(
       ((cpuUsage.user + cpuUsage.system) / 1000000 / process.uptime()) * 100
@@ -65,10 +80,88 @@ class ResourceMonitor {
   }
 
   /**
-   * Check if current metrics exceed thresholds
+   * Scan running processes for crypto miners and suspicious activity
    */
+  public scanProcesses(): { suspicious: boolean; findings: string[] } {
+    const findings: string[] = [];
+
+    try {
+      const psOutput = execSync('ps aux 2>/dev/null || ps -ef 2>/dev/null', {
+        timeout: 5000,
+        encoding: 'utf-8',
+      });
+
+      const lines = psOutput.split('\n').filter(Boolean);
+
+      for (const line of lines) {
+        const lineLower = line.toLowerCase();
+
+        // Check against known suspicious patterns
+        for (const pattern of SUSPICIOUS_PROCESS_NAMES) {
+          if (lineLower.includes(pattern.toLowerCase())) {
+            findings.push(`Suspicious process detected: ${line.trim().substring(0, 200)}`);
+          }
+        }
+
+        // Detect high-CPU processes that aren't ours
+        const parts = line.trim().split(/\s+/);
+        if (parts.length >= 11) {
+          const cpuPercent = parseFloat(parts[2]);
+          const command = parts.slice(10).join(' ');
+          const isAllowed = ALLOWED_PROCESSES.some(p => command.toLowerCase().includes(p));
+
+          // Flag unknown processes using >5% CPU
+          if (cpuPercent > 5 && !isAllowed && !command.includes('ps aux')) {
+            findings.push(`High-CPU unknown process (${cpuPercent}% CPU): ${command.substring(0, 200)}`);
+          }
+        }
+      }
+
+      // Check for zombie processes (sign of exploitation)
+      const zombies = lines.filter(l => l.includes('<defunct>'));
+      if (zombies.length > 3) {
+        findings.push(`${zombies.length} zombie processes detected (possible exploitation remnants)`);
+      }
+
+    } catch (err) {
+      // ps command might not be available in all containers
+    }
+
+    return { suspicious: findings.length > 0, findings };
+  }
+
+  /**
+   * Check for suspicious network connections
+   */
+  public scanConnections(): string[] {
+    const findings: string[] = [];
+
+    try {
+      // Check for unusual outbound connections (mining pools, C2 servers)
+      const netstat = execSync(
+        'ss -tnp 2>/dev/null || netstat -tnp 2>/dev/null || echo ""',
+        { timeout: 5000, encoding: 'utf-8' }
+      );
+
+      const lines = netstat.split('\n').filter(Boolean);
+      // Mining pools typically use ports 3333, 4444, 5555, 8333, 14433, 14444
+      const suspiciousPorts = ['3333', '4444', '5555', '8333', '14433', '14444', '45700'];
+
+      for (const line of lines) {
+        for (const port of suspiciousPorts) {
+          if (line.includes(`:${port}`) && !line.includes('127.0.0.1')) {
+            findings.push(`Suspicious outbound connection to mining port ${port}: ${line.trim().substring(0, 200)}`);
+          }
+        }
+      }
+    } catch (err) {
+      // Network tools might not be available
+    }
+
+    return findings;
+  }
+
   private checkThresholds(metrics: ResourceMetrics): void {
-    // Memory threshold check
     if (metrics.memoryUsageMB > this.config.memoryThresholdMB) {
       this.config.alertCallback({
         type: 'memory',
@@ -78,7 +171,6 @@ class ResourceMonitor {
       });
     }
 
-    // CPU threshold check
     if (metrics.cpuUsage > this.config.cpuThresholdPercent) {
       this.config.alertCallback({
         type: 'cpu',
@@ -88,7 +180,7 @@ class ResourceMonitor {
       });
     }
 
-    // Check for sustained high usage (potential crypto mining indicator)
+    // Sustained high usage check (crypto mining indicator)
     if (this.metrics.length >= 5) {
       const recent = this.metrics.slice(-5);
       const avgCpu = recent.reduce((sum, m) => sum + m.cpuUsage, 0) / 5;
@@ -98,7 +190,7 @@ class ResourceMonitor {
         this.config.alertCallback({
           type: 'sustained_high_usage',
           severity: 'critical',
-          message: `Sustained high resource usage detected over 5 minutes. Avg CPU: ${avgCpu.toFixed(1)}%, Avg Memory: ${avgMemory.toFixed(0)}MB. This could indicate crypto mining or memory leak.`,
+          message: `Sustained high resource usage over 5 minutes. Avg CPU: ${avgCpu.toFixed(1)}%, Avg Memory: ${avgMemory.toFixed(0)}MB. Possible crypto mining.`,
           metrics,
         });
       }
@@ -106,72 +198,97 @@ class ResourceMonitor {
   }
 
   /**
-   * Default alert handler - logs to console
+   * Run full security scan (processes + connections + resources)
    */
-  private defaultAlertHandler(alert: ResourceAlert): void {
-    const emoji = alert.severity === 'critical' ? '🚨' : '⚠️';
-    console.warn(`${emoji} [RESOURCE MONITOR] ${alert.severity.toUpperCase()}: ${alert.message}`);
-    console.warn('Metrics:', {
-      memory: `${alert.metrics.memoryUsageMB}MB (${alert.metrics.memoryPercentage}%)`,
-      cpu: `${alert.metrics.cpuUsage}%`,
-      uptime: `${Math.round(alert.metrics.processUptime / 60)}min`,
-    });
-  }
+  public runSecurityScan(): {
+    suspicious: boolean;
+    processFindings: string[];
+    connectionFindings: string[];
+    metrics: ResourceMetrics;
+  } {
+    const processScan = this.scanProcesses();
+    const connectionFindings = this.scanConnections();
+    const metrics = this.getCurrentMetrics();
 
-  /**
-   * Start monitoring
-   */
-  public startMonitoring(): void {
-    if (this.monitoringInterval) {
-      console.warn('[RESOURCE MONITOR] Monitoring already started');
-      return;
+    const allFindings = [...processScan.findings, ...connectionFindings];
+
+    if (allFindings.length > 0) {
+      // Only alert once per unique finding to avoid spam
+      const newFindings = allFindings.filter(f => {
+        const key = f.substring(0, 50);
+        if (this.alertsSent.has(key)) return false;
+        this.alertsSent.add(key);
+        return true;
+      });
+
+      if (newFindings.length > 0) {
+        console.error('[SECURITY ALERT] Suspicious activity detected:');
+        newFindings.forEach(f => console.error(`  - ${f}`));
+
+        this.config.alertCallback({
+          type: 'suspicious_process',
+          severity: 'critical',
+          message: `INTRUSION DETECTED: ${newFindings.join('; ')}`,
+          metrics,
+        });
+      }
     }
 
-    console.log(`[RESOURCE MONITOR] Starting resource monitoring (interval: ${this.config.checkIntervalMs}ms)`);
-    console.log(`[RESOURCE MONITOR] Thresholds - Memory: ${this.config.memoryThresholdMB}MB, CPU: ${this.config.cpuThresholdPercent}%`);
+    return {
+      suspicious: allFindings.length > 0,
+      processFindings: processScan.findings,
+      connectionFindings,
+      metrics,
+    };
+  }
 
-    // Initial check
-    const initialMetrics = this.getCurrentMetrics();
-    this.metrics.push(initialMetrics);
-    console.log('[RESOURCE MONITOR] Initial metrics:', {
-      memory: `${initialMetrics.memoryUsageMB}MB (${initialMetrics.memoryPercentage}%)`,
-      cpu: `${initialMetrics.cpuUsage}%`,
-    });
+  private defaultAlertHandler(alert: ResourceAlert): void {
+    if (alert.severity === 'critical') {
+      console.error(`[SECURITY] CRITICAL: ${alert.message}`);
+    } else {
+      console.warn(`[SECURITY] WARNING: ${alert.message}`);
+    }
+  }
+
+  public startMonitoring(): void {
+    if (this.monitoringInterval) return;
+
+    console.log('[MONITOR] Starting resource monitoring + intrusion detection');
+
+    // Initial security scan on startup
+    const initialScan = this.runSecurityScan();
+    if (initialScan.suspicious) {
+      console.error('[MONITOR] ALERT: Suspicious activity found on startup!');
+    }
 
     this.monitoringInterval = setInterval(() => {
       const metrics = this.getCurrentMetrics();
       this.metrics.push(metrics);
 
-      // Keep only recent history
       if (this.metrics.length > this.maxMetricsHistory) {
         this.metrics.shift();
       }
 
       this.checkThresholds(metrics);
+
+      // Run process scan every 5 minutes (every 5th interval at 60s)
+      if (this.metrics.length % 5 === 0) {
+        this.runSecurityScan();
+      }
     }, this.config.checkIntervalMs);
   }
 
-  /**
-   * Stop monitoring
-   */
   public stopMonitoring(): void {
     if (this.monitoringInterval) {
       clearInterval(this.monitoringInterval);
       this.monitoringInterval = null;
-      console.log('[RESOURCE MONITOR] Monitoring stopped');
     }
   }
 
-  /**
-   * Get metrics history
-   */
   public getMetricsHistory(): ResourceMetrics[] {
     return [...this.metrics];
   }
 
-  /**
-   * Get average metrics over last N minutes
-   */
   public getAverageMetrics(minutes: number = 5): ResourceMetrics | null {
     if (this.metrics.length === 0) return null;
 
@@ -180,26 +297,22 @@ class ResourceMonitor {
 
     if (recentMetrics.length === 0) return null;
 
-    const avg = {
+    return {
       timestamp: new Date(),
       memoryUsageMB: Math.round(recentMetrics.reduce((sum, m) => sum + m.memoryUsageMB, 0) / recentMetrics.length),
       memoryPercentage: Math.round(recentMetrics.reduce((sum, m) => sum + m.memoryPercentage, 0) / recentMetrics.length),
       cpuUsage: Math.round(recentMetrics.reduce((sum, m) => sum + m.cpuUsage, 0) / recentMetrics.length),
       processUptime: process.uptime(),
     };
-
-    return avg;
   }
 }
 
-// Export singleton instance
 export const resourceMonitor = new ResourceMonitor({
   memoryThresholdMB: 512,
   cpuThresholdPercent: 70,
-  checkIntervalMs: 60000, // Check every minute
+  checkIntervalMs: 60000,
 });
 
-// Auto-start monitoring in production
 if (process.env.NODE_ENV === 'production') {
   resourceMonitor.startMonitoring();
 }

@@ -77,12 +77,26 @@ export default function SearchResults() {
   const expandSearch = searchParams?.get('expandSearch') === 'true';
   const isTransfer = vehicleType === 'transfers' || vehicleType === 'transfer';
 
+  // Transfer coordinates (from address autocomplete)
+  const fromLat = searchParams?.get('fromLat') || '';
+  const fromLng = searchParams?.get('fromLng') || '';
+  const toLat = searchParams?.get('toLat') || '';
+  const toLng = searchParams?.get('toLng') || '';
+
   // Fetch distance for transfer searches
   useEffect(() => {
     if (!isTransfer || !pickupLocation || !returnLocation) return;
     const fetchDistance = async () => {
       try {
-        const res = await fetch(`/api/distance?from=${encodeURIComponent(pickupLocation)}&to=${encodeURIComponent(returnLocation)}`);
+        let url: string;
+        // Use coordinates if available (from address autocomplete)
+        if (fromLat && fromLng && toLat && toLng) {
+          url = `/api/distance?fromLat=${fromLat}&fromLng=${fromLng}&toLat=${toLat}&toLng=${toLng}`;
+        } else {
+          // Fallback to location names (legacy)
+          url = `/api/distance?from=${encodeURIComponent(pickupLocation)}&to=${encodeURIComponent(returnLocation)}`;
+        }
+        const res = await fetch(url);
         const data = await res.json();
         if (data.success) {
           setDistanceKm(data.distanceKm);
@@ -92,7 +106,7 @@ export default function SearchResults() {
       }
     };
     fetchDistance();
-  }, [isTransfer, pickupLocation, returnLocation]);
+  }, [isTransfer, pickupLocation, returnLocation, fromLat, fromLng, toLat, toLng]);
 
   // Fetch vehicles based on search criteria
   useEffect(() => {

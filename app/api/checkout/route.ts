@@ -51,6 +51,10 @@ export async function POST(request: NextRequest) {
       rentalDays,
       cdwCoverage,
       addOns,
+      fromLat,
+      fromLng,
+      toLat,
+      toLng,
     } = body;
 
     // Validate required fields
@@ -71,6 +75,10 @@ export async function POST(request: NextRequest) {
       rentalDays,
       cdwCoverage,
       addOns,
+      fromLat: fromLat ? parseFloat(fromLat) : undefined,
+      fromLng: fromLng ? parseFloat(fromLng) : undefined,
+      toLat: toLat ? parseFloat(toLat) : undefined,
+      toLng: toLng ? parseFloat(toLng) : undefined,
     };
 
     const validation = validatePricingInput(pricingInput);

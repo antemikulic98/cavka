@@ -3,6 +3,7 @@ import { connectMongoDB } from '@/lib/mongodb';
 import User from '@/models/User';
 import { generateToken } from '@/lib/auth';
 import { rateLimit } from '@/lib/security';
+import { csrfProtection } from '@/lib/csrf';
 
 const loginRateLimit = rateLimit({ windowMs: 15 * 60 * 1000, maxRequests: 5 });
 
@@ -13,6 +14,9 @@ interface LoginRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    const csrfError = csrfProtection(request);
+    if (csrfError) return csrfError;
+
     const rateLimitResponse = await loginRateLimit(request);
     if (rateLimitResponse) return rateLimitResponse;
 
@@ -52,6 +56,7 @@ export async function POST(request: NextRequest) {
       email: user.email,
       first_name: user.first_name,
       last_name: user.last_name,
+      role: user.role || 'user',
     });
 
     // Create response

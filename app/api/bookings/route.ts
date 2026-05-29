@@ -303,30 +303,34 @@ export async function GET(request: NextRequest) {
     const email = searchParams.get('email');
     const bookingReference = searchParams.get('reference');
 
-    if (!email) {
+    if (!email || !bookingReference) {
       return NextResponse.json(
-        { error: 'Email parameter is required' },
+        { error: 'Both email and booking reference are required' },
         { status: 400 }
       );
     }
 
-    // SECURITY: Sanitize email input to prevent injection
-    const sanitizedEmail = validators.sanitizeString(email.toLowerCase().trim());
-
-    // Validate email format
-    if (!validators.email(sanitizedEmail)) {
+    // Validate email format (don't use sanitizeString for DB queries - it's for HTML output)
+    const cleanEmail = email.toLowerCase().trim();
+    if (!validators.email(cleanEmail)) {
       return NextResponse.json(
         { error: 'Invalid email format' },
         { status: 400 }
       );
     }
 
-    let query: any = { 'clientInfo.email': sanitizedEmail };
-
-    // If booking reference is provided, add it to query (uppercase to match stored format)
-    if (bookingReference) {
-      query.bookingReference = bookingReference.toUpperCase().trim();
+    // Validate booking reference format
+    if (!validators.bookingReference(bookingReference.toUpperCase().trim())) {
+      return NextResponse.json(
+        { error: 'Invalid booking reference format' },
+        { status: 400 }
+      );
     }
+
+    const query: any = {
+      'clientInfo.email': cleanEmail,
+      bookingReference: bookingReference.toUpperCase().trim(),
+    };
 
     const bookings = await Booking.find(query)
       .populate('vehicleId', 'make model category images mainImage')

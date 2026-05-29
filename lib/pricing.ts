@@ -17,6 +17,10 @@ export interface PricingInput {
   returnDate: string;
   pickupLocation: string;
   returnLocation?: string;
+  fromLat?: number;
+  fromLng?: number;
+  toLat?: number;
+  toLng?: number;
   rentalDays: number;
   cdwCoverage?: 'none' | 'basic' | 'full';
   addOns?: {
@@ -73,7 +77,11 @@ export async function calculateBookingPrice(
     input.pickupDate,
     input.rentalDays,
     input.pickupLocation,
-    input.returnLocation
+    input.returnLocation,
+    input.fromLat,
+    input.fromLng,
+    input.toLat,
+    input.toLng
   );
 
   // Calculate CDW cost
@@ -120,26 +128,44 @@ export async function calculateBookingPrice(
 }
 
 /**
- * Calculate driving distance between two locations using Google Maps API
+ * Calculate driving distance using Google Maps API
+ * Supports both direct coordinates and location name lookup
  */
 async function calculateDistanceKm(
   pickupLocation: string,
-  returnLocation: string
+  returnLocation: string,
+  fromLat?: number,
+  fromLng?: number,
+  toLat?: number,
+  toLng?: number
 ): Promise<number | null> {
   try {
-    const [fromLoc, toLoc] = await Promise.all([
-      Location.findOne({ name: { $regex: new RegExp(`^${pickupLocation}$`, 'i') } }),
-      Location.findOne({ name: { $regex: new RegExp(`^${returnLocation}$`, 'i') } }),
-    ]);
+    let origins: string;
+    let destinations: string;
 
-    if (!fromLoc?.lat || !fromLoc?.lng || !toLoc?.lat || !toLoc?.lng) {
-      return null;
+    // Use direct coordinates if provided (from address autocomplete)
+    if (fromLat && fromLng && toLat && toLng) {
+      origins = `${fromLat},${fromLng}`;
+      destinations = `${toLat},${toLng}`;
+    } else {
+      // Fallback: look up location names from DB
+      const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const [fromLoc, toLoc] = await Promise.all([
+        Location.findOne({ name: { $regex: new RegExp(`^${escapeRegex(pickupLocation)}$`, 'i') } }),
+        Location.findOne({ name: { $regex: new RegExp(`^${escapeRegex(returnLocation)}$`, 'i') } }),
+      ]);
+
+      if (!fromLoc?.lat || !fromLoc?.lng || !toLoc?.lat || !toLoc?.lng) {
+        return null;
+      }
+      origins = `${fromLoc.lat},${fromLoc.lng}`;
+      destinations = `${toLoc.lat},${toLoc.lng}`;
     }
 
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
     if (!apiKey) return null;
 
-    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${fromLoc.lat},${fromLoc.lng}&destinations=${toLoc.lat},${toLoc.lng}&mode=driving&units=metric&key=${apiKey}`;
+    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origins}&destinations=${destinations}&mode=driving&units=metric&key=${apiKey}`;
     const res = await fetch(url);
     const data = await res.json();
 
@@ -163,7 +189,11 @@ async function calculateVehicleCost(
   pickupDate: string,
   rentalDays: number,
   pickupLocation?: string,
-  returnLocation?: string
+  returnLocation?: string,
+  fromLat?: number,
+  fromLng?: number,
+  toLat?: number,
+  toLng?: number
 ): Promise<number> {
   // For transfer vehicles
   if (vehicle.type === 'transfer') {
@@ -181,7 +211,7 @@ async function calculateVehicleCost(
 
     // 2. Calculate from km * pricePerKm
     if (vehicle.pricePerKm && pickupLocation && returnLocation) {
-      const km = await calculateDistanceKm(pickupLocation, returnLocation);
+      const km = await calculateDistanceKm(pickupLocation, returnLocation, fromLat, fromLng, toLat, toLng);
       if (km && km > 0) {
         return Math.round(km * vehicle.pricePerKm * 100) / 100;
       }

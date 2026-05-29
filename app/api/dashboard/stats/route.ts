@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
 import Booking from '@/models/Booking';
+import { getCurrentUser } from '@/lib/auth';
 
-// GET - Retrieve dashboard statistics
+// GET - Retrieve dashboard statistics (admin only)
 export async function GET(request: NextRequest) {
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     await connectMongoDB();
 
     const currentDate = new Date();

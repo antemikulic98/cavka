@@ -14,6 +14,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import MobileSearchModal from './MobileSearchModal';
+import AddressAutocomplete from './AddressAutocomplete';
 
 export default function Hero() {
   // Vehicle type state
@@ -27,6 +28,12 @@ export default function Hero() {
   const [showPickupDropdown, setShowPickupDropdown] = useState(false);
   const [showReturnDropdown, setShowReturnDropdown] = useState(false);
   const [locations, setLocations] = useState<string[]>([]);
+
+  // Transfer address coordinates (from Google Places Autocomplete)
+  const [pickupLat, setPickupLat] = useState<number | null>(null);
+  const [pickupLng, setPickupLng] = useState<number | null>(null);
+  const [returnLat, setReturnLat] = useState<number | null>(null);
+  const [returnLng, setReturnLng] = useState<number | null>(null);
 
   // Mobile modal states
   const [showMobileSearchModal, setShowMobileSearchModal] = useState(false);
@@ -199,6 +206,18 @@ export default function Hero() {
     searchParams.set('pickupTime', pickupTime);
     searchParams.set('returnTime', returnTime);
     searchParams.set('vehicleType', selectedVehicleType);
+
+    // For transfers, pass coordinates for distance calculation
+    if (isTransfer) {
+      if (pickupLat && pickupLng) {
+        searchParams.set('fromLat', pickupLat.toString());
+        searchParams.set('fromLng', pickupLng.toString());
+      }
+      if (returnLat && returnLng) {
+        searchParams.set('toLat', returnLat.toString());
+        searchParams.set('toLng', returnLng.toString());
+      }
+    }
 
     // Navigate to search results page
     window.location.href = `/search?${searchParams.toString()}`;
@@ -386,6 +405,17 @@ export default function Hero() {
                   <label className='block text-sm font-bold text-gray-800 mb-2'>
                     {isTransfer ? 'From' : 'Pickup Location'}
                   </label>
+                  {isTransfer ? (
+                    <AddressAutocomplete
+                      value={pickupLocation}
+                      onChange={(val, lat, lng) => {
+                        setPickupLocation(val);
+                        setPickupLat(lat);
+                        setPickupLng(lng);
+                      }}
+                      placeholder='Enter pickup address'
+                    />
+                  ) : (
                   <div className='relative'>
                     <div className='absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10'>
                       <MapPin className='h-5 w-5 text-green-600' />
@@ -427,6 +457,7 @@ export default function Hero() {
                       </div>
                     )}
                   </div>
+                  )}
                 </div>
 
                 {/* Return Location / To */}
@@ -435,6 +466,17 @@ export default function Hero() {
                     <label className='block text-sm font-bold text-gray-800 mb-2'>
                       {isTransfer ? 'To' : 'Return Location'}
                     </label>
+                    {isTransfer ? (
+                      <AddressAutocomplete
+                        value={returnLocationValue}
+                        onChange={(val, lat, lng) => {
+                          setReturnLocationValue(val);
+                          setReturnLat(lat);
+                          setReturnLng(lng);
+                        }}
+                        placeholder='Enter destination address'
+                      />
+                    ) : (
                     <div className='relative'>
                       <div className='absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10'>
                         <MapPin className='h-5 w-5 text-green-600' />
@@ -449,7 +491,7 @@ export default function Hero() {
                         }}
                         className='w-full pl-12 pr-16 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-800 focus:border-green-800 text-gray-900 text-sm font-medium shadow-sm hover:border-gray-300 transition-all duration-200 bg-white text-left'
                       >
-                        {returnLocationValue || (isTransfer ? 'Select destination' : 'Select return location')}
+                        {returnLocationValue || 'Select return location'}
                       </button>
                       <div className='absolute inset-y-0 right-8 pr-2 flex items-center pointer-events-none'>
                         <ChevronDown
@@ -458,18 +500,16 @@ export default function Hero() {
                           }`}
                         />
                       </div>
-                      {!isTransfer && (
-                        <button
-                          onClick={() => {
-                            setShowReturnLocation(false);
-                            setReturnLocationValue('');
-                            setShowReturnDropdown(false);
-                          }}
-                          className='absolute inset-y-0 right-0 pr-4 flex items-center hover:bg-gray-50 rounded-r-xl transition-colors z-20'
-                        >
-                          <X className='h-5 w-5 text-gray-400 hover:text-red-500' />
-                        </button>
-                      )}
+                      <button
+                        onClick={() => {
+                          setShowReturnLocation(false);
+                          setReturnLocationValue('');
+                          setShowReturnDropdown(false);
+                        }}
+                        className='absolute inset-y-0 right-0 pr-4 flex items-center hover:bg-gray-50 rounded-r-xl transition-colors z-20'
+                      >
+                        <X className='h-5 w-5 text-gray-400 hover:text-red-500' />
+                      </button>
 
                       {showReturnDropdown && (
                         <div className='absolute top-full left-0 right-0 mt-1 bg-white border-2 border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto z-50'>
@@ -488,6 +528,7 @@ export default function Hero() {
                         </div>
                       )}
                     </div>
+                    )}
                   </div>
                 ) : !isTransfer ? (
                   <div className='flex-1 min-w-0'>

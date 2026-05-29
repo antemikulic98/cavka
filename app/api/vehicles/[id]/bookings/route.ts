@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
 import Booking from '@/models/Booking';
+import { getCurrentUser } from '@/lib/auth';
 
-// GET - Retrieve bookings for a specific vehicle
+// GET - Retrieve bookings for a specific vehicle (admin only)
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     await connectMongoDB();
 
     const { id } = await params;

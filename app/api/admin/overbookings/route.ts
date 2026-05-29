@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
 import { getCurrentUser } from '@/lib/auth';
+import { csrfProtection } from '@/lib/csrf';
 import Booking from '@/models/Booking';
 import ExternalCarSource from '@/models/ExternalCarSource';
 import Vehicle from '@/models/Vehicle';
@@ -80,6 +81,9 @@ export async function GET(request: NextRequest) {
 // POST - Create an external car source for an overbooking (admin only)
 export async function POST(request: NextRequest) {
   try {
+    const csrfError = csrfProtection(request);
+    if (csrfError) return csrfError;
+
     await connectMongoDB();
 
     const user = await getCurrentUser();
