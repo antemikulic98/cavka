@@ -29,7 +29,9 @@ export default function MobileSearchModal({
   locations,
 }: MobileSearchModalProps) {
   const [step, setStep] = useState<ModalStep>('pickup-location');
-  const [vehicleType] = useState(initialVehicleType);
+  // Read the prop directly — the modal stays mounted, so useState would
+  // freeze the vehicle type chosen before the user switched tabs
+  const vehicleType = initialVehicleType;
   const isTransfer = vehicleType === 'transfers';
   const [pickupLocation, setPickupLocation] = useState('');
   const [returnLocation, setReturnLocation] = useState('');
