@@ -53,7 +53,11 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' https://js.stripe.com https://maps.googleapis.com https://www.googletagmanager.com",
+              // 'unsafe-eval' is required only by Next.js dev-mode hot reload;
+              // without it the dev server serves a page that never hydrates
+              `script-src 'self' 'unsafe-inline'${
+                process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''
+              } https://js.stripe.com https://maps.googleapis.com https://www.googletagmanager.com`,
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data: https://fonts.gstatic.com",

@@ -21,6 +21,7 @@ export default function Hero() {
   const [selectedVehicleType, setSelectedVehicleType] = useState('car'); // 'car' or 'transfers'
   const isTransfer = selectedVehicleType === 'transfers';
   const [showReturnLocation, setShowReturnLocation] = useState(false);
+  const [searchError, setSearchError] = useState('');
 
   // Location state
   const [pickupLocation, setPickupLocation] = useState('Split Airport');
@@ -93,6 +94,7 @@ export default function Hero() {
 
   // Auto-show return location for transfers, hide for rent a car
   useEffect(() => {
+    setSearchError('');
     if (isTransfer) {
       setShowReturnLocation(true);
     } else {
@@ -127,6 +129,10 @@ export default function Hero() {
     returnDate: Date;
     pickupTime: string;
     returnTime: string;
+    pickupLat?: number | null;
+    pickupLng?: number | null;
+    returnLat?: number | null;
+    returnLng?: number | null;
   }) => {
     const searchParams = new URLSearchParams();
 
@@ -164,12 +170,55 @@ export default function Hero() {
     searchParams.set('returnTime', searchData.returnTime);
     searchParams.set('vehicleType', searchData.vehicleType);
 
+    // For transfers, pass coordinates for distance calculation
+    if (searchData.vehicleType === 'transfers') {
+      if (searchData.pickupLat != null && searchData.pickupLng != null) {
+        searchParams.set('fromLat', searchData.pickupLat.toString());
+        searchParams.set('fromLng', searchData.pickupLng.toString());
+      }
+      if (searchData.returnLat != null && searchData.returnLng != null) {
+        searchParams.set('toLat', searchData.returnLat.toString());
+        searchParams.set('toLng', searchData.returnLng.toString());
+      }
+    }
+
     // Navigate to search results page
     window.location.href = `/search?${searchParams.toString()}`;
   };
 
+  // A transfer address is usable if it came from the suggestions dropdown
+  // (has coords) or exactly matches one of our own locations from the DB
+  const isValidTransferAddress = (
+    value: string,
+    lat: number | null,
+    lng: number | null
+  ) =>
+    value !== '' &&
+    ((lat !== null && lng !== null) ||
+      locations.some((l) => l.toLowerCase() === value.trim().toLowerCase()));
+
   // Handle search - navigate to search page
   const handleSearch = () => {
+    // Transfers need real addresses — free-typed text has no coordinates, so
+    // the price could not be calculated on the results page
+    if (isTransfer) {
+      if (!isValidTransferAddress(pickupLocation, pickupLat, pickupLng)) {
+        setSearchError(
+          'Please select a pickup address from the suggestions list'
+        );
+        return;
+      }
+      if (
+        !isValidTransferAddress(returnLocationValue, returnLat, returnLng)
+      ) {
+        setSearchError(
+          'Please select a destination address from the suggestions list'
+        );
+        return;
+      }
+    }
+    setSearchError('');
+
     const searchParams = new URLSearchParams();
 
     searchParams.set('pickupLocation', pickupLocation);
@@ -202,9 +251,16 @@ export default function Hero() {
     const returnTime24 = convertTo24Hour(returnTime);
 
     searchParams.set('pickupDate', formatDateTimeForURL(pickupDate, pickupTime24));
-    searchParams.set('returnDate', formatDateTimeForURL(returnDate, returnTime24));
+    // A transfer is a one-way trip — its "return" mirrors the pickup so the
+    // availability check doesn't block the vehicle for extra days
+    searchParams.set(
+      'returnDate',
+      isTransfer
+        ? formatDateTimeForURL(pickupDate, pickupTime24)
+        : formatDateTimeForURL(returnDate, returnTime24)
+    );
     searchParams.set('pickupTime', pickupTime);
-    searchParams.set('returnTime', returnTime);
+    searchParams.set('returnTime', isTransfer ? pickupTime : returnTime);
     searchParams.set('vehicleType', selectedVehicleType);
 
     // For transfers, pass coordinates for distance calculation
@@ -388,7 +444,9 @@ export default function Hero() {
                   <div className='flex items-center'>
                     <MapPin className='h-5 w-5 text-green-600 mr-3' />
                     <span className='text-gray-900 font-medium'>
-                      Select pickup location
+                      {isTransfer
+                        ? 'Enter pickup address'
+                        : 'Select pickup location'}
                     </span>
                   </div>
                   <ChevronDown className='h-4 w-4 text-green-600' />
@@ -683,6 +741,13 @@ export default function Hero() {
                     : 'Show Transfers'}
                 </button>
               </div>
+
+              {/* Validation message */}
+              {searchError && (
+                <p className='mt-3 inline-block rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm font-medium text-amber-800'>
+                  {searchError}
+                </p>
+              )}
 
               {/* Calendar Overlay */}
               {showCalendar && (

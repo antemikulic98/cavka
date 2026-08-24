@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { MapPin, X, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import AddressAutocomplete from './AddressAutocomplete';
 
 interface MobileSearchModalProps {
   isOpen: boolean;
@@ -14,6 +15,10 @@ interface MobileSearchModalProps {
     returnDate: Date;
     pickupTime: string;
     returnTime: string;
+    pickupLat?: number | null;
+    pickupLng?: number | null;
+    returnLat?: number | null;
+    returnLng?: number | null;
   }) => void;
   initialVehicleType?: string;
   locations: string[];
@@ -35,7 +40,26 @@ export default function MobileSearchModal({
   const isTransfer = vehicleType === 'transfers';
   const [pickupLocation, setPickupLocation] = useState('');
   const [returnLocation, setReturnLocation] = useState('');
-  const [showReturnLocation, setShowReturnLocation] = useState(false);
+  const [showReturnLocationState, setShowReturnLocation] = useState(false);
+  // Transfers always need a destination; rentals only when the user adds one
+  const showReturnLocation = isTransfer || showReturnLocationState;
+
+  // Transfer address coordinates (set when picking a Google suggestion)
+  const [pickupLat, setPickupLat] = useState<number | null>(null);
+  const [pickupLng, setPickupLng] = useState<number | null>(null);
+  const [returnLat, setReturnLat] = useState<number | null>(null);
+  const [returnLng, setReturnLng] = useState<number | null>(null);
+
+  // A transfer address is usable if it came from the suggestions dropdown
+  // (has coords) or exactly matches one of our own locations from the DB
+  const isValidTransferAddress = (
+    value: string,
+    lat: number | null,
+    lng: number | null
+  ) =>
+    value !== '' &&
+    ((lat !== null && lng !== null) ||
+      locations.some((l) => l.toLowerCase() === value.trim().toLowerCase()));
   const [pickupDate, setPickupDate] = useState(new Date());
   const [returnDate, setReturnDate] = useState(() => {
     const tomorrow = new Date();
@@ -111,6 +135,11 @@ export default function MobileSearchModal({
   };
 
   const handleCalendarDateSelect = (date: Date) => {
+    // Transfers are one-way: only the pickup date matters
+    if (isTransfer) {
+      setPickupDate(date);
+      return;
+    }
     if (selectingPickup) {
       setPickupDate(date);
       // Allow same-day rentals - only adjust if return date is before pickup date
@@ -159,15 +188,20 @@ export default function MobileSearchModal({
         setStep('dates');
         break;
       case 'dates':
-        // Perform search
+        // Perform search — a transfer is a one-way trip, so its "return"
+        // date/time mirror the pickup
         onSearch({
           vehicleType,
           pickupLocation,
           returnLocation: showReturnLocation ? returnLocation : undefined,
           pickupDate,
-          returnDate,
+          returnDate: isTransfer ? pickupDate : returnDate,
           pickupTime,
-          returnTime,
+          returnTime: isTransfer ? pickupTime : returnTime,
+          pickupLat,
+          pickupLng,
+          returnLat,
+          returnLng,
         });
         onClose();
         break;
@@ -192,11 +226,15 @@ export default function MobileSearchModal({
   const canProceed = () => {
     switch (step) {
       case 'pickup-location':
-        return pickupLocation !== '';
+        return isTransfer
+          ? isValidTransferAddress(pickupLocation, pickupLat, pickupLng)
+          : pickupLocation !== '';
       case 'return-location':
-        return returnLocation !== '';
+        return isTransfer
+          ? isValidTransferAddress(returnLocation, returnLat, returnLng)
+          : returnLocation !== '';
       case 'dates':
-        return pickupDate && returnDate;
+        return isTransfer ? !!pickupDate : pickupDate && returnDate;
       default:
         return false;
     }
@@ -259,7 +297,40 @@ export default function MobileSearchModal({
         {/* Content */}
         <div className='flex-1 overflow-y-auto'>
           {/* Pickup Location Selection */}
-          {step === 'pickup-location' && (
+          {step === 'pickup-location' && isTransfer && (
+            <div className='p-4 space-y-4'>
+              <div className='text-center mb-6'>
+                <h3 className='text-xl font-semibold text-gray-900 mb-2'>
+                  Where should we pick you up?
+                </h3>
+                <p className='text-gray-600'>
+                  Enter an address, hotel or airport
+                </p>
+              </div>
+
+              <AddressAutocomplete
+                value={pickupLocation}
+                onChange={(val, lat, lng) => {
+                  setPickupLocation(val);
+                  setPickupLat(lat);
+                  setPickupLng(lng);
+                }}
+                placeholder='Enter pickup address'
+              />
+              {pickupLocation !== '' &&
+                !isValidTransferAddress(
+                  pickupLocation,
+                  pickupLat,
+                  pickupLng
+                ) && (
+                  <p className='text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2'>
+                    Please select an address from the suggestions list
+                  </p>
+                )}
+            </div>
+          )}
+
+          {step === 'pickup-location' && !isTransfer && (
             <div className='p-4 space-y-4'>
               <div className='text-center mb-6'>
                 <h3 className='text-xl font-semibold text-gray-900 mb-2'>
@@ -325,13 +396,46 @@ export default function MobileSearchModal({
           )}
 
           {/* Return Location Selection */}
-          {step === 'return-location' && (
+          {step === 'return-location' && isTransfer && (
             <div className='p-4 space-y-4'>
               <div className='text-center mb-6'>
                 <h3 className='text-xl font-semibold text-gray-900 mb-2'>
-                  {isTransfer ? 'Where are you going?' : 'Where do you want to return?'}
+                  Where are you going?
                 </h3>
-                <p className='text-gray-600'>{isTransfer ? 'Select your destination' : 'Select your return location'}</p>
+                <p className='text-gray-600'>
+                  Enter your destination address, hotel or airport
+                </p>
+              </div>
+
+              <AddressAutocomplete
+                value={returnLocation}
+                onChange={(val, lat, lng) => {
+                  setReturnLocation(val);
+                  setReturnLat(lat);
+                  setReturnLng(lng);
+                }}
+                placeholder='Enter destination address'
+              />
+              {returnLocation !== '' &&
+                !isValidTransferAddress(
+                  returnLocation,
+                  returnLat,
+                  returnLng
+                ) && (
+                  <p className='text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2'>
+                    Please select an address from the suggestions list
+                  </p>
+                )}
+            </div>
+          )}
+
+          {step === 'return-location' && !isTransfer && (
+            <div className='p-4 space-y-4'>
+              <div className='text-center mb-6'>
+                <h3 className='text-xl font-semibold text-gray-900 mb-2'>
+                  Where do you want to return?
+                </h3>
+                <p className='text-gray-600'>Select your return location</p>
               </div>
 
               <div className='space-y-2'>
@@ -379,14 +483,17 @@ export default function MobileSearchModal({
             <div className='p-4 space-y-6'>
               <div className='text-center mb-6'>
                 <h3 className='text-xl font-semibold text-gray-900 mb-2'>
-                  When do you need it?
+                  {isTransfer ? 'When is your transfer?' : 'When do you need it?'}
                 </h3>
                 <p className='text-gray-600'>
-                  Select your pickup and return dates
+                  {isTransfer
+                    ? 'Select your pickup date and time'
+                    : 'Select your pickup and return dates'}
                 </p>
               </div>
 
               {/* Date Selection Tabs */}
+              {!isTransfer && (
               <div className='flex mb-4'>
                 <button
                   onClick={() => setSelectingPickup(true)}
@@ -409,6 +516,7 @@ export default function MobileSearchModal({
                   Return: {formatDate(returnDate)}
                 </button>
               </div>
+              )}
 
               {/* Calendar */}
               <div className='bg-white border border-gray-200 rounded-xl p-4'>
@@ -471,12 +579,16 @@ export default function MobileSearchModal({
                         }
                         ${
                           date &&
+                          !isTransfer &&
                           date.toDateString() === returnDate.toDateString()
                             ? 'bg-orange-500 text-white font-semibold'
                             : ''
                         }
                         ${
-                          date && date > pickupDate && date < returnDate
+                          date &&
+                          !isTransfer &&
+                          date > pickupDate &&
+                          date < returnDate
                             ? 'bg-gray-100'
                             : ''
                         }
@@ -498,7 +610,11 @@ export default function MobileSearchModal({
               </div>
 
               {/* Time Selection */}
-              <div className='grid grid-cols-2 gap-4'>
+              <div
+                className={`grid ${
+                  isTransfer ? 'grid-cols-1' : 'grid-cols-2'
+                } gap-4`}
+              >
                 <div>
                   <label className='block text-sm font-medium text-gray-700 mb-2'>
                     Pickup Time
@@ -515,6 +631,7 @@ export default function MobileSearchModal({
                     ))}
                   </select>
                 </div>
+                {!isTransfer && (
                 <div>
                   <label className='block text-sm font-medium text-gray-700 mb-2'>
                     Return Time
@@ -531,6 +648,7 @@ export default function MobileSearchModal({
                     ))}
                   </select>
                 </div>
+                )}
               </div>
             </div>
           )}

@@ -16,6 +16,7 @@ import {
 import Link from 'next/link';
 import BookingModal from './BookingModal';
 import SearchBar from './SearchBar';
+import ContactManagerModal from '../components/ContactManagerModal';
 
 interface Vehicle {
   _id: string;
@@ -64,6 +65,10 @@ export default function SearchResults() {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
+  const [durationText, setDurationText] = useState('');
+  const [distanceLoading, setDistanceLoading] = useState(false);
+  const [distanceError, setDistanceError] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
   // Get search criteria from URL (with safety check for SSR)
   const pickupLocation = searchParams?.get('pickupLocation') || '';
@@ -88,6 +93,8 @@ export default function SearchResults() {
     if (!isTransfer || !pickupLocation || !returnLocation) return;
     const fetchDistance = async () => {
       try {
+        setDistanceLoading(true);
+        setDistanceError(false);
         let url: string;
         // Use coordinates if available (from address autocomplete)
         if (fromLat && fromLng && toLat && toLng) {
@@ -100,9 +107,15 @@ export default function SearchResults() {
         const data = await res.json();
         if (data.success) {
           setDistanceKm(data.distanceKm);
+          setDurationText(data.durationText || '');
+        } else {
+          setDistanceError(true);
         }
       } catch (err) {
         console.error('Failed to fetch distance:', err);
+        setDistanceError(true);
+      } finally {
+        setDistanceLoading(false);
       }
     };
     fetchDistance();
@@ -258,6 +271,12 @@ export default function SearchResults() {
 
   // Handle opening booking modal
   const handleVehicleSelect = (vehicle: Vehicle) => {
+    // No computable price for this transfer route — booking would charge a
+    // wrong fallback amount, so route the user to the fleet manager instead
+    if (vehicle.type === 'transfer' && getTransferPrice(vehicle) === null) {
+      setIsContactModalOpen(true);
+      return;
+    }
     setSelectedVehicle(vehicle);
     setIsBookingModalOpen(true);
   };
@@ -268,8 +287,10 @@ export default function SearchResults() {
     setSelectedVehicle(null);
   };
 
-  // Get transfer price: trips[] override first, then km * pricePerKm
-  const getTransferPrice = (vehicle: Vehicle): number => {
+  // Get transfer price: trips[] override first, then km * pricePerKm.
+  // Returns null when neither applies — a price from an unrelated route or the
+  // daily rate would be wrong for this trip, so the card shows "Price on request".
+  const getTransferPrice = (vehicle: Vehicle): number | null => {
     if (vehicle.type !== 'transfer') return 0;
 
     // Check for matching trip override first
@@ -287,11 +308,7 @@ export default function SearchResults() {
       return Math.round(distanceKm * vehicle.pricePerKm * 100) / 100;
     }
 
-    // Fallback to first trip or dailyRate
-    if (vehicle.trips && vehicle.trips.length > 0) {
-      return vehicle.trips[0].price;
-    }
-    return vehicle.dailyRate;
+    return null;
   };
 
   // Get price for a specific date string (YYYY-MM-DD), checking custom pricing first
@@ -309,18 +326,19 @@ export default function SearchResults() {
   };
 
   // Calculate average daily rate with custom pricing
-  const getAverageDailyRate = (vehicle: Vehicle): number => {
+  const getAverageDailyRate = (vehicle: Vehicle): number | null => {
     if (vehicle.type === 'transfer') {
       return getTransferPrice(vehicle);
     }
 
-    const totalPrice = calculateTotalPriceValue(vehicle);
+    // Rentals always produce a numeric total (null only happens for transfers)
+    const totalPrice = calculateTotalPriceValue(vehicle) ?? vehicle.dailyRate;
     const days = calculateRentalDays();
     return days > 0 ? totalPrice / days : vehicle.dailyRate;
   };
 
   // Calculate total price value (number only)
-  const calculateTotalPriceValue = (vehicle: Vehicle): number => {
+  const calculateTotalPriceValue = (vehicle: Vehicle): number | null => {
     // For transfers, calculate from km or use trip override
     if (vehicle.type === 'transfer') {
       return getTransferPrice(vehicle);
@@ -363,7 +381,7 @@ export default function SearchResults() {
     return {
       days,
       total,
-      formatted: `${symbol}${total.toLocaleString()}`,
+      formatted: total === null ? '' : `${symbol}${total.toLocaleString()}`,
       isTrip: vehicle.type === 'transfer',
     };
   };
@@ -402,7 +420,16 @@ export default function SearchResults() {
           <p className='text-gray-600'>
             {loading ? 'Searching...' : `${vehicles.length} vehicles found`}
             {isTransfer
-              ? pickupLocation && returnLocation && ` • ${pickupLocation} → ${returnLocation}`
+              ? pickupLocation && returnLocation && (
+                  <>
+                    {` • ${pickupLocation} → ${returnLocation}`}
+                    {distanceKm !== null && (
+                      <span className='ml-2 font-medium text-gray-900'>
+                        • {distanceKm} km{durationText && ` · ~${durationText} drive`}
+                      </span>
+                    )}
+                  </>
+                )
               : (
                 <>
                   {pickupLocation && ` in ${pickupLocation}`}
@@ -416,6 +443,13 @@ export default function SearchResults() {
               )
             }
           </p>
+          {isTransfer && distanceError && (
+            <p className='mt-2 inline-block rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800'>
+              We couldn&apos;t calculate the driving distance for this route.
+              Vehicles without a fixed price for it are shown as &quot;Price on
+              request&quot;.
+            </p>
+          )}
         </div>
 
         {/* Loading */}
@@ -460,7 +494,15 @@ export default function SearchResults() {
         {/* Vehicle Grid */}
         {!loading && !error && vehicles.length > 0 && (
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
-            {vehicles.map((vehicle) => (
+            {vehicles.map((vehicle) => {
+              const cardPrice =
+                vehicle.type === 'transfer'
+                  ? getTransferPrice(vehicle)
+                  : getAverageDailyRate(vehicle);
+              const priceUnknown =
+                vehicle.type === 'transfer' && cardPrice === null;
+              const priceLoading = priceUnknown && distanceLoading;
+              return (
               <div
                 key={vehicle._id}
                 className='border-4 border-transparent hover:border-green-800 rounded-xl p-1 transition-all duration-300 group cursor-pointer'
@@ -544,66 +586,105 @@ export default function SearchResults() {
                     <div className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-6'>
                       <div className='text-white'>
                         {/* Benefits */}
-                        <div className='flex items-center mb-4'>
-                          <span className='text-green-400 text-lg mr-2'>✓</span>
-                          <span className='text-sm'>
-                            Unlimited kilometers included
-                          </span>
-                        </div>
-
-                        {/* Pricing Section */}
-                        <div className='flex items-end justify-between'>
-                          <div className='flex items-baseline space-x-2'>
-                            <div className='flex items-baseline'>
-                              <span className='text-sm mr-1'>
-                                {
-                                  formatPriceWithCents(
-                                    vehicle.type === 'transfer'
-                                      ? (getTransferPrice(vehicle))
-                                      : vehicle.dailyRate,
-                                    vehicle.currency
-                                  ).symbol
-                                }
+                        {vehicle.type === 'transfer' ? (
+                          <div className='mb-4 space-y-1'>
+                            <div className='flex items-center'>
+                              <span className='text-green-400 text-lg mr-2'>
+                                ✓
                               </span>
-                              <span className='text-4xl font-bold'>
-                                {
-                                  formatPriceWithCents(
-                                    getAverageDailyRate(vehicle),
-                                    vehicle.currency
-                                  ).whole
-                                }
+                              <span className='text-sm'>
+                                Professional driver, door to door
                               </span>
-                              {formatPriceWithCents(
-                                getAverageDailyRate(vehicle),
-                                vehicle.currency
-                              ).hasDecimals && (
-                                <span className='text-xl font-semibold'>
-                                  .
-                                  {formatPriceWithCents(
-                                    getAverageDailyRate(vehicle),
-                                    vehicle.currency
-                                  )
-                                    .cents.toString()
-                                    .padStart(2, '0')}
-                                </span>
-                              )}
                             </div>
-                            <span className='text-base opacity-90'>
-                              {vehicle.type === 'transfer' ? '/trip' : '/day'}
+                            <div className='flex items-center'>
+                              <span className='text-green-400 text-lg mr-2'>
+                                ✓
+                              </span>
+                              <span className='text-sm'>
+                                Fixed all-inclusive price
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className='flex items-center mb-4'>
+                            <span className='text-green-400 text-lg mr-2'>
+                              ✓
+                            </span>
+                            <span className='text-sm'>
+                              Unlimited kilometers included
                             </span>
                           </div>
-                          <div className='text-right'>
-                            <div className='text-lg font-medium opacity-75'>
-                              {calculateTotalPrice(vehicle).formatted} total
+                        )}
+
+                        {/* Pricing Section */}
+                        {priceLoading ? (
+                          <div className='flex items-end'>
+                            <div className='h-10 w-32 bg-white/20 rounded-lg animate-pulse' />
+                          </div>
+                        ) : priceUnknown ? (
+                          <div className='flex items-end justify-between'>
+                            <div>
+                              <div className='text-2xl font-bold'>
+                                Price on request
+                              </div>
+                              <div className='text-sm opacity-75'>
+                                Contact us for this route
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        ) : (
+                          <div className='flex items-end justify-between'>
+                            <div className='flex items-baseline space-x-2'>
+                              <div className='flex items-baseline'>
+                                <span className='text-sm mr-1'>
+                                  {
+                                    formatPriceWithCents(
+                                      cardPrice ?? 0,
+                                      vehicle.currency
+                                    ).symbol
+                                  }
+                                </span>
+                                <span className='text-4xl font-bold'>
+                                  {
+                                    formatPriceWithCents(
+                                      cardPrice ?? 0,
+                                      vehicle.currency
+                                    ).whole
+                                  }
+                                </span>
+                                {formatPriceWithCents(
+                                  cardPrice ?? 0,
+                                  vehicle.currency
+                                ).hasDecimals && (
+                                  <span className='text-xl font-semibold'>
+                                    .
+                                    {formatPriceWithCents(
+                                      cardPrice ?? 0,
+                                      vehicle.currency
+                                    )
+                                      .cents.toString()
+                                      .padStart(2, '0')}
+                                  </span>
+                                )}
+                              </div>
+                              <span className='text-base opacity-90'>
+                                {vehicle.type === 'transfer' ? '/trip' : '/day'}
+                              </span>
+                            </div>
+                            <div className='text-right'>
+                              <div className='text-lg font-medium opacity-75'>
+                                {calculateTotalPrice(vehicle).formatted} total
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -623,6 +704,12 @@ export default function SearchResults() {
               ? calculateTotalPrice(selectedVehicle).formatted
               : ''
           }
+        />
+
+        {/* Contact modal for transfer routes without a computable price */}
+        <ContactManagerModal
+          isOpen={isContactModalOpen}
+          onClose={() => setIsContactModalOpen(false)}
         />
       </div>
     </div>
