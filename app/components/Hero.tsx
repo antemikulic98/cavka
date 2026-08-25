@@ -14,7 +14,9 @@ import {
   UserCheck,
 } from 'lucide-react';
 import MobileSearchModal from './MobileSearchModal';
-import AddressAutocomplete from './AddressAutocomplete';
+import AddressAutocomplete, {
+  LocationSuggestion,
+} from './AddressAutocomplete';
 
 export default function Hero() {
   // Vehicle type state
@@ -28,7 +30,10 @@ export default function Hero() {
   const [returnLocationValue, setReturnLocationValue] = useState('');
   const [showPickupDropdown, setShowPickupDropdown] = useState(false);
   const [showReturnDropdown, setShowReturnDropdown] = useState(false);
-  const [locations, setLocations] = useState<string[]>([]);
+  const [locationOptions, setLocationOptions] = useState<LocationSuggestion[]>(
+    []
+  );
+  const locations = locationOptions.map((l) => l.name);
 
   // Transfer address coordinates (from Google Places Autocomplete)
   const [pickupLat, setPickupLat] = useState<number | null>(null);
@@ -111,7 +116,13 @@ export default function Hero() {
         const response = await fetch(`/api/settings/locations?activeOnly=true&serviceType=${serviceType}`);
         const data = await response.json();
         if (data.success) {
-          setLocations(data.locations.map((loc: any) => loc.name));
+          setLocationOptions(
+            data.locations.map((loc: any) => ({
+              name: loc.name,
+              lat: loc.lat ?? null,
+              lng: loc.lng ?? null,
+            }))
+          );
         }
       } catch (error) {
         console.error('Error fetching locations:', error);
@@ -470,8 +481,10 @@ export default function Hero() {
                         setPickupLocation(val);
                         setPickupLat(lat);
                         setPickupLng(lng);
+                        setSearchError('');
                       }}
                       placeholder='Enter pickup address'
+                      fallbackSuggestions={locationOptions}
                     />
                   ) : (
                   <div className='relative'>
@@ -531,8 +544,10 @@ export default function Hero() {
                           setReturnLocationValue(val);
                           setReturnLat(lat);
                           setReturnLng(lng);
+                          setSearchError('');
                         }}
                         placeholder='Enter destination address'
+                        fallbackSuggestions={locationOptions}
                       />
                     ) : (
                     <div className='relative'>
@@ -981,6 +996,7 @@ export default function Hero() {
         onSearch={handleMobileSearch}
         initialVehicleType={selectedVehicleType}
         locations={locations}
+        locationOptions={locationOptions}
       />
 
       {/* Powerful Hero Title - Bottom Positioned to Avoid Car */}

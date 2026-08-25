@@ -2,7 +2,9 @@
 
 import React, { useState } from 'react';
 import { MapPin, X, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import AddressAutocomplete from './AddressAutocomplete';
+import AddressAutocomplete, {
+  LocationSuggestion,
+} from './AddressAutocomplete';
 
 interface MobileSearchModalProps {
   isOpen: boolean;
@@ -22,6 +24,7 @@ interface MobileSearchModalProps {
   }) => void;
   initialVehicleType?: string;
   locations: string[];
+  locationOptions?: LocationSuggestion[];
 }
 
 type ModalStep = 'pickup-location' | 'return-location' | 'dates';
@@ -32,6 +35,7 @@ export default function MobileSearchModal({
   onSearch,
   initialVehicleType = 'car',
   locations,
+  locationOptions = [],
 }: MobileSearchModalProps) {
   const [step, setStep] = useState<ModalStep>('pickup-location');
   // Read the prop directly — the modal stays mounted, so useState would
@@ -316,6 +320,7 @@ export default function MobileSearchModal({
                   setPickupLng(lng);
                 }}
                 placeholder='Enter pickup address'
+                fallbackSuggestions={locationOptions}
               />
               {pickupLocation !== '' &&
                 !isValidTransferAddress(
@@ -415,6 +420,7 @@ export default function MobileSearchModal({
                   setReturnLng(lng);
                 }}
                 placeholder='Enter destination address'
+                fallbackSuggestions={locationOptions}
               />
               {returnLocation !== '' &&
                 !isValidTransferAddress(

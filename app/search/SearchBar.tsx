@@ -3,7 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { MapPin, Calendar, Search, X, Plus, ChevronDown } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import AddressAutocomplete from '../components/AddressAutocomplete';
+import AddressAutocomplete, {
+  LocationSuggestion,
+} from '../components/AddressAutocomplete';
 
 interface SearchBarProps {
   initialPickupLocation: string;
@@ -53,7 +55,10 @@ export default function SearchBar({
   const [expanded, setExpanded] = useState(initialExpanded);
   const [showPickupDropdown, setShowPickupDropdown] = useState(false);
   const [showReturnDropdown, setShowReturnDropdown] = useState(false);
-  const [locations, setLocations] = useState<string[]>([]);
+  const [locationOptions, setLocationOptions] = useState<LocationSuggestion[]>(
+    []
+  );
+  const locations = locationOptions.map((l) => l.name);
 
   const pickupDropdownRef = useRef<HTMLDivElement>(null);
   const returnDropdownRef = useRef<HTMLDivElement>(null);
@@ -66,7 +71,13 @@ export default function SearchBar({
         const response = await fetch(`/api/settings/locations?activeOnly=true&serviceType=${serviceType}`);
         const data = await response.json();
         if (data.success) {
-          setLocations(data.locations.map((loc: any) => loc.name));
+          setLocationOptions(
+            data.locations.map((loc: any) => ({
+              name: loc.name,
+              lat: loc.lat ?? null,
+              lng: loc.lng ?? null,
+            }))
+          );
         }
       } catch (error) {
         console.error('Error fetching locations:', error);
@@ -200,6 +211,7 @@ export default function SearchBar({
                       setPickupLng(lng);
                     }}
                     placeholder='Enter pickup address'
+                    fallbackSuggestions={locationOptions}
                   />
                 ) : (
                 <>
@@ -265,6 +277,7 @@ export default function SearchBar({
                       setReturnLng(lng);
                     }}
                     placeholder='Enter destination address'
+                    fallbackSuggestions={locationOptions}
                   />
                 ) : (
                   <>
