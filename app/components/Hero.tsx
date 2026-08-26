@@ -274,15 +274,33 @@ export default function Hero() {
     searchParams.set('returnTime', isTransfer ? pickupTime : returnTime);
     searchParams.set('vehicleType', selectedVehicleType);
 
-    // For transfers, pass coordinates for distance calculation
+    // For transfers, pass coordinates for distance calculation. A field can
+    // hold a DB location name without coords (e.g. the default pickup) — in
+    // that case take the coords we already fetched with the locations list.
     if (isTransfer) {
-      if (pickupLat && pickupLng) {
-        searchParams.set('fromLat', pickupLat.toString());
-        searchParams.set('fromLng', pickupLng.toString());
+      const resolveCoords = (
+        value: string,
+        lat: number | null,
+        lng: number | null
+      ) => {
+        if (lat !== null && lng !== null) return { lat, lng };
+        const match = locationOptions.find(
+          (l) => l.name.toLowerCase() === value.trim().toLowerCase()
+        );
+        return match && match.lat !== null && match.lng !== null
+          ? { lat: match.lat, lng: match.lng }
+          : null;
+      };
+
+      const from = resolveCoords(pickupLocation, pickupLat, pickupLng);
+      if (from) {
+        searchParams.set('fromLat', from.lat.toString());
+        searchParams.set('fromLng', from.lng.toString());
       }
-      if (returnLat && returnLng) {
-        searchParams.set('toLat', returnLat.toString());
-        searchParams.set('toLng', returnLng.toString());
+      const to = resolveCoords(returnLocationValue, returnLat, returnLng);
+      if (to) {
+        searchParams.set('toLat', to.lat.toString());
+        searchParams.set('toLng', to.lng.toString());
       }
     }
 

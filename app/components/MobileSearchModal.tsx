@@ -191,7 +191,25 @@ export default function MobileSearchModal({
       case 'return-location':
         setStep('dates');
         break;
-      case 'dates':
+      case 'dates': {
+        // A field can hold a DB location name typed without picking from the
+        // dropdown (no coords) — resolve coords from the locations list
+        const resolveCoords = (
+          value: string,
+          lat: number | null,
+          lng: number | null
+        ) => {
+          if (lat !== null && lng !== null) return { lat, lng };
+          const match = locationOptions.find(
+            (l) => l.name.toLowerCase() === value.trim().toLowerCase()
+          );
+          return match && match.lat !== null && match.lng !== null
+            ? { lat: match.lat, lng: match.lng }
+            : { lat: null, lng: null };
+        };
+        const from = resolveCoords(pickupLocation, pickupLat, pickupLng);
+        const to = resolveCoords(returnLocation, returnLat, returnLng);
+
         // Perform search — a transfer is a one-way trip, so its "return"
         // date/time mirror the pickup
         onSearch({
@@ -202,13 +220,14 @@ export default function MobileSearchModal({
           returnDate: isTransfer ? pickupDate : returnDate,
           pickupTime,
           returnTime: isTransfer ? pickupTime : returnTime,
-          pickupLat,
-          pickupLng,
-          returnLat,
-          returnLng,
+          pickupLat: from.lat,
+          pickupLng: from.lng,
+          returnLat: to.lat,
+          returnLng: to.lng,
         });
         onClose();
         break;
+      }
     }
   };
 

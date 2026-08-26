@@ -23,6 +23,9 @@ interface AddressAutocompleteProps {
 let googleMapsLoaded = false;
 let googleMapsLoading = false;
 let googleMapsFailed = false;
+// Which address input the user was last typing in — several instances exist
+// on a page, and only this one may reclaim focus after Google blurs it
+let lastFocusedAddressInput: HTMLInputElement | null = null;
 const loadCallbacks: (() => void)[] = [];
 const failCallbacks: (() => void)[] = [];
 
@@ -111,6 +114,8 @@ export default function AddressAutocomplete({
   const [placesFailed, setPlacesFailed] = useState(googleMapsFailed);
   const [showFallback, setShowFallback] = useState(false);
   const [text, setText] = useState(value);
+  const [osmResults, setOsmResults] = useState<LocationSuggestion[]>([]);
+  const [osmLoading, setOsmLoading] = useState(false);
 
   useEffect(() => {
     if (googleMapsFailed) {
@@ -163,13 +168,62 @@ export default function AddressAutocomplete({
     }
   }, [isReady, initAutocomplete]);
 
+  // When Google Places is down, search addresses through our own geocoding
+  // endpoint (OpenStreetMap) so users can still enter any Croatian address
+  useEffect(() => {
+    if (!placesFailed) return;
+    const query = text.trim();
+    if (query.length < 3) {
+      setOsmResults([]);
+      setOsmLoading(false);
+      return;
+    }
+    setOsmLoading(true);
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`, {
+          signal: controller.signal,
+        });
+        const data = await res.json();
+        setOsmResults(data.success ? data.results : []);
+        setOsmLoading(false);
+      } catch {
+        // request was aborted by newer input or failed — keep previous list
+        if (!controller.signal.aborted) setOsmLoading(false);
+      }
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [text, placesFailed]);
+
   // On auth failure Google disables the input and swaps the placeholder for
   // "Oops! Something went wrong." — undo that so our fallback stays usable
   useEffect(() => {
     if (!placesFailed || !inputRef.current) return;
     const input = inputRef.current;
+
+    // Block Google from disabling the input via the property — a disabled
+    // input blurs, and mid-typing keystrokes would fall through to the page
+    Object.defineProperty(input, 'disabled', {
+      configurable: true,
+      get: () => false,
+      set: () => {},
+    });
+
     const restore = () => {
-      if (input.disabled) input.disabled = false;
+      if (input.hasAttribute('disabled')) {
+        input.removeAttribute('disabled');
+        // Give focus back only to the field the user was actually typing in
+        if (
+          document.activeElement === document.body &&
+          lastFocusedAddressInput === input
+        ) {
+          input.focus();
+        }
+      }
       if (input.placeholder !== placeholder) input.placeholder = placeholder;
       if (input.style.backgroundImage !== 'none') {
         input.style.backgroundImage = 'none';
@@ -216,12 +270,17 @@ export default function AddressAutocomplete({
     setShowFallback(false);
   };
 
-  const useFallback = placesFailed && fallbackSuggestions.length > 0;
-  const filteredSuggestions = useFallback
+  const useFallback = placesFailed;
+  const dbMatches = useFallback
     ? fallbackSuggestions.filter((s) =>
         s.name.toLowerCase().includes(text.trim().toLowerCase())
       )
     : [];
+  // Own locations first (they can have fixed trip prices), then OSM addresses
+  const filteredSuggestions = [
+    ...dbMatches,
+    ...osmResults.filter((o) => !dbMatches.some((d) => d.name === o.name)),
+  ];
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
@@ -235,6 +294,7 @@ export default function AddressAutocomplete({
         placeholder={placeholder}
         className='w-full pl-12 pr-10 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-800 focus:border-green-800 text-gray-900 text-sm font-medium shadow-sm hover:border-gray-300 transition-all duration-200 bg-white'
         onFocus={() => {
+          lastFocusedAddressInput = inputRef.current;
           probePlacesAvailability();
           setShowFallback(true);
         }}
@@ -270,10 +330,17 @@ export default function AddressAutocomplete({
                 {suggestion.name}
               </button>
             ))
+          ) : osmLoading ? (
+            <p className='px-4 py-3 text-sm text-gray-500'>
+              Searching addresses…
+            </p>
+          ) : text.trim().length >= 3 ? (
+            <p className='px-4 py-3 text-sm text-gray-500'>
+              No results found — try adding the city name
+            </p>
           ) : (
             <p className='px-4 py-3 text-sm text-gray-500'>
-              No matching locations — please choose one of the listed pickup
-              points
+              Keep typing to search addresses…
             </p>
           )}
         </div>
