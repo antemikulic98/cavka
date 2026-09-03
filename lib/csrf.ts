@@ -37,16 +37,33 @@ export function verifyCSRFToken(request: NextRequest): boolean {
   // Get token from cookie
   const cookieToken = request.cookies.get(CSRF_COOKIE_NAME)?.value;
 
-  // Both must exist and match
-  if (!headerToken || !cookieToken) {
-    return false;
+  if (headerToken && cookieToken) {
+    // Double-submit token check. Length guard first — timingSafeEqual THROWS
+    // on buffers of different lengths, which would escape as a 500.
+    const a = Buffer.from(headerToken);
+    const b = Buffer.from(cookieToken);
+    if (a.length !== b.length) {
+      return false;
+    }
+    return crypto.timingSafeEqual(a, b);
   }
 
-  // Constant-time comparison to prevent timing attacks
-  return crypto.timingSafeEqual(
-    Buffer.from(headerToken),
-    Buffer.from(cookieToken)
-  );
+  // No token pair (login form, dashboard fetches) — fall back to strict
+  // same-origin validation. Browsers always attach the Origin header to
+  // fetch/XHR/form POSTs and script cannot forge it cross-site, so a
+  // matching Origin proves the request came from our own pages.
+  const origin = request.headers.get('origin');
+  if (origin) {
+    try {
+      const originHost = new URL(origin).host;
+      const requestHost = request.headers.get('host');
+      return !!requestHost && originHost === requestHost;
+    } catch {
+      return false;
+    }
+  }
+
+  return false;
 }
 
 /**

@@ -17,6 +17,9 @@ interface AddressAutocompleteProps {
   // Our own locations from the DB, shown as a dropdown when Google Places
   // is unavailable (missing key, blocked key, script failure)
   fallbackSuggestions?: LocationSuggestion[];
+  // Lets the parent close its own overlays (calendar, time dropdowns) that
+  // would otherwise cover the suggestion list
+  onFocus?: () => void;
 }
 
 // Global script loader to avoid loading the script multiple times
@@ -106,6 +109,7 @@ export default function AddressAutocomplete({
   placeholder = 'Enter address',
   className = '',
   fallbackSuggestions = [],
+  onFocus,
 }: AddressAutocompleteProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -297,6 +301,7 @@ export default function AddressAutocomplete({
           lastFocusedAddressInput = inputRef.current;
           probePlacesAvailability();
           setShowFallback(true);
+          onFocus?.();
         }}
         onChange={(e) => {
           setText(e.target.value);

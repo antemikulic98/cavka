@@ -121,7 +121,12 @@ async function createBookingFromSession(session: Stripe.Checkout.Session) {
       console.log('Conflicting bookings:', conflictingBookings.map(b => b.bookingReference));
     }
 
-    const discountedAmount = Math.round(parseFloat(metadata.totalAfterDiscount || metadata.discountedAmount || '0') * 100) / 100;
+    // Prefer the amount Stripe actually charged over metadata echoes
+    const chargedAmount =
+      typeof session.amount_total === 'number'
+        ? session.amount_total / 100
+        : null;
+    const discountedAmount = chargedAmount ?? Math.round(parseFloat(metadata.totalAfterDiscount || metadata.discountedAmount || '0') * 100) / 100;
     const originalAmount = Math.round(parseFloat(metadata.totalBeforeDiscount || metadata.totalAmount || '0') * 100) / 100;
     const discount = Math.round(parseFloat(metadata.discountAmount || metadata.discount || '0') * 100) / 100;
     const cdwCost = Math.round(parseFloat(metadata.cdwCost || '0') * 100) / 100;
@@ -160,6 +165,8 @@ async function createBookingFromSession(session: Stripe.Checkout.Session) {
 
       // Vehicle Information
       vehicleId: metadata.vehicleId,
+      // Without this the schema default 'rental' would mislabel paid transfers
+      vehicleType: metadata.vehicleType === 'transfer' ? 'transfer' : 'rental',
       vehicleInfo: {
         make: vehicle.make,
         model: vehicle.vehicleModel,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentAdmin } from '@/lib/auth';
 import Booking from '@/models/Booking';
 import Vehicle from '@/models/Vehicle';
 
@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   try {
     await connectMongoDB();
 
-    const user = await getCurrentUser();
+    const user = await getCurrentAdmin();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

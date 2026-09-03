@@ -63,6 +63,16 @@ export async function getCurrentUser(): Promise<UserSession | null> {
   }
 }
 
+/**
+ * Like getCurrentUser, but only returns the session when the user has the
+ * admin role — use this in every dashboard/settings/management route so a
+ * plain 'user' account cannot mutate the system.
+ */
+export async function getCurrentAdmin(): Promise<UserSession | null> {
+  const user = await getCurrentUser();
+  return user && user.role === 'admin' ? user : null;
+}
+
 export async function setAuthCookie(token: string): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.set('auth-token', token, {

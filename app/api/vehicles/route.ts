@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
 import Vehicle from '@/models/Vehicle';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentAdmin } from '@/lib/auth';
 import { csrfProtection } from '@/lib/csrf';
 
 interface CreateVehicleRequest {
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     await connectMongoDB();
 
     // Check if user is authenticated
-    const user = await getCurrentUser();
+    const user = await getCurrentAdmin();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -172,8 +172,12 @@ export async function GET(request: NextRequest) {
     const location = searchParams.get('location');
     const status = searchParams.get('status');
     const type = searchParams.get('type');
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '12');
+    // Clamp pagination — NaN or huge values would allow unbounded pulls
+    const page = Math.max(parseInt(searchParams.get('page') || '1') || 1, 1);
+    const limit = Math.min(
+      Math.max(parseInt(searchParams.get('limit') || '12') || 12, 1),
+      100
+    );
 
     // Build query - simplified
     const query: Record<string, unknown> = {};

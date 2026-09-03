@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { connectMongoDB } from '@/lib/mongodb';
+import { rateLimit } from '@/lib/security';
 import Booking from '@/models/Booking';
 import Vehicle from '@/models/Vehicle';
 import { sendBookingConfirmation } from '@/lib/email';
@@ -11,6 +12,16 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(request: NextRequest) {
   try {
+    // Unauthenticated endpoint that creates bookings from a session ID —
+    // rate limit it so session IDs can't be probed in bulk
+    const rateLimitResponse = await rateLimit({
+      windowMs: 5 * 60 * 1000,
+      maxRequests: 10,
+    })(request);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
     const { sessionId } = await request.json();
 
     if (!sessionId) {
@@ -111,7 +122,12 @@ export async function POST(request: NextRequest) {
       console.log('Conflicting bookings:', conflictingBookings.map(b => b.bookingReference));
     }
 
-    const discountedAmount = Math.round(parseFloat(metadata.totalAfterDiscount || metadata.discountedAmount || '0') * 100) / 100;
+    // Prefer the amount Stripe actually charged over metadata echoes
+    const chargedAmount =
+      typeof session.amount_total === 'number'
+        ? session.amount_total / 100
+        : null;
+    const discountedAmount = chargedAmount ?? Math.round(parseFloat(metadata.totalAfterDiscount || metadata.discountedAmount || '0') * 100) / 100;
     const originalAmount = Math.round(parseFloat(metadata.totalBeforeDiscount || metadata.totalAmount || '0') * 100) / 100;
     const discount = Math.round(parseFloat(metadata.discountAmount || metadata.discount || '0') * 100) / 100;
     const baseVehicleCost = Math.round(parseFloat(metadata.baseVehicleCost || '0') * 100) / 100;

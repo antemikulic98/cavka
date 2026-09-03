@@ -390,6 +390,9 @@ export default function SearchResults() {
     <div className='min-h-screen bg-gray-50'>
       {/* Search Bar */}
       <SearchBar
+        // Remount when the URL changes — the bar snapshots its props into
+        // state, so back/forward navigation would otherwise show stale values
+        key={searchParams?.toString()}
         initialPickupLocation={pickupLocation}
         initialReturnLocation={returnLocation}
         initialPickupDate={pickupDate}

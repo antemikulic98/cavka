@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
 import { uploadToSpaces } from '@/lib/spaces';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentAdmin } from '@/lib/auth';
 import { csrfProtection } from '@/lib/csrf';
 import { rateLimit } from '@/lib/security';
 
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     if (rateLimitResponse) return rateLimitResponse;
 
     // SECURITY: Require authentication
-    const user = await getCurrentUser();
+    const user = await getCurrentAdmin();
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Authentication required' },

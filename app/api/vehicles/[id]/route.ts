@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
 import Vehicle from '@/models/Vehicle';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentAdmin } from '@/lib/auth';
 import { csrfProtection } from '@/lib/csrf';
 
 export async function GET(
@@ -13,7 +13,7 @@ export async function GET(
     await connectMongoDB();
 
     // Check if user is authenticated
-    const user = await getCurrentUser();
+    const user = await getCurrentAdmin();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -63,7 +63,7 @@ export async function PUT(
     await connectMongoDB();
 
     // Check if user is authenticated
-    const user = await getCurrentUser();
+    const user = await getCurrentAdmin();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -75,10 +75,22 @@ export async function PUT(
     if (body.model) {
       updateData.vehicleModel = body.model;
     }
+    // Never allow these through mass-assignment
+    delete updateData._id;
+    delete updateData.addedBy;
+    delete updateData.createdAt;
+
+    // An empty plate (transfer vehicles have none) would be indexed by the
+    // unique sparse index and collide with the next empty one — unset instead
+    const update: Record<string, unknown> = { $set: updateData };
+    if ('licensePlate' in body && !body.licensePlate) {
+      delete updateData.licensePlate;
+      update.$unset = { licensePlate: 1 };
+    }
 
     const vehicle = await Vehicle.findByIdAndUpdate(
       resolvedParams.id,
-      updateData,
+      update,
       { new: true, runValidators: true }
     );
 
@@ -96,6 +108,9 @@ export async function PUT(
     });
   } catch (error) {
     console.error('Error updating vehicle:', error);
+    if (error instanceof Error && error.name === 'ValidationError') {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -115,7 +130,7 @@ export async function PATCH(
     await connectMongoDB();
 
     // Check if user is authenticated
-    const user = await getCurrentUser();
+    const user = await getCurrentAdmin();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -127,10 +142,22 @@ export async function PATCH(
     if (body.model) {
       updateData.vehicleModel = body.model;
     }
+    // Never allow these through mass-assignment
+    delete updateData._id;
+    delete updateData.addedBy;
+    delete updateData.createdAt;
+
+    // An empty plate (transfer vehicles have none) would be indexed by the
+    // unique sparse index and collide with the next empty one — unset instead
+    const update: Record<string, unknown> = { $set: updateData };
+    if ('licensePlate' in body && !body.licensePlate) {
+      delete updateData.licensePlate;
+      update.$unset = { licensePlate: 1 };
+    }
 
     const vehicle = await Vehicle.findByIdAndUpdate(
       resolvedParams.id,
-      updateData,
+      update,
       { new: true, runValidators: true }
     );
 
@@ -148,6 +175,9 @@ export async function PATCH(
     });
   } catch (error) {
     console.error('Error updating vehicle:', error);
+    if (error instanceof Error && error.name === 'ValidationError') {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -167,7 +197,7 @@ export async function DELETE(
     await connectMongoDB();
 
     // Check if user is authenticated
-    const user = await getCurrentUser();
+    const user = await getCurrentAdmin();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

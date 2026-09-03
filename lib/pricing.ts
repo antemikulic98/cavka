@@ -21,7 +21,8 @@ export interface PricingInput {
   fromLng?: number;
   toLat?: number;
   toLng?: number;
-  rentalDays: number;
+  /** Display-only; the charged day count is always recomputed from the dates */
+  rentalDays?: number;
   cdwCoverage?: 'none' | 'basic' | 'full';
   addOns?: {
     additionalDriver?: boolean;
@@ -54,6 +55,20 @@ export interface PricingResult {
 }
 
 /**
+ * Number of chargeable rental days derived from the dates themselves.
+ * SECURITY: never trust a client-sent day count — it multiplies the price.
+ * Mirrors the client display logic (ceil of the time difference, minimum 1).
+ */
+export function computeRentalDays(
+  pickupDate: string,
+  returnDate: string
+): number {
+  const diff = new Date(returnDate).getTime() - new Date(pickupDate).getTime();
+  if (!Number.isFinite(diff) || diff <= 0) return 1;
+  return Math.max(Math.ceil(diff / (1000 * 60 * 60 * 24)), 1);
+}
+
+/**
  * Calculate complete pricing for a booking
  * All calculations happen server-side with database prices
  */
@@ -71,11 +86,14 @@ export async function calculateBookingPrice(
     throw new Error('Vehicle not found');
   }
 
+  // Derive the day count from the dates — input.rentalDays is display-only
+  const rentalDays = computeRentalDays(input.pickupDate, input.returnDate);
+
   // Calculate base vehicle cost
   const baseVehicleCost = await calculateVehicleCost(
     vehicle,
     input.pickupDate,
-    input.rentalDays,
+    rentalDays,
     input.pickupLocation,
     input.returnLocation,
     input.fromLat,
@@ -88,14 +106,14 @@ export async function calculateBookingPrice(
   const cdwCost = await calculateCDWCost(
     vehicle,
     input.cdwCoverage || 'none',
-    input.rentalDays
+    rentalDays
   );
 
   // Calculate add-ons cost
   const addOnsResult = await calculateAddOnsCost(
     vehicle,
     input.addOns || {},
-    input.rentalDays
+    rentalDays
   );
 
   // Calculate discount
@@ -113,12 +131,12 @@ export async function calculateBookingPrice(
     discountAmount,
     totalAfterDiscount,
     priceBreakdown: {
-      vehicleCostPerDay: vehicle.type !== 'transfer' && input.rentalDays > 0
-        ? baseVehicleCost / input.rentalDays
+      vehicleCostPerDay: vehicle.type !== 'transfer' && rentalDays > 0
+        ? baseVehicleCost / rentalDays
         : undefined,
       vehicleTotalCost: baseVehicleCost,
-      cdwCostPerDay: vehicle.type !== 'transfer' && cdwCost > 0 && input.rentalDays > 0
-        ? cdwCost / input.rentalDays
+      cdwCostPerDay: vehicle.type !== 'transfer' && cdwCost > 0 && rentalDays > 0
+        ? cdwCost / rentalDays
         : undefined,
       cdwTotalCost: cdwCost,
       addOnsDetails: addOnsResult.details,
@@ -217,25 +235,22 @@ async function calculateVehicleCost(
       }
     }
 
-    // 3. Fallback to first trip price or dailyRate
-    if (vehicle.trips && vehicle.trips.length > 0) {
-      const price = vehicle.trips[0].price;
-      if (price && price > 0) return price;
-    }
-    if (vehicle.dailyRate && vehicle.dailyRate > 0) {
-      return vehicle.dailyRate;
-    }
-    throw new Error('Transfer vehicle has no pricing configured');
+    // No trip override and no computable km price. Do NOT fall back to an
+    // unrelated trip's price or the daily rate — that would silently charge
+    // a wrong amount. The client shows "Price on request" for this case.
+    throw new Error('TRANSFER_PRICE_UNAVAILABLE');
   }
 
-  // For rental vehicles, calculate with custom pricing
+  // For rental vehicles, calculate with custom pricing. Work in UTC from the
+  // date part of the string so the priced calendar days don't shift by one
+  // on servers running in a non-UTC timezone.
   let total = 0;
-  const pickupDateObj = new Date(pickupDate);
+  const [year, month, day] = pickupDate.split('T')[0].split('-').map(Number);
 
   for (let i = 0; i < rentalDays; i++) {
-    const currentDate = new Date(pickupDateObj);
-    currentDate.setDate(currentDate.getDate() + i);
-    const dateStr = currentDate.toISOString().split('T')[0];
+    const dateStr = new Date(Date.UTC(year, month - 1, day + i))
+      .toISOString()
+      .split('T')[0];
 
     // Check for custom pricing
     const customPrice = vehicle.customPricing?.find(
@@ -366,8 +381,13 @@ export function validatePricingInput(input: PricingInput): {
     errors.push('Invalid return date');
   }
 
-  if (input.rentalDays < 1 || input.rentalDays > 365) {
-    errors.push('Invalid rental days');
+  // The charged day count comes from the dates — validate that, not the
+  // client-sent rentalDays (undefined would pass < / > comparisons anyway)
+  if (
+    !errors.length &&
+    computeRentalDays(input.pickupDate, input.returnDate) > 365
+  ) {
+    errors.push('Rental period too long');
   }
 
   if (!input.pickupLocation || input.pickupLocation.trim() === '') {

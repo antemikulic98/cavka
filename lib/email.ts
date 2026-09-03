@@ -446,6 +446,46 @@ export async function sendBookingConfirmation(
   }
 }
 
+interface ContactInquiryData {
+  name: string;
+  email: string;
+  phone?: string;
+  carModel?: string;
+  message: string;
+}
+
+/**
+ * Send a contact-form inquiry to the fleet manager
+ */
+export async function sendContactInquiry(
+  data: ContactInquiryData
+): Promise<void> {
+  const escapeHtml = (s: string) =>
+    s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+  await transporter.sendMail({
+    from: `"Hit Rent Website" <${process.env.GMAIL_USER}>`,
+    to: process.env.ADMIN_EMAIL || 'booking@hit-rent.com',
+    replyTo: data.email,
+    subject: `New inquiry from ${data.name}${
+      data.carModel ? ` — ${data.carModel}` : ''
+    }`,
+    html: `
+      <h2>New website inquiry</h2>
+      <p><strong>Name:</strong> ${escapeHtml(data.name)}</p>
+      <p><strong>Email:</strong> ${escapeHtml(data.email)}</p>
+      ${data.phone ? `<p><strong>Phone:</strong> ${escapeHtml(data.phone)}</p>` : ''}
+      ${data.carModel ? `<p><strong>Vehicle:</strong> ${escapeHtml(data.carModel)}</p>` : ''}
+      <p><strong>Message:</strong></p>
+      <p>${escapeHtml(data.message).replace(/\n/g, '<br/>')}</p>
+    `,
+  });
+}
+
 // Verify email configuration
 export async function verifyEmailConfig(): Promise<boolean> {
   try {

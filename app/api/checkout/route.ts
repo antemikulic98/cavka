@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { rateLimit } from '@/lib/security';
-import { calculateBookingPrice, validatePricingInput } from '@/lib/pricing';
+import {
+  calculateBookingPrice,
+  validatePricingInput,
+  computeRentalDays,
+} from '@/lib/pricing';
 import { connectMongoDB } from '@/lib/mongodb';
 import Vehicle from '@/models/Vehicle';
+import Booking from '@/models/Booking';
 import { csrfProtection } from '@/lib/csrf';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -89,8 +94,51 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // The charged day count comes from the dates, not the client value
+    const serverRentalDays = computeRentalDays(pickupDate, returnDate);
+
+    // Check availability BEFORE taking the customer's money — the webhook
+    // re-checks after payment, but by then the charge already happened
+    const pickup = new Date(pickupDate);
+    const returnD = new Date(returnDate);
+    const conflictingBookings = await Booking.find({
+      vehicleId,
+      status: { $in: ['confirmed', 'in_progress'] },
+      $or: [
+        { pickupDate: { $lte: pickup }, returnDate: { $gte: pickup } },
+        { pickupDate: { $lte: returnD }, returnDate: { $gte: returnD } },
+        { pickupDate: { $gte: pickup }, returnDate: { $lte: returnD } },
+      ],
+    }).limit(1);
+    if (conflictingBookings.length > 0) {
+      return NextResponse.json(
+        {
+          error:
+            'This vehicle is no longer available for the selected dates. Please choose different dates or another vehicle.',
+        },
+        { status: 409 }
+      );
+    }
+
     // SECURITY: Calculate price SERVER-SIDE (never trust client prices)
-    const pricing = await calculateBookingPrice(pricingInput);
+    let pricing;
+    try {
+      pricing = await calculateBookingPrice(pricingInput);
+    } catch (pricingError) {
+      if (
+        pricingError instanceof Error &&
+        pricingError.message === 'TRANSFER_PRICE_UNAVAILABLE'
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              'We could not calculate a price for this route. Please contact us to book this transfer.',
+          },
+          { status: 400 }
+        );
+      }
+      throw pricingError;
+    }
 
     // Fetch vehicle for metadata
     const vehicle = await Vehicle.findById(vehicleId);
@@ -121,7 +169,7 @@ export async function POST(request: NextRequest) {
               name: vehicleName || `${vehicle.make} ${vehicle.vehicleModel}`,
               description: vehicle.type === 'transfer'
                 ? `Transfer from ${pickupLocation} to ${returnLocation || pickupLocation}`
-                : `${rentalDays} day${rentalDays > 1 ? 's' : ''} rental`,
+                : `${serverRentalDays} day${serverRentalDays > 1 ? 's' : ''} rental`,
               images: vehicleImage ? [vehicleImage] : vehicle.images,
               metadata: {
                 vehicleId,
@@ -166,7 +214,7 @@ export async function POST(request: NextRequest) {
         customerCompany: customerCompany || '',
         customerFlightNumber: customerFlightNumber || '',
         customerEmail,
-        rentalDays: rentalDays?.toString() || '1',
+        rentalDays: serverRentalDays.toString(),
         cdwCoverage: cdwCoverage || 'none',
         addOns: addOns ? JSON.stringify(addOns) : '{}',
       },

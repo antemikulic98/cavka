@@ -53,6 +53,7 @@ interface VehicleDetailsProps {
   vehicle: Vehicle;
   bookings: Booking[];
   dayPricing: DayPricing[];
+  onVehicleUpdated?: () => void;
 }
 
 interface LocationOption {
@@ -80,9 +81,17 @@ export default function VehicleDetails({
   vehicle,
   bookings,
   dayPricing,
+  onVehicleUpdated,
 }: VehicleDetailsProps) {
   const [showRoutes, setShowRoutes] = useState(false);
   const [routes, setRoutes] = useState(vehicle.trips || []);
+
+  // Keep local routes in sync when the vehicle is refetched (e.g. after the
+  // edit modal saves) — otherwise the next PATCH here would overwrite those
+  // changes with a stale copy
+  useEffect(() => {
+    setRoutes(vehicle.trips || []);
+  }, [vehicle.trips]);
   const [isAddingRoute, setIsAddingRoute] = useState(false);
   const [newRoute, setNewRoute] = useState({
     from: '',
@@ -161,6 +170,25 @@ export default function VehicleDetails({
       alert('Please fill in all required fields (From, To, Price)');
       return;
     }
+    if (newRoute.from === newRoute.to) {
+      alert('From and To must be different locations');
+      return;
+    }
+    if (newRoute.price <= 0) {
+      alert('Price must be greater than 0');
+      return;
+    }
+    const duplicate = routes.some(
+      (r) =>
+        r.from.toLowerCase() === newRoute.from.toLowerCase() &&
+        r.to.toLowerCase() === newRoute.to.toLowerCase()
+    );
+    if (duplicate) {
+      alert(
+        `A route ${newRoute.from} → ${newRoute.to} already exists. Remove it first to change the price.`
+      );
+      return;
+    }
 
     try {
       const response = await fetch(`/api/vehicles/${vehicle._id}`, {
@@ -174,6 +202,7 @@ export default function VehicleDetails({
         setRoutes([...routes, newRoute]);
         setNewRoute({ from: '', to: '', price: 0, duration: '', distance: '' });
         setIsAddingRoute(false);
+        onVehicleUpdated?.();
       } else {
         alert('Failed to add route');
       }
@@ -196,6 +225,7 @@ export default function VehicleDetails({
 
       if (response.ok) {
         setRoutes(updatedRoutes);
+        onVehicleUpdated?.();
       } else {
         alert('Failed to remove route');
       }
@@ -224,6 +254,7 @@ export default function VehicleDetails({
 
     setGeneratingAll(true);
     const newTrips: typeof routes = [];
+    const failedPairs: string[] = [];
 
     for (const from of transferLocs) {
       for (const to of transferLocs) {
@@ -239,21 +270,49 @@ export default function VehicleDetails({
             distance: `${result.distanceKm} km`,
             duration: result.durationText,
           });
+        } else {
+          failedPairs.push(`${from.name} → ${to.name}`);
         }
       }
     }
+
+    // If everything failed (Google down, missing key), don't touch the
+    // existing routes — a PATCH here would wipe them all
+    if (newTrips.length === 0) {
+      alert(
+        'Could not calculate any distances (check the Google Maps key/quota). Existing routes were left unchanged.'
+      );
+      setGeneratingAll(false);
+      return;
+    }
+
+    // Keep existing routes for pairs that failed to regenerate
+    const generatedKeys = new Set(
+      newTrips.map((t) => `${t.from}|${t.to}`.toLowerCase())
+    );
+    const preserved = routes.filter(
+      (r) => !generatedKeys.has(`${r.from}|${r.to}`.toLowerCase())
+    );
+    const merged = [...newTrips, ...preserved];
 
     try {
       const response = await fetch(`/api/vehicles/${vehicle._id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trips: newTrips }),
+        body: JSON.stringify({ trips: merged }),
         credentials: 'include',
       });
 
       if (response.ok) {
-        setRoutes(newTrips);
-        alert(`Generated ${newTrips.length} routes successfully!`);
+        setRoutes(merged);
+        onVehicleUpdated?.();
+        alert(
+          `Generated ${newTrips.length} routes successfully!` +
+            (preserved.length ? ` Kept ${preserved.length} existing route(s).` : '') +
+            (failedPairs.length
+              ? `\n\nFailed to calculate ${failedPairs.length} pair(s):\n${failedPairs.slice(0, 10).join('\n')}`
+              : '')
+        );
       } else {
         alert('Failed to save generated routes');
       }

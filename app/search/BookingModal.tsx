@@ -1636,9 +1636,11 @@ export default function BookingModal({
     <div 
       className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-0 sm:p-4'
       onClick={(e) => {
-        // Close modal when clicking on backdrop (not on modal content)
+        // Close modal when clicking on backdrop (not on modal content).
+        // Use handleClose so the step/form state resets like the X button —
+        // otherwise the next vehicle's modal resumes mid-flow
         if (e.target === e.currentTarget) {
-          onClose();
+          handleClose();
         }
       }}
     >

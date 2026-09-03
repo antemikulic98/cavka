@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
 import Vehicle from '@/models/Vehicle';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentAdmin } from '@/lib/auth';
 import { csrfProtection } from '@/lib/csrf';
 import mongoose from 'mongoose';
 
@@ -12,7 +12,7 @@ export async function PUT(request: NextRequest) {
     if (csrfError) return csrfError;
 
     // Check authentication
-    const user = await getCurrentUser();
+    const user = await getCurrentAdmin();
     if (!user) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },

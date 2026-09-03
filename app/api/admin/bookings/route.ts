@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import { connectMongoDB } from '@/lib/mongodb';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentAdmin } from '@/lib/auth';
 import { csrfProtection } from '@/lib/csrf';
 import Booking from '@/models/Booking';
 
@@ -9,7 +10,7 @@ export async function GET(request: NextRequest) {
   try {
     await connectMongoDB();
 
-    const user = await getCurrentUser();
+    const user = await getCurrentAdmin();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -34,12 +35,17 @@ export async function GET(request: NextRequest) {
       )
       .sort({ createdAt: -1 });
 
-    // Apply pagination if provided
-    if (limit) {
-      bookingsQuery = bookingsQuery.limit(parseInt(limit));
+    // Apply pagination if provided (clamped — NaN or huge values otherwise
+    // turn this into an unbounded data pull)
+    const parsedLimit = limit
+      ? Math.min(Math.max(parseInt(limit) || 50, 1), 200)
+      : null;
+    const parsedOffset = offset ? Math.max(parseInt(offset) || 0, 0) : 0;
+    if (parsedLimit) {
+      bookingsQuery = bookingsQuery.limit(parsedLimit);
     }
-    if (offset) {
-      bookingsQuery = bookingsQuery.skip(parseInt(offset));
+    if (parsedOffset) {
+      bookingsQuery = bookingsQuery.skip(parsedOffset);
     }
 
     const bookings = await bookingsQuery;
@@ -72,12 +78,11 @@ export async function GET(request: NextRequest) {
       bookings: formattedBookings,
       totalCount,
       pagination: {
-        limit: limit ? parseInt(limit) : null,
-        offset: offset ? parseInt(offset) : 0,
-        hasMore:
-          offset && limit
-            ? parseInt(offset) + parseInt(limit) < totalCount
-            : false,
+        limit: parsedLimit,
+        offset: parsedOffset,
+        hasMore: parsedLimit
+          ? parsedOffset + parsedLimit < totalCount
+          : false,
       },
     });
   } catch (error) {
@@ -97,16 +102,28 @@ export async function PUT(request: NextRequest) {
 
     await connectMongoDB();
 
-    const user = await getCurrentUser();
+    const user = await getCurrentAdmin();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { bookingIds, updates } = await request.json();
 
-    if (!bookingIds || !Array.isArray(bookingIds) || bookingIds.length === 0) {
+    if (
+      !bookingIds ||
+      !Array.isArray(bookingIds) ||
+      bookingIds.length === 0 ||
+      bookingIds.length > 200
+    ) {
       return NextResponse.json(
-        { error: 'Booking IDs are required' },
+        { error: 'Booking IDs are required (max 200)' },
+        { status: 400 }
+      );
+    }
+
+    if (!bookingIds.every((id) => mongoose.Types.ObjectId.isValid(id))) {
+      return NextResponse.json(
+        { error: 'Invalid booking ID in list' },
         { status: 400 }
       );
     }
@@ -118,10 +135,25 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Only allow certain fields to be bulk updated
+    // Only allow certain fields to be bulk updated. updateMany skips schema
+    // validators, so the status enum must be checked here.
+    const validStatuses = [
+      'pending',
+      'confirmed',
+      'in_progress',
+      'completed',
+      'cancelled',
+    ];
     const allowedUpdates: any = {};
-    if (updates.status) allowedUpdates.status = updates.status;
-    if (updates.notes) allowedUpdates.notes = updates.notes;
+    if (updates.status) {
+      if (!validStatuses.includes(updates.status)) {
+        return NextResponse.json(
+          { error: `Invalid status. Allowed: ${validStatuses.join(', ')}` },
+          { status: 400 }
+        );
+      }
+      allowedUpdates.status = updates.status;
+    }
 
     allowedUpdates.updatedAt = new Date();
 

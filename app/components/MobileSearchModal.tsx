@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapPin, X, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import AddressAutocomplete, {
   LocationSuggestion,
@@ -72,6 +72,20 @@ export default function MobileSearchModal({
   });
   const [pickupTime, setPickupTime] = useState('12:00 PM');
   const [returnTime, setReturnTime] = useState('12:00 PM');
+
+  // Start a fresh flow whenever the modal opens or the vehicle type changes —
+  // otherwise a half-finished transfer search leaks its step, address, and
+  // coordinates into the next rental search (and vice versa)
+  useEffect(() => {
+    setStep('pickup-location');
+    setPickupLocation('');
+    setReturnLocation('');
+    setPickupLat(null);
+    setPickupLng(null);
+    setReturnLat(null);
+    setReturnLng(null);
+    setShowReturnLocation(false);
+  }, [vehicleType, isOpen]);
 
   // Calendar states
   const [selectingPickup, setSelectingPickup] = useState(true);

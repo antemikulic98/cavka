@@ -527,6 +527,7 @@ export default function VehicleView({ vehicleId, onBack }: VehicleViewProps) {
           vehicle={vehicle}
           bookings={bookings}
           dayPricing={dayPricing}
+          onVehicleUpdated={fetchVehicleDetails}
         />
 
         {/* BIG CALENDAR - Full Width */}

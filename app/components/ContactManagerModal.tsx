@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { X, Phone, Send, Mail } from 'lucide-react';
+import { useCSRF } from '@/hooks/useCSRF';
 
 interface ContactManagerModalProps {
   isOpen: boolean;
@@ -12,22 +13,46 @@ export default function ContactManagerModal({
   isOpen,
   onClose,
 }: ContactManagerModalProps) {
+  const { getHeaders } = useCSRF();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [carModel, setCarModel] = useState('');
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSending(true);
+    setError('');
 
-    // Simulate sending
-    setTimeout(() => {
-      alert('Message sent! We will contact you soon.');
-      setSending(false);
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ name, email, phone, carModel, message }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send message');
+      }
+      setSent(true);
+      setName('');
+      setEmail('');
+      setPhone('');
       setCarModel('');
       setMessage('');
-      onClose();
-    }, 1000);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to send message. Please call us instead.'
+      );
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleCall = () => {
@@ -98,7 +123,60 @@ export default function ContactManagerModal({
             </div>
 
             {/* Contact Form */}
+            {sent ? (
+              <div className='text-center py-6'>
+                <div className='text-emerald-600 text-4xl mb-3'>✓</div>
+                <p className='font-semibold text-gray-900 mb-1'>
+                  Message sent!
+                </p>
+                <p className='text-sm text-gray-600'>
+                  We will get back to you as soon as possible.
+                </p>
+              </div>
+            ) : (
             <form onSubmit={handleSubmit} className='space-y-4'>
+              <div className='grid grid-cols-2 gap-4'>
+                <div>
+                  <label className='block text-sm font-semibold text-gray-700 mb-2'>
+                    Your Name
+                  </label>
+                  <input
+                    type='text'
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    placeholder='Full name'
+                    className='w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-gray-900 placeholder-gray-400'
+                  />
+                </div>
+                <div>
+                  <label className='block text-sm font-semibold text-gray-700 mb-2'>
+                    Phone (Optional)
+                  </label>
+                  <input
+                    type='tel'
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder='+385...'
+                    className='w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-gray-900 placeholder-gray-400'
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className='block text-sm font-semibold text-gray-700 mb-2'>
+                  Email
+                </label>
+                <input
+                  type='email'
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder='you@example.com'
+                  className='w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-gray-900 placeholder-gray-400'
+                />
+              </div>
+
               <div>
                 <label className='block text-sm font-semibold text-gray-700 mb-2'>
                   Car Model (Optional)
@@ -126,6 +204,12 @@ export default function ContactManagerModal({
                 />
               </div>
 
+              {error && (
+                <p className='text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2'>
+                  {error}
+                </p>
+              )}
+
               <button
                 type='submit'
                 disabled={sending}
@@ -144,6 +228,7 @@ export default function ContactManagerModal({
                 )}
               </button>
             </form>
+            )}
           </div>
         </div>
       </div>

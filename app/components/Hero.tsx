@@ -100,11 +100,19 @@ export default function Hero() {
   // Auto-show return location for transfers, hide for rent a car
   useEffect(() => {
     setSearchError('');
+    // Coordinates belong to the previous tab's selection — a leftover pair
+    // would silently price the wrong route after switching back
+    setPickupLat(null);
+    setPickupLng(null);
+    setReturnLat(null);
+    setReturnLng(null);
+    setReturnLocationValue('');
     if (isTransfer) {
       setShowReturnLocation(true);
     } else {
       setShowReturnLocation(false);
-      setReturnLocationValue('');
+      // A transfer street address is not a valid rental pickup location
+      setPickupLocation('Split Airport');
     }
   }, [isTransfer]);
 
@@ -503,6 +511,11 @@ export default function Hero() {
                       }}
                       placeholder='Enter pickup address'
                       fallbackSuggestions={locationOptions}
+                      onFocus={() => {
+                        setShowCalendar(false);
+                        setShowPickupTimeDropdown(false);
+                        setShowReturnTimeDropdown(false);
+                      }}
                     />
                   ) : (
                   <div className='relative'>
@@ -566,6 +579,11 @@ export default function Hero() {
                         }}
                         placeholder='Enter destination address'
                         fallbackSuggestions={locationOptions}
+                        onFocus={() => {
+                          setShowCalendar(false);
+                          setShowPickupTimeDropdown(false);
+                          setShowReturnTimeDropdown(false);
+                        }}
                       />
                     ) : (
                     <div className='relative'>
@@ -595,6 +613,8 @@ export default function Hero() {
                         onClick={() => {
                           setShowReturnLocation(false);
                           setReturnLocationValue('');
+                          setReturnLat(null);
+                          setReturnLng(null);
                           setShowReturnDropdown(false);
                         }}
                         className='absolute inset-y-0 right-0 pr-4 flex items-center hover:bg-gray-50 rounded-r-xl transition-colors z-20'

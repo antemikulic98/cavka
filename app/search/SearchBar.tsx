@@ -48,8 +48,15 @@ export default function SearchBar({
     currentSearchParams ? parseFloat(currentSearchParams.get('toLng') || '') || null : null
   );
   const [showReturnLocation, setShowReturnLocation] = useState(isTransfer || !!initialReturnLocation);
-  const [pickupDate, setPickupDate] = useState(initialPickupDate);
-  const [returnDate, setReturnDate] = useState(initialReturnDate);
+  // <input type='date'> only accepts YYYY-MM-DD — the URL carries full
+  // datetimes, so keep only the date part in state and re-attach the time
+  // (from the separate time params) when building the search URL
+  const [pickupDate, setPickupDate] = useState(
+    (initialPickupDate || '').split('T')[0]
+  );
+  const [returnDate, setReturnDate] = useState(
+    (initialReturnDate || '').split('T')[0]
+  );
   const [pickupTime, setPickupTime] = useState(initialPickupTime);
   const [returnTime, setReturnTime] = useState(initialReturnTime);
   const [expanded, setExpanded] = useState(initialExpanded);
@@ -107,8 +114,19 @@ export default function SearchBar({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Convert '10:00 AM' to '10:00' for datetime URL params
+  const convertTo24Hour = (time12h: string): string => {
+    const match = time12h.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!match) return '12:00';
+    let hour = parseInt(match[1]);
+    const period = match[3].toUpperCase();
+    if (period === 'PM' && hour !== 12) hour += 12;
+    if (period === 'AM' && hour === 12) hour = 0;
+    return `${String(hour).padStart(2, '0')}:${match[2]}`;
+  };
+
   const handleSearch = () => {
-    if (!pickupLocation || !pickupDate || !returnDate) {
+    if (!pickupLocation || !pickupDate || (!isTransfer && !returnDate)) {
       return;
     }
     const searchParams = new URLSearchParams();
@@ -116,10 +134,18 @@ export default function SearchBar({
     if (showReturnLocation && returnLocation) {
       searchParams.set('returnLocation', returnLocation);
     }
-    searchParams.set('pickupDate', pickupDate);
-    searchParams.set('returnDate', returnDate);
+    const pickupDateTime = `${pickupDate}T${convertTo24Hour(pickupTime)}`;
+    searchParams.set('pickupDate', pickupDateTime);
+    // A transfer is one-way — its return mirrors the pickup so changing the
+    // date can't produce a return before the pickup
+    searchParams.set(
+      'returnDate',
+      isTransfer
+        ? pickupDateTime
+        : `${returnDate}T${convertTo24Hour(returnTime)}`
+    );
     searchParams.set('pickupTime', pickupTime);
-    searchParams.set('returnTime', returnTime);
+    searchParams.set('returnTime', isTransfer ? pickupTime : returnTime);
     searchParams.set('vehicleType', initialVehicleType);
 
     // For transfers, pass coordinates
