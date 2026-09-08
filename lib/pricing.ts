@@ -23,6 +23,8 @@ export interface PricingInput {
   toLng?: number;
   /** Display-only; the charged day count is always recomputed from the dates */
   rentalDays?: number;
+  /** The 10/15% discount is a pay-now incentive — pay_later gets none */
+  paymentMethod?: 'pay_now' | 'pay_later';
   cdwCoverage?: 'none' | 'basic' | 'full';
   addOns?: {
     additionalDriver?: boolean;
@@ -63,7 +65,21 @@ export function computeRentalDays(
   pickupDate: string,
   returnDate: string
 ): number {
-  const diff = new Date(returnDate).getTime() - new Date(pickupDate).getTime();
+  // Parse 'YYYY-MM-DD[THH:mm]' as UTC instants — local-time parsing makes a
+  // rental spanning the DST fall-back weekend one hour "longer" and Math.ceil
+  // then bills an extra day
+  const toUtc = (s: string): number => {
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/);
+    if (!m) return NaN;
+    return Date.UTC(
+      Number(m[1]),
+      Number(m[2]) - 1,
+      Number(m[3]),
+      Number(m[4] || 0),
+      Number(m[5] || 0)
+    );
+  };
+  const diff = toUtc(returnDate) - toUtc(pickupDate);
   if (!Number.isFinite(diff) || diff <= 0) return 1;
   return Math.max(Math.ceil(diff / (1000 * 60 * 60 * 24)), 1);
 }
@@ -116,9 +132,15 @@ export async function calculateBookingPrice(
     rentalDays
   );
 
-  // Calculate discount
+  // Calculate discount — it's advertised as a pay-now incentive, so
+  // pay-later bookings are charged the full amount they were shown
   const totalBeforeDiscount = baseVehicleCost + cdwCost + addOnsResult.total;
-  const discountPercentage = vehicle.type === 'transfer' ? 10 : 15;
+  const discountPercentage =
+    input.paymentMethod === 'pay_now'
+      ? vehicle.type === 'transfer'
+        ? 10
+        : 15
+      : 0;
   const discountAmount = totalBeforeDiscount * (discountPercentage / 100);
   const totalAfterDiscount = totalBeforeDiscount - discountAmount;
 
@@ -149,6 +171,55 @@ export async function calculateBookingPrice(
  * Calculate driving distance using Google Maps API
  * Supports both direct coordinates and location name lookup
  */
+// Croatia (with a little slack) — coordinates outside make no sense for us
+function inServiceArea(lat: number, lng: number): boolean {
+  return lat >= 42.0 && lat <= 46.9 && lng >= 13.0 && lng <= 19.7;
+}
+
+// Straight-line km between two points (haversine)
+function haversineKm(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number
+): number {
+  const rad = (d: number) => (d * Math.PI) / 180;
+  const a =
+    Math.sin(rad(lat2 - lat1) / 2) ** 2 +
+    Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(rad(lng2 - lng1) / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.sqrt(a));
+}
+
+/**
+ * Best-effort check that client-sent coordinates actually belong to the
+ * address string they claim to be — geocode the name (OpenStreetMap/Photon)
+ * and require the coords within 10 km. Returns true when the geocoder is
+ * unavailable (we can't verify, don't block bookings on a third party).
+ */
+async function coordsMatchAddress(
+  address: string,
+  lat: number,
+  lng: number
+): Promise<boolean> {
+  try {
+    const res = await fetch(
+      `https://photon.komoot.io/api/?q=${encodeURIComponent(address.slice(0, 100))}&limit=3&lang=en`,
+      { headers: { 'User-Agent': 'HitRentCroatia/1.0 (booking verify)' } }
+    );
+    if (!res.ok) return true;
+    const data = await res.json();
+    const candidates = (data.features || [])
+      .map((f: any) => f.geometry?.coordinates)
+      .filter((c: any) => Array.isArray(c) && c.length === 2);
+    if (candidates.length === 0) return true; // nothing to compare against
+    return candidates.some(
+      (c: number[]) => haversineKm(lat, lng, c[1], c[0]) <= 10
+    );
+  } catch {
+    return true;
+  }
+}
+
 async function calculateDistanceKm(
   pickupLocation: string,
   returnLocation: string,
@@ -158,26 +229,45 @@ async function calculateDistanceKm(
   toLng?: number
 ): Promise<number | null> {
   try {
-    let origins: string;
-    let destinations: string;
+    let origins: string | null = null;
+    let destinations: string | null = null;
 
-    // Use direct coordinates if provided (from address autocomplete)
-    if (fromLat && fromLng && toLat && toLng) {
-      origins = `${fromLat},${fromLng}`;
-      destinations = `${toLat},${toLng}`;
-    } else {
-      // Fallback: look up location names from DB
-      const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const [fromLoc, toLoc] = await Promise.all([
-        Location.findOne({ name: { $regex: new RegExp(`^${escapeRegex(pickupLocation)}$`, 'i') } }),
-        Location.findOne({ name: { $regex: new RegExp(`^${escapeRegex(returnLocation)}$`, 'i') } }),
-      ]);
+    // SECURITY: our own DB locations win over client-sent coordinates —
+    // otherwise two nearby coords buy any named route for a 1 km price
+    const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const [fromLoc, toLoc] = await Promise.all([
+      Location.findOne({ name: { $regex: new RegExp(`^${escapeRegex(pickupLocation)}$`, 'i') } }),
+      Location.findOne({ name: { $regex: new RegExp(`^${escapeRegex(returnLocation)}$`, 'i') } }),
+    ]);
 
-      if (!fromLoc?.lat || !fromLoc?.lng || !toLoc?.lat || !toLoc?.lng) {
+    if (fromLoc?.lat && fromLoc?.lng) {
+      origins = `${fromLoc.lat},${fromLoc.lng}`;
+    }
+    if (toLoc?.lat && toLoc?.lng) {
+      destinations = `${toLoc.lat},${toLoc.lng}`;
+    }
+
+    // For free-form addresses use client coords, but only after validating
+    // they are in our service area and plausibly match the address text
+    if (!origins && fromLat && fromLng) {
+      if (!inServiceArea(fromLat, fromLng)) return null;
+      if (!(await coordsMatchAddress(pickupLocation, fromLat, fromLng))) {
+        console.warn('Pickup coords do not match address:', pickupLocation);
         return null;
       }
-      origins = `${fromLoc.lat},${fromLoc.lng}`;
-      destinations = `${toLoc.lat},${toLoc.lng}`;
+      origins = `${fromLat},${fromLng}`;
+    }
+    if (!destinations && toLat && toLng) {
+      if (!inServiceArea(toLat, toLng)) return null;
+      if (!(await coordsMatchAddress(returnLocation, toLat, toLng))) {
+        console.warn('Return coords do not match address:', returnLocation);
+        return null;
+      }
+      destinations = `${toLat},${toLng}`;
+    }
+
+    if (!origins || !destinations) {
+      return null;
     }
 
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
@@ -381,13 +471,32 @@ export function validatePricingInput(input: PricingInput): {
     errors.push('Invalid return date');
   }
 
-  // The charged day count comes from the dates — validate that, not the
-  // client-sent rentalDays (undefined would pass < / > comparisons anyway)
+  if (!errors.length) {
+    const pickup = new Date(input.pickupDate).getTime();
+    const returnD = new Date(input.returnDate).getTime();
+
+    // Transfers legitimately have returnDate === pickupDate (one-way)
+    if (returnD < pickup) {
+      errors.push('Return date must be on or after the pickup date');
+    }
+
+    // Allow a day of slack for timezone differences, nothing more
+    if (pickup < Date.now() - 24 * 60 * 60 * 1000) {
+      errors.push('Pickup date is in the past');
+    }
+
+    // The charged day count comes from the dates — validate that, not the
+    // client-sent rentalDays (undefined would pass < / > comparisons anyway)
+    if (computeRentalDays(input.pickupDate, input.returnDate) > 365) {
+      errors.push('Rental period too long');
+    }
+  }
+
   if (
-    !errors.length &&
-    computeRentalDays(input.pickupDate, input.returnDate) > 365
+    input.cdwCoverage !== undefined &&
+    !['none', 'basic', 'full'].includes(input.cdwCoverage)
   ) {
-    errors.push('Rental period too long');
+    errors.push('Invalid coverage option');
   }
 
   if (!input.pickupLocation || input.pickupLocation.trim() === '') {

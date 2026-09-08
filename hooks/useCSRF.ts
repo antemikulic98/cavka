@@ -6,23 +6,46 @@
 
 import { useEffect, useState } from 'react';
 
+// One token for the whole page. Every GET /api/csrf rotates the single
+// csrf-token cookie, so two hook instances fetching independently leave one
+// of them holding a token that no longer matches the cookie → guaranteed 403.
+let sharedToken: string | null = null;
+let inflightFetch: Promise<string | null> | null = null;
+
+async function fetchSharedToken(force = false): Promise<string | null> {
+  if (sharedToken && !force) return sharedToken;
+  if (!inflightFetch) {
+    inflightFetch = (async () => {
+      try {
+        const response = await fetch('/api/csrf');
+        if (!response.ok) {
+          throw new Error('Failed to fetch CSRF token');
+        }
+        const data = await response.json();
+        sharedToken = data.csrfToken;
+        return sharedToken;
+      } finally {
+        inflightFetch = null;
+      }
+    })();
+  }
+  return inflightFetch;
+}
+
 export function useCSRF() {
-  const [csrfToken, setCSRFToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [csrfToken, setCSRFToken] = useState<string | null>(sharedToken);
+  const [loading, setLoading] = useState(sharedToken === null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCSRFToken();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fetchCSRFToken = async () => {
+  const fetchCSRFToken = async (force = false) => {
     try {
-      const response = await fetch('/api/csrf');
-      if (!response.ok) {
-        throw new Error('Failed to fetch CSRF token');
-      }
-      const data = await response.json();
-      setCSRFToken(data.csrfToken);
+      const token = await fetchSharedToken(force);
+      setCSRFToken(token);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -86,6 +109,6 @@ export function useCSRF() {
     error,
     getHeaders,
     protectedFetch,
-    refreshToken: fetchCSRFToken,
+    refreshToken: () => fetchCSRFToken(true),
   };
 }

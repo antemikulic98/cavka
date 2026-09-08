@@ -187,7 +187,8 @@ export async function POST(request: NextRequest) {
       clientInfo: {
         firstName: metadata.customerFirstName || metadata.customerName?.split(' ')[0] || '',
         lastName: metadata.customerLastName || metadata.customerName?.split(' ').slice(1).join(' ') || '',
-        email: session.customer_email || session.customer_details?.email || metadata.customerEmail,
+        // Lowercased — the booking lookup queries a lowercased email
+        email: (session.customer_email || session.customer_details?.email || metadata.customerEmail || '').toLowerCase().trim(),
         phoneNumber: phoneNumber,
         countryCode: countryCode,
         company: metadata.customerCompany || '',
@@ -230,8 +231,34 @@ export async function POST(request: NextRequest) {
       overbookingStatus: isOverbooking ? 'pending' : 'none',
     };
 
-    const booking = new Booking(bookingData);
-    await booking.save();
+    let booking = new Booking(bookingData);
+    try {
+      await booking.save();
+    } catch (saveError: any) {
+      // The Stripe webhook can create the same booking concurrently — the
+      // unique stripeSessionId index makes the loser throw E11000. That's a
+      // success for the customer, not a verification failure.
+      if (saveError?.code === 11000) {
+        const existing = await Booking.findOne({ stripeSessionId: session.id });
+        if (existing) {
+          return NextResponse.json({
+            success: true,
+            booking: {
+              id: existing._id,
+              bookingReference: existing.bookingReference,
+              customerName: bookingData.customerName,
+              vehicleName: `${vehicle.make} ${vehicle.vehicleModel}`,
+              pickupDate: existing.pickupDate,
+              returnDate: existing.returnDate,
+              totalCost: existing.pricing?.totalCost,
+              status: existing.status,
+            },
+            message: 'Booking already confirmed',
+          });
+        }
+      }
+      throw saveError;
+    }
 
     console.log('✅ Booking created successfully:', booking._id);
 

@@ -111,16 +111,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Security: Sanitize text inputs to prevent XSS
+    // Security: Sanitize text inputs to prevent XSS — including fields that
+    // end up interpolated into confirmation-email HTML
     bookingData.clientInfo.firstName = validators.sanitizeString(bookingData.clientInfo.firstName.trim());
     bookingData.clientInfo.lastName = validators.sanitizeString(bookingData.clientInfo.lastName.trim());
     bookingData.clientInfo.email = bookingData.clientInfo.email.toLowerCase().trim();
+    bookingData.clientInfo.countryCode = validators.sanitizeString(String(bookingData.clientInfo.countryCode).trim()).slice(0, 6);
+    bookingData.pickupLocation = validators.sanitizeString(String(bookingData.pickupLocation).trim()).slice(0, 200);
+    if (bookingData.returnLocation) {
+      bookingData.returnLocation = validators.sanitizeString(String(bookingData.returnLocation).trim()).slice(0, 200);
+    }
 
     if (bookingData.clientInfo.company) {
       bookingData.clientInfo.company = validators.sanitizeString(bookingData.clientInfo.company.trim());
     }
     if (bookingData.clientInfo.flightNumber) {
       bookingData.clientInfo.flightNumber = validators.sanitizeString(bookingData.clientInfo.flightNumber.trim());
+    }
+
+    // Validate the booking window itself (past dates, reversed range,
+    // duration cap) — validators.date alone accepts the year 9999
+    const { validatePricingInput } = await import('@/lib/pricing');
+    const inputValidation = validatePricingInput({
+      vehicleId: bookingData.vehicleId,
+      pickupDate: bookingData.pickupDate,
+      returnDate: bookingData.returnDate,
+      pickupLocation: bookingData.pickupLocation,
+      cdwCoverage: bookingData.cdwCoverage,
+    });
+    if (!inputValidation.valid) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: inputValidation.errors },
+        { status: 400 }
+      );
     }
 
     // Fetch vehicle information
@@ -132,6 +155,26 @@ export async function POST(request: NextRequest) {
     // Check vehicle availability with detailed conflict detection
     const pickupDate = new Date(bookingData.pickupDate);
     const returnDate = new Date(bookingData.returnDate);
+
+    // Admin-blocked periods (maintenance etc.) are hard blocks — reject,
+    // don't route into the overbooking workflow
+    const { default: BlockedDate } = await import('@/models/BlockedDate');
+    const blockedConflict = await BlockedDate.findOne({
+      vehicleId: bookingData.vehicleId,
+      // Blocks are stored as UTC-midnight instants; treat endDate as
+      // covering its whole day
+      startDate: { $lte: returnDate },
+      endDate: { $gte: new Date(pickupDate.getTime() - 24 * 60 * 60 * 1000) },
+    });
+    if (blockedConflict) {
+      return NextResponse.json(
+        {
+          error:
+            'This vehicle is not available for the selected dates. Please choose different dates or another vehicle.',
+        },
+        { status: 409 }
+      );
+    }
 
     const conflictingBookings = await Booking.find({
       vehicleId: bookingData.vehicleId,
@@ -162,10 +205,10 @@ export async function POST(request: NextRequest) {
     let conflictDetails = null;
 
     if (isOverbooking) {
+      // This response goes to an anonymous customer — never include other
+      // customers' names or booking references
       conflictDetails = conflictingBookings.map((booking) => ({
-        bookingReference: booking.bookingReference,
         dates: `${booking.pickupDate.toDateString()} - ${booking.returnDate.toDateString()}`,
-        customer: `${booking.clientInfo.firstName} ${booking.clientInfo.lastName}`,
       }));
     }
 
@@ -193,6 +236,8 @@ export async function POST(request: NextRequest) {
         toLng: bookingData.toLng,
         cdwCoverage: bookingData.cdwCoverage,
         addOns: bookingData.addOns,
+        paymentMethod:
+          bookingData.paymentMethod === 'pay_now' ? 'pay_now' : 'pay_later',
       });
     } catch (pricingError) {
       if (
@@ -267,7 +312,7 @@ export async function POST(request: NextRequest) {
         returnLocation: savedBooking.returnLocation || savedBooking.pickupLocation,
         rentalDays: savedBooking.rentalDays,
         totalCost: savedBooking.pricing.totalCost,
-        originalAmount: savedBooking.pricing.totalCost,
+        originalAmount: savedBooking.pricing.originalAmount,
         discount: savedBooking.pricing.discount || 0,
         paymentStatus: 'pending',
         paymentMethod: 'pay_later',

@@ -114,11 +114,22 @@ async function createBookingFromSession(session: Stripe.Checkout.Session) {
       ],
     }).select('bookingReference clientInfo.firstName clientInfo.lastName pickupDate returnDate');
 
-    const isOverbooking = conflictingBookings.length > 0;
+    // Payment already happened, so a conflict (including an admin-blocked
+    // maintenance period) can't be rejected — flag it for the overbooking
+    // workflow instead so ops resolves it
+    const { default: BlockedDate } = await import('@/models/BlockedDate');
+    const blockedConflict = await BlockedDate.findOne({
+      vehicleId: metadata.vehicleId,
+      startDate: { $lte: returnDate },
+      endDate: { $gte: new Date(pickupDate.getTime() - 24 * 60 * 60 * 1000) },
+    });
+
+    const isOverbooking = conflictingBookings.length > 0 || !!blockedConflict;
 
     console.log(`Webhook overbooking check: ${isOverbooking ? 'CONFLICT DETECTED' : 'No conflicts'}`);
     if (isOverbooking) {
       console.log('Conflicting bookings:', conflictingBookings.map(b => b.bookingReference));
+      if (blockedConflict) console.log('Conflicts with admin-blocked period');
     }
 
     // Prefer the amount Stripe actually charged over metadata echoes
@@ -184,7 +195,8 @@ async function createBookingFromSession(session: Stripe.Checkout.Session) {
       clientInfo: {
         firstName: metadata.customerName?.split(' ')[0] || '',
         lastName: metadata.customerName?.split(' ').slice(1).join(' ') || '',
-        email: session.customer_email || session.customer_details?.email || metadata.customerEmail,
+        // Lowercased — the booking lookup queries a lowercased email
+        email: (session.customer_email || session.customer_details?.email || metadata.customerEmail || '').toLowerCase().trim(),
         phoneNumber: phoneNumber,
         countryCode: countryCode,
       },

@@ -205,10 +205,16 @@ export default function VehicleView({ vehicleId, onBack }: VehicleViewProps) {
   // Event handlers
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
-    if (blockMode && date >= new Date()) {
+    // Calendar cells are UTC-midnight instants — compare against today's
+    // midnight, not the current time, or today's cell is never editable
+    const now = new Date();
+    const todayUtc = new Date(
+      Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
+    );
+    if (blockMode && date >= todayUtc) {
       // Open block modal when in block mode
       setShowBlockModal(true);
-    } else if (editMode && !isDateBooked(date) && date >= new Date()) {
+    } else if (editMode && !isDateBooked(date) && date >= todayUtc) {
       openPriceModal(date);
     }
   };
@@ -475,7 +481,7 @@ export default function VehicleView({ vehicleId, onBack }: VehicleViewProps) {
       return (
         checkDate >= startDate &&
         checkDate <= endDate &&
-        booking.status === 'confirmed'
+        ['confirmed', 'in_progress'].includes(booking.status)
       );
     });
   };

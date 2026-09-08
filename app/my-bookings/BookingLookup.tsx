@@ -70,6 +70,11 @@ export default function BookingLookup() {
       setError('Please enter your email address');
       return;
     }
+    // The API requires both — without this the user gets a raw server error
+    if (!bookingReference.trim()) {
+      setError('Please enter your booking reference (from the confirmation email)');
+      return;
+    }
 
     setLoading(true);
     setError('');
@@ -412,7 +417,11 @@ export default function BookingLookup() {
     doc.setTextColor(...grayColor);
     doc.text(
       `CDW Coverage: ${
-        booking.cdwCoverage === 'full' ? 'Full Coverage' : 'Basic Coverage'
+        booking.cdwCoverage === 'full'
+          ? 'Full Coverage'
+          : booking.cdwCoverage === 'basic'
+            ? 'Basic Coverage'
+            : 'No Coverage'
       }`,
       col1X,
       yPos
@@ -748,7 +757,9 @@ export default function BookingLookup() {
                             <span className='font-medium text-gray-900'>
                               {booking.cdwCoverage === 'full'
                                 ? 'Full Coverage'
-                                : 'Basic Coverage'}
+                                : booking.cdwCoverage === 'basic'
+                                  ? 'Basic Coverage'
+                                  : 'No Coverage'}
                             </span>
                           </div>
 

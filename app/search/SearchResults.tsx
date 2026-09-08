@@ -248,16 +248,26 @@ export default function SearchResults() {
     });
   };
 
-  // Calculate number of rental days based on actual time difference
+  // Calculate number of rental days based on actual time difference.
+  // Parses as UTC so a DST-crossing rental doesn't gain a phantom hour that
+  // Math.ceil would turn into an extra billed day (matches lib/pricing.ts).
+  const parseAsUtc = (s: string): number => {
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/);
+    if (!m) return new Date(s).getTime();
+    return Date.UTC(
+      Number(m[1]),
+      Number(m[2]) - 1,
+      Number(m[3]),
+      Number(m[4] || 0),
+      Number(m[5] || 0)
+    );
+  };
+
   const calculateRentalDays = () => {
     if (!pickupDate || !returnDate) return 1;
 
-    // Parse full datetime strings including time
-    const pickup = new Date(pickupDate);
-    const returnDay = new Date(returnDate);
-
     // Calculate difference in milliseconds
-    const diffTime = returnDay.getTime() - pickup.getTime();
+    const diffTime = parseAsUtc(returnDate) - parseAsUtc(pickupDate);
 
     // If return time is before or equal to pickup time, return 0 (invalid)
     if (diffTime <= 0) return 1;

@@ -84,6 +84,8 @@ export async function POST(request: NextRequest) {
       fromLng: fromLng ? parseFloat(fromLng) : undefined,
       toLat: toLat ? parseFloat(toLat) : undefined,
       toLng: toLng ? parseFloat(toLng) : undefined,
+      // Stripe checkout IS the pay-now path — this is where the discount applies
+      paymentMethod: 'pay_now' as const,
     };
 
     const validation = validatePricingInput(pricingInput);
@@ -115,6 +117,23 @@ export async function POST(request: NextRequest) {
         {
           error:
             'This vehicle is no longer available for the selected dates. Please choose different dates or another vehicle.',
+        },
+        { status: 409 }
+      );
+    }
+
+    // Admin-blocked periods (maintenance etc.) must not be chargeable either
+    const { default: BlockedDate } = await import('@/models/BlockedDate');
+    const blockedConflict = await BlockedDate.findOne({
+      vehicleId,
+      startDate: { $lte: returnD },
+      endDate: { $gte: new Date(pickup.getTime() - 24 * 60 * 60 * 1000) },
+    });
+    if (blockedConflict) {
+      return NextResponse.json(
+        {
+          error:
+            'This vehicle is not available for the selected dates. Please choose different dates or another vehicle.',
         },
         { status: 409 }
       );

@@ -33,38 +33,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
 
-    // User-related pages
-    {
-      url: `${baseUrl}/login`,
-      lastModified: currentDate,
-      changeFrequency: 'monthly',
-      priority: 0.5,
-    },
+    // User-related pages (login is robots-blocked, so it doesn't belong here)
     {
       url: `${baseUrl}/my-bookings`,
       lastModified: currentDate,
       changeFrequency: 'weekly',
       priority: 0.6,
-    },
-
-    // Location-specific landing pages (for SEO)
-    {
-      url: `${baseUrl}/zagreb`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/split`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/dubrovnik`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 0.8,
     },
 
     // Note: Individual vehicle pages would be added dynamically here

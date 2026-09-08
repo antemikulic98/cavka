@@ -121,7 +121,7 @@ export default function VehicleCalendar({
       return (
         checkDateStr >= startDateStr &&
         checkDateStr <= endDateStr &&
-        booking.status === 'confirmed'
+        ['confirmed', 'in_progress'].includes(booking.status)
       );
     });
   };
@@ -153,7 +153,7 @@ export default function VehicleCalendar({
       return (
         checkDateStr >= startDateStr &&
         checkDateStr <= endDateStr &&
-        booking.status === 'confirmed'
+        ['confirmed', 'in_progress'].includes(booking.status)
       );
     });
   };

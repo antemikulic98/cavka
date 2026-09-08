@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongodb';
+import { rateLimit } from '@/lib/security';
 import Location from '@/models/Location';
 
 /**
@@ -10,6 +11,14 @@ import Location from '@/models/Location';
  */
 export async function GET(request: NextRequest) {
   try {
+    // Public proxy to a billed Google API — cap how fast one client can drain it
+    const rateLimitResponse = await rateLimit({
+      windowMs: 10 * 60 * 1000,
+      maxRequests: 30,
+    })(request);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
     const fromLat = request.nextUrl.searchParams.get('fromLat');
     const fromLng = request.nextUrl.searchParams.get('fromLng');
     const toLat = request.nextUrl.searchParams.get('toLat');
@@ -34,11 +43,14 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      // Validate coordinate ranges
-      if (fLat < -90 || fLat > 90 || tLat < -90 || tLat > 90 ||
-          fLng < -180 || fLng > 180 || tLng < -180 || tLng > 180) {
+      // Validate coordinate ranges — restricted to our service area
+      // (Croatia + slack) so the billed Google API can't be used as a
+      // general-purpose worldwide distance service
+      const inServiceArea = (lat: number, lng: number) =>
+        lat >= 42.0 && lat <= 46.9 && lng >= 13.0 && lng <= 19.7;
+      if (!inServiceArea(fLat, fLng) || !inServiceArea(tLat, tLng)) {
         return NextResponse.json(
-          { error: 'Coordinates out of range' },
+          { error: 'Coordinates out of service area' },
           { status: 400 }
         );
       }

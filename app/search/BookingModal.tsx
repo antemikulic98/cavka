@@ -648,7 +648,12 @@ export default function BookingModal({
         });
 
         if (!response.ok) {
-          throw new Error('Failed to create checkout session');
+          // Surface the API's message — e.g. "no longer available" (409) or
+          // "could not calculate a price for this route" (400)
+          const errorData = await response.json().catch(() => null);
+          throw new Error(
+            errorData?.error || 'Failed to create checkout session'
+          );
         }
 
         const { url } = await response.json();
@@ -683,19 +688,8 @@ export default function BookingModal({
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-
-        // Handle conflict errors with detailed information
-        if (response.status === 409 && errorData.conflicts) {
-          const conflictList = errorData.conflicts
-            .map((c: any) => `• ${c.dates} - Booking ${c.bookingReference}`)
-            .join('\n');
-          throw new Error(
-            `Vehicle Not Available\n\n${errorData.message}\n\nConflicting bookings:\n${conflictList}\n\nPlease select different dates.`
-          );
-        }
-
-        throw new Error(errorData.error || 'Failed to create booking');
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || 'Failed to create booking');
       }
 
       const result = await response.json();

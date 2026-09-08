@@ -77,14 +77,14 @@ export async function GET(request: NextRequest) {
     const vehiclesWithAvailability = [];
 
     for (const vehicle of vehicles) {
-      // Check for blocked dates that overlap with the requested period
+      // Check for blocked dates that overlap with the requested period.
+      // Blocks are stored as UTC-midnight instants, so endDate must count as
+      // covering its whole day — otherwise the last day of every block (and
+      // most of a single-day block) is still bookable.
       const blockedDateConflicts = await BlockedDate.find({
         vehicleId: vehicle._id,
-        $or: [
-          { startDate: { $lte: pickup }, endDate: { $gte: pickup } },
-          { startDate: { $lte: returnD }, endDate: { $gte: returnD } },
-          { startDate: { $gte: pickup }, endDate: { $lte: returnD } },
-        ],
+        startDate: { $lte: returnD },
+        endDate: { $gte: new Date(pickup.getTime() - 24 * 60 * 60 * 1000) },
       });
 
       // Skip vehicles that have blocked dates in the requested period

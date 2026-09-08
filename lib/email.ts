@@ -63,7 +63,7 @@ function generateCustomerEmailHTML(data: BookingEmailData): string {
     </tr>
     <tr>
       <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">
-        <strong style="color: #059669;">Discount (${Number(data.discount).toFixed(0)}%):</strong>
+        <strong style="color: #059669;">Discount:</strong>
       </td>
       <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #059669;">
         -€${((data.originalAmount || 0) - data.totalCost).toFixed(2)}
