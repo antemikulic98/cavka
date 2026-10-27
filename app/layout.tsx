@@ -21,26 +21,22 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Hit Rent Croatia | Affordable Car Rental Zagreb, Split & Dubrovnik',
+    default: 'Hit Rent Croatia | Car Rental & Transfers in Split',
     template: '%s | Hit Rent Croatia',
   },
-  description: 'Hit Rent Croatia - Premium car rental in Zagreb, Split & Dubrovnik. Family-owned service, quality vehicles, competitive prices. Book online!',
+  description: 'Hit Rent Croatia - car rental at Split Airport and Split city, plus private transfers along the Dalmatian coast. Family-owned service, quality vehicles, competitive prices. Book online!',
   keywords: [
     'family rent a car croatia',
     'rent a car croatia',
     'car rental croatia',
     'family car rental',
-    'rent a car zagreb',
     'rent a car split',
-    'rent a car dubrovnik',
     'airport car rental croatia',
     'cheap car rental croatia',
     'affordable car rental croatia',
     'car hire croatia',
     'transfer services croatia',
     'airport transfer split',
-    'airport transfer zagreb',
-    'airport transfer dubrovnik',
     'najam auta hrvatska',
     'rent a car hrvatska',
     'family owned car rental',
@@ -56,20 +52,13 @@ export const metadata: Metadata = {
     telephone: false,
   },
   metadataBase: new URL('https://hit-rent.com'),
-  alternates: {
-    canonical: '/',
-    languages: {
-      'en': '/en',
-      'hr': '/hr',
-    },
-  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: 'https://hit-rent.com',
     siteName: 'Hit Rent Croatia',
     title: 'Hit Rent | Premium Car Rental & Transfer Services in Croatia',
-    description: 'Your trusted family-owned car rental service. Rent quality vehicles at competitive prices. Car rental and transfer services in Zagreb, Split, Dubrovnik and across Croatia. Book online today!',
+    description: 'Your trusted family-owned car rental service in Split, Croatia. Quality vehicles at competitive prices, airport pickup and private transfers along the Dalmatian coast. Book online today!',
     images: [
       {
         url: '/img/og-image.jpg',
@@ -84,7 +73,6 @@ export const metadata: Metadata = {
     title: 'Hit Rent Croatia | Premium Car Rental & Transfer Services',
     description: 'Your trusted family-owned car rental service in Croatia. Premium vehicles, personal service, competitive prices. Book online today!',
     images: ['/img/og-image.jpg'],
-    creator: '@hitrentcroatia',
   },
   robots: {
     index: true,
@@ -126,21 +114,19 @@ const localBusinessSchema = {
   '@id': 'https://hit-rent.com/#localbusiness',
   name: 'Hit Rent Croatia',
   image: 'https://hit-rent.com/img/og-image.jpg',
-  telephone: '+385 1 234 5678',
+  telephone: '+385 91 722 4138',
   email: 'info@hit-rent.com',
   priceRange: '€€',
   address: {
     '@type': 'PostalAddress',
-    streetAddress: 'Main Office',
-    addressLocality: 'Zagreb',
-    addressRegion: 'Zagreb County',
-    postalCode: '10000',
+    addressLocality: 'Split',
+    addressRegion: 'Splitsko-dalmatinska županija',
     addressCountry: 'HR',
   },
   geo: {
     '@type': 'GeoCoordinates',
-    latitude: 45.815,
-    longitude: 15.9819,
+    latitude: 43.5081,
+    longitude: 16.4402,
   },
   url: 'https://hit-rent.com',
   openingHoursSpecification: [
@@ -151,12 +137,6 @@ const localBusinessSchema = {
       closes: '23:59',
     },
   ],
-  aggregateRating: {
-    '@type': 'AggregateRating',
-    ratingValue: '4.8',
-    bestRating: '5',
-    reviewCount: '150',
-  },
 };
 
 // Main CarRental Schema for SEO
@@ -166,7 +146,8 @@ const jsonLd = {
   '@id': 'https://hit-rent.com/#organization',
   name: 'Hit Rent Croatia',
   alternateName: 'Hit Rent',
-  description: 'Family-owned premium car rental and transfer services in Croatia. We offer quality vehicles, personalized service, and competitive prices across all major Croatian cities and airports.',
+  legalName: 'Turist ekspert d.o.o.',
+  description: 'Family-owned car rental and private transfer service based in Split, Croatia. Quality vehicles, personal service and competitive prices at Split Airport and along the Dalmatian coast.',
   url: 'https://hit-rent.com',
   logo: {
     '@type': 'ImageObject',
@@ -175,35 +156,36 @@ const jsonLd = {
     height: 60,
   },
   image: 'https://hit-rent.com/img/og-image.jpg',
-  telephone: '+385 1 234 5678',
+  telephone: '+385 91 722 4138',
   email: 'info@hit-rent.com',
   address: {
     '@type': 'PostalAddress',
     addressCountry: 'HR',
-    addressRegion: 'Croatia',
-    addressLocality: 'Zagreb',
+    addressRegion: 'Splitsko-dalmatinska županija',
+    addressLocality: 'Split',
   },
   geo: {
     '@type': 'GeoCoordinates',
-    latitude: '45.815',
-    longitude: '15.9819',
+    latitude: '43.5081',
+    longitude: '16.4402',
   },
   areaServed: [
-    {
-      '@type': 'City',
-      name: 'Zagreb',
-    },
     {
       '@type': 'City',
       name: 'Split',
     },
     {
-      '@type': 'City',
-      name: 'Dubrovnik',
+      '@type': 'Airport',
+      name: 'Split Airport',
+      iataCode: 'SPU',
     },
     {
       '@type': 'City',
-      name: 'Zadar',
+      name: 'Trogir',
+    },
+    {
+      '@type': 'City',
+      name: 'Makarska',
     },
     {
       '@type': 'Country',
@@ -211,7 +193,7 @@ const jsonLd = {
     },
   ],
   priceRange: '€€',
-  currenciesAccepted: 'EUR, USD',
+  currenciesAccepted: 'EUR',
   paymentAccepted: 'Cash, Credit Card, Debit Card',
   openingHoursSpecification: {
     '@type': 'OpeningHoursSpecification',
@@ -219,17 +201,7 @@ const jsonLd = {
     opens: '00:00',
     closes: '23:59',
   },
-  sameAs: [
-    'https://www.facebook.com/familyrentacar',
-    'https://www.instagram.com/familyrentacar',
-  ],
-  aggregateRating: {
-    '@type': 'AggregateRating',
-    ratingValue: '4.8',
-    bestRating: '5',
-    worstRating: '1',
-    reviewCount: '150',
-  },
+  sameAs: ['https://www.instagram.com/hit_rentacar'],
   hasOfferCatalog: {
     '@type': 'OfferCatalog',
     name: 'Car Rental Services',
@@ -252,11 +224,6 @@ const jsonLd = {
       },
     ],
   },
-  founder: {
-    '@type': 'Person',
-    name: 'Family Business',
-    description: 'Family-owned business dedicated to quality service',
-  },
 };
 
 export default function RootLayout({
@@ -267,13 +234,12 @@ export default function RootLayout({
   return (
     <html lang='en'>
       <head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <meta name="theme-color" content="#166534" />
         <meta name="geo.region" content="HR" />
-        <meta name="geo.placename" content="Croatia" />
-        <meta name="geo.position" content="45.815;15.9819" />
-        <meta name="ICBM" content="45.815, 15.9819" />
+        <meta name="geo.placename" content="Split, Croatia" />
+        <meta name="geo.position" content="43.5081;16.4402" />
+        <meta name="ICBM" content="43.5081, 16.4402" />
 
         {/* Main Organization Schema */}
         <script

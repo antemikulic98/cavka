@@ -48,12 +48,13 @@ export default function CookieBanner() {
   }, []);
 
   const initializeAnalytics = () => {
-    // Initialize Google Analytics 4
-    // Replace G-XXXXXXXXXX with your actual GA4 measurement ID
+    // Initialize Google Analytics 4 (only when a measurement ID is configured)
+    const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+    if (!gaId) return;
     if (typeof window !== 'undefined' && !(window as any).gtag) {
       const script1 = document.createElement('script');
       script1.async = true;
-      script1.src = 'https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX';
+      script1.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
       document.head.appendChild(script1);
 
       const script2 = document.createElement('script');
@@ -61,7 +62,7 @@ export default function CookieBanner() {
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
-        gtag('config', 'G-XXXXXXXXXX', {
+        gtag('config', '${gaId}', {
           'anonymize_ip': true,
           'cookie_flags': 'SameSite=None;Secure'
         });

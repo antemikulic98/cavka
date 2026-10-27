@@ -187,7 +187,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (location && location !== 'all') {
-      query.location = location;
+      query.$or = [{ location }, { additionalLocations: location }];
     }
 
     if (status && status !== 'all') {
@@ -207,11 +207,16 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .lean();
 
-    // Map vehicleModel to model for frontend compatibility
-    const vehiclesWithModel = vehicles.map((vehicle: any) => ({
-      ...vehicle,
-      model: vehicle.vehicleModel,
-    }));
+    // Map vehicleModel to model for frontend compatibility. Anonymous
+    // callers never get plates or internal admin references.
+    const isAdmin = !!(await getCurrentAdmin());
+    const vehiclesWithModel = vehicles.map((vehicle: any) => {
+      const { licensePlate, addedBy, ...publicFields } = vehicle;
+      return {
+        ...(isAdmin ? vehicle : publicFields),
+        model: vehicle.vehicleModel,
+      };
+    });
 
     const total = await Vehicle.countDocuments(query);
 

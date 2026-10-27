@@ -3,6 +3,7 @@ import { connectMongoDB } from '@/lib/mongodb';
 import { getCurrentAdmin } from '@/lib/auth';
 import { csrfProtection } from '@/lib/csrf';
 import Booking from '@/models/Booking';
+import { findConflictingBookings, BLOCKING_STATUSES } from '@/lib/availability';
 
 // GET - Retrieve specific booking by ID (requires auth)
 export async function GET(
@@ -105,6 +106,33 @@ export async function PUT(
 
     if (updateData.clientInfo?.flightNumber) {
       updates['clientInfo.flightNumber'] = updateData.clientInfo.flightNumber;
+    }
+
+    // Re-activating a cancelled/completed booking must not silently create a
+    // double booking — flag it so it shows up in the overbooking workflow
+    if (
+      updates.status &&
+      (BLOCKING_STATUSES as readonly string[]).includes(updates.status)
+    ) {
+      const current = await Booking.findById(id).select(
+        'status vehicleId vehicleType pickupDate returnDate'
+      );
+      if (
+        current &&
+        !(BLOCKING_STATUSES as readonly string[]).includes(current.status)
+      ) {
+        const conflicts = await findConflictingBookings(
+          String(current.vehicleId),
+          current.vehicleType,
+          current.pickupDate,
+          current.returnDate,
+          { excludeBookingId: id, limit: 1 }
+        );
+        if (conflicts.length > 0) {
+          updates.isOverbooking = true;
+          updates.overbookingStatus = 'pending';
+        }
+      }
     }
 
     const updatedBooking = await Booking.findByIdAndUpdate(

@@ -42,6 +42,7 @@ export default function CarCards() {
         // Show available vehicles for preview
         const searchParams = new URLSearchParams();
         searchParams.set('status', 'Available');
+        searchParams.set('type', 'rental');
         searchParams.set('limit', '6');
 
         const response = await fetch(
@@ -158,10 +159,7 @@ export default function CarCards() {
           <div className='text-center py-20'>
             <div className='font-poppins text-red-500 mb-4'>⚠️ {error}</div>
             <p className='font-poppins text-gray-600 mb-6 text-sm'>
-              {error.includes('500') ||
-              error.includes('Failed to load vehicles')
-                ? 'This might be a server configuration issue. Check the console for details.'
-                : 'There was an error loading the vehicle data.'}
+              We could not load our vehicles right now. Please try again or contact us.
             </p>
             <div className='flex flex-col sm:flex-row gap-4 justify-center'>
               <button
@@ -170,16 +168,6 @@ export default function CarCards() {
               >
                 Try Again
               </button>
-              {(error.includes('500') ||
-                error.includes('Failed to load vehicles')) && (
-                <a
-                  href='/api/test-env'
-                  target='_blank'
-                  className='font-poppins bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2 rounded-lg'
-                >
-                  Check Configuration
-                </a>
-              )}
             </div>
           </div>
         )}
@@ -362,7 +350,7 @@ export default function CarCards() {
                   tomorrow.setDate(tomorrow.getDate() + 1);
                   const pickupDate = today.toISOString().split('T')[0];
                   const returnDate = tomorrow.toISOString().split('T')[0];
-                  window.location.href = `/search?pickupLocation=Zagreb Downtown&returnLocation=Zagreb Downtown&pickupDate=${pickupDate}&returnDate=${returnDate}&vehicleType=car`;
+                  window.location.href = `/search?pickupLocation=Split Airport&returnLocation=Split Airport&pickupDate=${pickupDate}&returnDate=${returnDate}&vehicleType=car`;
                 }}
                 className='font-poppins border border-gray-400 hover:border-gray-500 text-gray-700 hover:text-gray-900 font-medium py-3 px-6 rounded-2xl transition-colors duration-200'
               >

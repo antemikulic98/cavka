@@ -54,6 +54,7 @@ export interface IVehicle {
   // Availability & Status
   status: 'Available' | 'Booked' | 'Maintenance' | 'Inactive';
   location: string; // Base location
+  additionalLocations?: string[]; // Other pickup points this car is offered at
 
   // Description
   description?: string;
@@ -122,6 +123,7 @@ const VehicleSchema = new Schema<IVehicle & Document>(
     acrissCode: {
       $type: String,
       trim: true,
+      uppercase: true,
     },
     category: {
       $type: String,
@@ -258,6 +260,10 @@ const VehicleSchema = new Schema<IVehicle & Document>(
       required: [true, 'Location is required'],
       trim: true,
     },
+    additionalLocations: {
+      $type: [String],
+      default: [],
+    },
 
     // Description
     description: {
@@ -311,6 +317,7 @@ const VehicleSchema = new Schema<IVehicle & Document>(
 // Indexes for better performance
 VehicleSchema.index({ type: 1 }); // Index for filtering by vehicle type
 VehicleSchema.index({ status: 1, location: 1 });
+VehicleSchema.index({ additionalLocations: 1 });
 VehicleSchema.index({ type: 1, status: 1, location: 1 }); // Composite index for common queries
 VehicleSchema.index({ category: 1, dailyRate: 1 });
 VehicleSchema.index({ make: 1, vehicleModel: 1, year: 1 });

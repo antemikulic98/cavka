@@ -6,7 +6,9 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Search Available Cars | Find Your Perfect Rental Vehicle',
   description: 'Browse and search available rental cars in Croatia. Filter by location, dates, and vehicle type. Find the perfect car for your trip with HIT Rent a Car.',
-  keywords: 'search rental cars, available cars croatia, car rental search, book car online, rent a car zagreb, rent a car split',
+  keywords: 'search rental cars, available cars croatia, car rental search, book car online, rent a car split, rent a car split airport',
+  alternates: { canonical: '/search' },
+  robots: { index: false, follow: true },
   openGraph: {
     title: 'Search Available Cars | HIT Rent a Car',
     description: 'Browse and search available rental cars in Croatia. Find the perfect car for your trip.',

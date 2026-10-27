@@ -5,6 +5,7 @@ import { rateLimit } from '@/lib/security';
 import Booking from '@/models/Booking';
 import Vehicle from '@/models/Vehicle';
 import { sendBookingConfirmation } from '@/lib/email';
+import { findConflictingBookings, findBlockedConflict } from '@/lib/availability';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-10-29.clover',
@@ -93,29 +94,20 @@ export async function POST(request: NextRequest) {
     const pickupDate = new Date(metadata.pickupDate);
     const returnDate = new Date(metadata.returnDate);
 
-    const conflictingBookings = await Booking.find({
-      vehicleId: metadata.vehicleId,
-      status: { $in: ['confirmed', 'in_progress'] },
-      $or: [
-        // New booking starts during existing booking
-        {
-          pickupDate: { $lte: pickupDate },
-          returnDate: { $gte: pickupDate },
-        },
-        // New booking ends during existing booking
-        {
-          pickupDate: { $lte: returnDate },
-          returnDate: { $gte: returnDate },
-        },
-        // New booking completely contains existing booking
-        {
-          pickupDate: { $gte: pickupDate },
-          returnDate: { $lte: returnDate },
-        },
-      ],
-    }).select('bookingReference clientInfo.firstName clientInfo.lastName pickupDate returnDate');
+    const conflictingBookings = await findConflictingBookings(
+      metadata.vehicleId,
+      vehicle.type,
+      pickupDate,
+      returnDate,
+      { select: 'bookingReference pickupDate returnDate' }
+    );
+    const blockedConflict = await findBlockedConflict(
+      metadata.vehicleId,
+      pickupDate,
+      returnDate
+    );
 
-    const isOverbooking = conflictingBookings.length > 0;
+    const isOverbooking = conflictingBookings.length > 0 || !!blockedConflict;
 
     console.log(`Overbooking check: ${isOverbooking ? 'CONFLICT DETECTED' : 'No conflicts'}`);
     if (isOverbooking) {

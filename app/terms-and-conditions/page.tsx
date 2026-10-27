@@ -4,7 +4,8 @@ import Footer from '../components/Footer';
 import { FileText, Car, CreditCard, AlertTriangle, Shield, CheckCircle } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Terms and Conditions | Hit Rent Croatia',
+  title: 'Terms and Conditions',
+  alternates: { canonical: '/terms-and-conditions' },
   description: 'Terms and Conditions for car rental services by Hit Rent Croatia (Turist ekspert d.o.o.). Read our rental agreement terms before booking.',
   robots: {
     index: true,

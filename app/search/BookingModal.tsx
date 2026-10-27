@@ -158,13 +158,15 @@ export default function BookingModal({
         if (insuranceRes.ok) {
           const data = await insuranceRes.json();
           const pricing = data.pricing.find(
-            (p: any) => p.acrissCode === vehicle.acrissCode
+            (p: any) =>
+              String(p.acrissCode).toUpperCase() ===
+              String(vehicle.acrissCode).toUpperCase()
           );
 
           if (pricing) {
             setInsurancePricing({
-              dailyPrice: pricing.dailyPrice || 0,
-              fullCoveragePrice: pricing.fullCoveragePrice || 15,
+              dailyPrice: pricing.dailyPrice ?? 0,
+              fullCoveragePrice: pricing.fullCoveragePrice ?? 15,
               basicDeductible: pricing.basicDeductible ?? 0,
               fullDeductible: pricing.fullDeductible ?? 0,
             });
@@ -180,14 +182,14 @@ export default function BookingModal({
           const data = await addOnRes.json();
           if (data.pricing) {
             setAddOnPricing({
-              additionalDriver: data.pricing.additionalDriver || 4.75,
-              wifiHotspot: data.pricing.wifiHotspot || 4.6,
-              roadsideAssistance: data.pricing.roadsideAssistance || 1.2,
-              tireProtection: data.pricing.tireProtection || 1.99,
-              personalAccident: data.pricing.personalAccident || 2.39,
-              theftProtection: data.pricing.theftProtection || 5.99,
-              extendedTheft: data.pricing.extendedTheft || 10.95,
-              interiorProtection: data.pricing.interiorProtection || 2.1,
+              additionalDriver: data.pricing.additionalDriver ?? 4.75,
+              wifiHotspot: data.pricing.wifiHotspot ?? 4.6,
+              roadsideAssistance: data.pricing.roadsideAssistance ?? 1.2,
+              tireProtection: data.pricing.tireProtection ?? 1.99,
+              personalAccident: data.pricing.personalAccident ?? 2.39,
+              theftProtection: data.pricing.theftProtection ?? 5.99,
+              extendedTheft: data.pricing.extendedTheft ?? 10.95,
+              interiorProtection: data.pricing.interiorProtection ?? 2.1,
             });
           } else {
             // Use defaults
@@ -771,8 +773,8 @@ export default function BookingModal({
               </div>
             </div>
             <p className='text-sm text-gray-600'>
-              Pay at pick-up, free cancellation and rebooking any time before
-              pick-up time
+              Pay at pick-up, free cancellation and rebooking up to 48 hours
+              before pick-up time
             </p>
           </div>
 
@@ -1510,7 +1512,7 @@ export default function BookingModal({
                         Book Now, Pay Later
                       </h5>
                       <p className='text-sm text-gray-600 mb-3'>
-                        Reserve your vehicle now and pay at the counter when you pick it up. Free cancellation anytime.
+                        Reserve your vehicle now and pay at the counter when you pick it up. Free cancellation up to 48 hours before pick-up.
                       </p>
                       <div className='flex items-baseline mb-2'>
                         <span className='text-3xl font-bold text-gray-900'>

@@ -1,15 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Image from 'next/image';
-import { Globe, Calendar, ChevronDown } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 
 export default function Header() {
-  const [language, setLanguage] = useState('EN'); // 'EN' or 'HR'
-
-  const toggleLanguage = () => {
-    setLanguage(language === 'EN' ? 'HR' : 'EN');
-  };
 
   return (
     <header className='absolute top-0 left-0 right-0 z-50 bg-transparent'>
@@ -30,17 +25,8 @@ export default function Header() {
             </a>
           </div>
 
-          {/* Language Switcher & Manage Booking */}
+          {/* Manage Booking */}
           <div className='flex items-center space-x-6'>
-            {/* Enhanced Language Switcher */}
-            <button
-              onClick={toggleLanguage}
-              className='flex items-center text-white hover:text-gray-200 font-medium text-sm transition-all duration-200 px-3 py-2 rounded-lg hover:bg-white/10'
-            >
-              <Globe className='h-4 w-4 mr-2' />
-              <span className='mr-1'>{language}</span>
-              <ChevronDown className='h-3 w-3' />
-            </button>
 
             {/* Manage Booking with Icon */}
             <a

@@ -19,7 +19,7 @@ const faqData: FAQItem[] = [
   },
   {
     question: 'Can I pick up the car at one location and return it to another?',
-    answer: 'Yes! We offer one-way rentals across Croatia. You can pick up your car in Zagreb and return it in Split, Dubrovnik, or any other location we service. A one-way fee may apply depending on the route.',
+    answer: 'Yes, within our service area. You can pick up at Split Airport and return in Split city, or the other way around. Other return locations can be arranged on request and a one-way fee may apply depending on the route.',
   },
   {
     question: 'What is your fuel policy?',
@@ -27,11 +27,11 @@ const faqData: FAQItem[] = [
   },
   {
     question: 'Do you offer airport pickup and delivery?',
-    answer: 'Absolutely! We provide free pickup and delivery services at major Croatian airports including Zagreb, Split, and Dubrovnik airports. We can also arrange delivery to your hotel or accommodation for your convenience.',
+    answer: 'Yes. We hand over cars directly at Split Airport and in Split city. Delivery to your hotel or accommodation in the Split area can be arranged on request.',
   },
   {
     question: 'What happens if I have an accident or breakdown?',
-    answer: 'Your safety is our priority. We provide 24/7 roadside assistance. In case of an accident, contact us immediately and follow the instructions provided. All our vehicles come with comprehensive insurance coverage.',
+    answer: 'Your safety is our priority. We provide 24/7 roadside assistance. In case of an accident, contact us immediately and follow the instructions provided. All our vehicles come with basic insurance (CDW and TP) included, and you can add full coverage during booking.',
   },
   {
     question: 'Can I cross borders with the rental car?',

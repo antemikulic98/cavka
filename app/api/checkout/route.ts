@@ -10,6 +10,11 @@ import { connectMongoDB } from '@/lib/mongodb';
 import Vehicle from '@/models/Vehicle';
 import Booking from '@/models/Booking';
 import { csrfProtection } from '@/lib/csrf';
+import {
+  findConflictingBookings,
+  findBlockedConflict,
+  isVehicleBookable,
+} from '@/lib/availability';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-10-29.clover',
@@ -103,15 +108,27 @@ export async function POST(request: NextRequest) {
     // re-checks after payment, but by then the charge already happened
     const pickup = new Date(pickupDate);
     const returnD = new Date(returnDate);
-    const conflictingBookings = await Booking.find({
+
+    const vehicle = await Vehicle.findById(vehicleId);
+    if (!vehicle) {
+      return NextResponse.json(
+        { error: 'Vehicle not found' },
+        { status: 404 }
+      );
+    }
+    if (!isVehicleBookable(vehicle.status)) {
+      return NextResponse.json(
+        { error: 'This vehicle is currently not available for booking.' },
+        { status: 409 }
+      );
+    }
+    const conflictingBookings = await findConflictingBookings(
       vehicleId,
-      status: { $in: ['confirmed', 'in_progress'] },
-      $or: [
-        { pickupDate: { $lte: pickup }, returnDate: { $gte: pickup } },
-        { pickupDate: { $lte: returnD }, returnDate: { $gte: returnD } },
-        { pickupDate: { $gte: pickup }, returnDate: { $lte: returnD } },
-      ],
-    }).limit(1);
+      vehicle.type,
+      pickup,
+      returnD,
+      { limit: 1 }
+    );
     if (conflictingBookings.length > 0) {
       return NextResponse.json(
         {
@@ -123,12 +140,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Admin-blocked periods (maintenance etc.) must not be chargeable either
-    const { default: BlockedDate } = await import('@/models/BlockedDate');
-    const blockedConflict = await BlockedDate.findOne({
-      vehicleId,
-      startDate: { $lte: returnD },
-      endDate: { $gte: new Date(pickup.getTime() - 24 * 60 * 60 * 1000) },
-    });
+    const blockedConflict = await findBlockedConflict(vehicleId, pickup, returnD);
     if (blockedConflict) {
       return NextResponse.json(
         {
@@ -159,16 +171,14 @@ export async function POST(request: NextRequest) {
       throw pricingError;
     }
 
-    // Fetch vehicle for metadata
-    const vehicle = await Vehicle.findById(vehicleId);
-    if (!vehicle) {
-      return NextResponse.json(
-        { error: 'Vehicle not found' },
-        { status: 404 }
-      );
-    }
-
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    if (!process.env.NEXT_PUBLIC_APP_URL && process.env.NODE_ENV === 'production') {
+      console.error('NEXT_PUBLIC_APP_URL is not set — Stripe will redirect customers to localhost');
+    }
+    const serverVehicleName = `${vehicle.make} ${vehicle.vehicleModel}`;
+    const serverVehicleImage: string | undefined =
+      vehicle.mainImage ||
+      (Array.isArray(vehicle.images) ? vehicle.images[0] : undefined);
 
     // SECURITY: Use server-calculated price (pricing.totalAfterDiscount)
     console.log('Creating Stripe checkout session:', {
@@ -185,11 +195,13 @@ export async function POST(request: NextRequest) {
           price_data: {
             currency: 'eur',
             product_data: {
-              name: vehicleName || `${vehicle.make} ${vehicle.vehicleModel}`,
+              // Never take name/image from the client — anyone could mint a
+              // legitimate-looking Stripe page under the merchant account
+              name: serverVehicleName,
               description: vehicle.type === 'transfer'
-                ? `Transfer from ${pickupLocation} to ${returnLocation || pickupLocation}`
+                ? `Transfer from ${String(pickupLocation).slice(0, 80)} to ${String(returnLocation || pickupLocation).slice(0, 80)}`
                 : `${serverRentalDays} day${serverRentalDays > 1 ? 's' : ''} rental`,
-              images: vehicleImage ? [vehicleImage] : vehicle.images,
+              images: serverVehicleImage ? [serverVehicleImage] : [],
               metadata: {
                 vehicleId,
                 vehicleType: vehicle.type,
@@ -211,7 +223,7 @@ export async function POST(request: NextRequest) {
       customer_email: customerEmail,
       metadata: {
         vehicleId,
-        vehicleName: vehicleName || `${vehicle.make} ${vehicle.vehicleModel}`,
+        vehicleName: serverVehicleName,
         vehicleType: vehicle.type,
         pickupDate,
         returnDate,

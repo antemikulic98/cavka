@@ -18,10 +18,10 @@ export async function GET(
 
     const { id } = await params;
 
-    // Find all confirmed bookings for this vehicle
+    // Everything that occupies the car, plus completed history for stats
     const bookings = await Booking.find({
       vehicleId: id,
-      status: { $in: ['confirmed', 'in_progress'] },
+      status: { $in: ['pending', 'confirmed', 'in_progress', 'completed'] },
     }).select(
       'pickupDate returnDate rentalDays status clientInfo.firstName clientInfo.lastName pricing.totalCost createdAt bookingReference'
     );

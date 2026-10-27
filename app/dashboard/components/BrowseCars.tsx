@@ -144,18 +144,22 @@ export default function BrowseCars({
     { value: 'Inactive', label: 'Inactive' },
   ];
 
-  const locations = [
+  const [locations, setLocations] = useState<{ value: string; label: string }[]>([
     { value: 'all', label: 'All Locations' },
-    { value: 'Zagreb Downtown', label: 'Zagreb Downtown' },
-    { value: 'Zagreb Airport', label: 'Zagreb Airport' },
-    { value: 'Split Downtown', label: 'Split Downtown' },
-    { value: 'Split Airport', label: 'Split Airport' },
-    { value: 'Dubrovnik Downtown', label: 'Dubrovnik Downtown' },
-    { value: 'Dubrovnik Airport', label: 'Dubrovnik Airport' },
-    { value: 'Rijeka Downtown', label: 'Rijeka Downtown' },
-    { value: 'Pula Downtown', label: 'Pula Downtown' },
-    { value: 'Zadar Downtown', label: 'Zadar Downtown' },
-  ];
+  ]);
+  useEffect(() => {
+    fetch('/api/settings/locations', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.locations) {
+          setLocations([
+            { value: 'all', label: 'All Locations' },
+            ...data.locations.map((l: any) => ({ value: l.name, label: l.name })),
+          ]);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const vehicleTypes = [
     { value: 'all', label: 'All Types' },

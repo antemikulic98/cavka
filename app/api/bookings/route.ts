@@ -5,6 +5,12 @@ import Vehicle from '@/models/Vehicle';
 import { sendBookingConfirmation } from '@/lib/email';
 import { validators, logSecurityEvent, rateLimit } from '@/lib/security';
 import { csrfProtection } from '@/lib/csrf';
+import {
+  findConflictingBookings,
+  findBlockedConflict,
+  isVehicleBookable,
+  BLOCKING_STATUSES,
+} from '@/lib/availability';
 
 // POST - Create a new booking
 export async function POST(request: NextRequest) {
@@ -151,6 +157,32 @@ export async function POST(request: NextRequest) {
     if (!vehicle) {
       return NextResponse.json({ error: 'Vehicle not found' }, { status: 404 });
     }
+    if (!isVehicleBookable(vehicle.status)) {
+      return NextResponse.json(
+        { error: 'This vehicle is currently not available for booking.' },
+        { status: 409 }
+      );
+    }
+
+    // Abuse guard: pay-later bookings cost nothing to create, so cap the
+    // number of open bookings a single email address can hold.
+    const requesterEmail = String(bookingData.clientInfo.email || '')
+      .toLowerCase()
+      .trim();
+    const openBookings = await Booking.countDocuments({
+      'clientInfo.email': requesterEmail,
+      status: { $in: [...BLOCKING_STATUSES] },
+      returnDate: { $gte: new Date() },
+    });
+    if (openBookings >= 3) {
+      return NextResponse.json(
+        {
+          error:
+            'You already have several open reservations. Please contact us to book another vehicle.',
+        },
+        { status: 429 }
+      );
+    }
 
     // Check vehicle availability with detailed conflict detection
     const pickupDate = new Date(bookingData.pickupDate);
@@ -158,14 +190,11 @@ export async function POST(request: NextRequest) {
 
     // Admin-blocked periods (maintenance etc.) are hard blocks — reject,
     // don't route into the overbooking workflow
-    const { default: BlockedDate } = await import('@/models/BlockedDate');
-    const blockedConflict = await BlockedDate.findOne({
-      vehicleId: bookingData.vehicleId,
-      // Blocks are stored as UTC-midnight instants; treat endDate as
-      // covering its whole day
-      startDate: { $lte: returnDate },
-      endDate: { $gte: new Date(pickupDate.getTime() - 24 * 60 * 60 * 1000) },
-    });
+    const blockedConflict = await findBlockedConflict(
+      bookingData.vehicleId,
+      pickupDate,
+      returnDate
+    );
     if (blockedConflict) {
       return NextResponse.json(
         {
@@ -176,28 +205,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const conflictingBookings = await Booking.find({
-      vehicleId: bookingData.vehicleId,
-      status: { $in: ['confirmed', 'in_progress'] },
-      $or: [
-        // New booking starts during existing booking
-        {
-          pickupDate: { $lte: pickupDate },
-          returnDate: { $gte: pickupDate },
-        },
-        // New booking ends during existing booking
-        {
-          pickupDate: { $lte: returnDate },
-          returnDate: { $gte: returnDate },
-        },
-        // New booking completely contains existing booking
-        {
-          pickupDate: { $gte: pickupDate },
-          returnDate: { $lte: returnDate },
-        },
-      ],
-    }).select(
-      'pickupDate returnDate bookingReference clientInfo.firstName clientInfo.lastName'
+    const conflictingBookings = await findConflictingBookings(
+      bookingData.vehicleId,
+      vehicle.type,
+      pickupDate,
+      returnDate,
+      { select: 'pickupDate returnDate' }
     );
 
     // Check if this is an overbooking situation

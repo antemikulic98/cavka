@@ -512,7 +512,7 @@ export default function BookingLookup() {
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.text(
-      'Thank you for choosing HT Rent A Car! | info@htrentacar.com | +385 1 234 5678',
+      'Thank you for choosing Hit Rent! | info@hit-rent.com | +385 91 722 4138',
       pageWidth / 2,
       pageHeight - 8,
       { align: 'center' }

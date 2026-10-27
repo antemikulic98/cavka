@@ -3,6 +3,7 @@ import { connectMongoDB } from '@/lib/mongodb';
 import Booking from '@/models/Booking';
 import BlockedDate from '@/models/BlockedDate';
 import Vehicle from '@/models/Vehicle';
+import { findConflictingBookings, findBlockedConflict } from '@/lib/availability';
 
 // GET - Check vehicle availability for specific dates
 export async function GET(request: NextRequest) {
@@ -50,14 +51,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Filter by location if provided
-    if (location) {
-      query.location = location;
-    }
-
-    // For transfer vehicles, don't filter by location or trips —
-    // pricing is calculated dynamically via Google Maps distance * pricePerKm
-    if (type === 'transfer') {
-      delete query.location;
+    // A vehicle is offered at its base location plus any additional pickup
+    // points. Transfers are priced by distance, so no location filter there.
+    if (location && type !== 'transfer') {
+      query.$or = [{ location }, { additionalLocations: location }];
     }
 
     // Find vehicles (both available and potentially overbooked)
@@ -81,38 +78,24 @@ export async function GET(request: NextRequest) {
       // Blocks are stored as UTC-midnight instants, so endDate must count as
       // covering its whole day — otherwise the last day of every block (and
       // most of a single-day block) is still bookable.
-      const blockedDateConflicts = await BlockedDate.find({
-        vehicleId: vehicle._id,
-        startDate: { $lte: returnD },
-        endDate: { $gte: new Date(pickup.getTime() - 24 * 60 * 60 * 1000) },
-      });
+      const blockedDateConflict = await findBlockedConflict(
+        String(vehicle._id),
+        pickup,
+        returnD
+      );
 
       // Skip vehicles that have blocked dates in the requested period
-      if (blockedDateConflicts.length > 0) {
+      if (blockedDateConflict) {
         continue;
       }
 
-      const conflictingBookings = await Booking.find({
-        vehicleId: vehicle._id,
-        status: { $in: ['confirmed', 'in_progress'] },
-        $or: [
-          // Booking starts during requested period
-          {
-            pickupDate: { $lte: pickup },
-            returnDate: { $gte: pickup },
-          },
-          // Booking ends during requested period
-          {
-            pickupDate: { $lte: returnD },
-            returnDate: { $gte: returnD },
-          },
-          // Booking completely contains requested period
-          {
-            pickupDate: { $gte: pickup },
-            returnDate: { $lte: returnD },
-          },
-        ],
-      });
+      const conflictingBookings = await findConflictingBookings(
+        String(vehicle._id),
+        vehicle.type,
+        pickup,
+        returnD,
+        { select: '_id' }
+      );
 
       const isAvailable = conflictingBookings.length === 0;
       const wouldBeOverbooking = !isAvailable;

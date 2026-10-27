@@ -609,7 +609,7 @@ export default function VehicleView({ vehicleId, onBack }: VehicleViewProps) {
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleDeleteVehicle}
         title='Delete Vehicle'
-        message={`Are you sure you want to delete ${vehicle?.year} ${vehicle?.make} ${vehicle?.model}? This action cannot be undone and will remove all associated bookings and pricing data.`}
+        message={`Are you sure you want to delete ${vehicle?.year} ${vehicle?.make} ${vehicle?.model}? This action cannot be undone. Vehicles with upcoming bookings cannot be deleted.`}
         loading={deleting}
       />
     </div>

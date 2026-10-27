@@ -4,7 +4,8 @@ import Footer from '../components/Footer';
 import { Shield, Lock, Eye, FileText, Users, Database, Globe } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy | Hit Rent Croatia',
+  title: 'Privacy Policy',
+  alternates: { canonical: '/privacy-policy' },
   description: 'Privacy Policy for Hit Rent Croatia (Turist ekspert d.o.o.). Learn how we collect, use, and protect your personal data in compliance with GDPR.',
   robots: {
     index: true,

@@ -368,14 +368,16 @@ async function calculateCDWCost(
   }
 
   // Fetch insurance pricing from database based on vehicle's ACRISS code
-  const acrissCode = vehicle.acrissCode || '';
-  let insurancePricing = { dailyPrice: 5, fullCoveragePrice: 10 };
+  // Defaults MUST match the client fallback in BookingModal (basic CDW/TP is
+  // included in the rate per Terms 4.2; full coverage default 15 EUR/day).
+  const acrissCode = (vehicle.acrissCode || '').toString().trim().toUpperCase();
+  let insurancePricing = { dailyPrice: 0, fullCoveragePrice: 15 };
   if (acrissCode) {
     const dbPricing = await InsurancePricing.findOne({ acrissCode });
     if (dbPricing) {
       insurancePricing = {
-        dailyPrice: dbPricing.dailyPrice,
-        fullCoveragePrice: dbPricing.fullCoveragePrice || 10,
+        dailyPrice: dbPricing.dailyPrice ?? 0,
+        fullCoveragePrice: dbPricing.fullCoveragePrice ?? 15,
       };
     }
   }
@@ -403,7 +405,7 @@ async function calculateAddOnsCost(
   }
 
   // Fetch add-on pricing from database based on vehicle's ACRISS code
-  const addOnAcrissCode = vehicle.acrissCode || '';
+  const addOnAcrissCode = (vehicle.acrissCode || '').toString().trim().toUpperCase();
   let addOnsPricing: Record<string, number> = {
     additionalDriver: 4.75,
     wifiHotspot: 4.6,

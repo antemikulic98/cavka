@@ -4,6 +4,7 @@ import { connectMongoDB } from '@/lib/mongodb';
 import Booking from '@/models/Booking';
 import Vehicle from '@/models/Vehicle';
 import { sendBookingConfirmation } from '@/lib/email';
+import { findConflictingBookings, findBlockedConflict } from '@/lib/availability';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-10-29.clover',
@@ -39,6 +40,14 @@ export async function POST(request: NextRequest) {
     switch (event.type) {
       case 'checkout.session.completed':
         const session = event.data.object as Stripe.Checkout.Session;
+
+        // Only card payments are enabled today, but if a delayed method
+        // (SEPA, bank transfer) is ever turned on, a completed session is
+        // not yet a paid one
+        if (session.payment_status !== 'paid') {
+          console.log('Checkout completed but not paid yet, skipping:', session.id, session.payment_status);
+          break;
+        }
 
         // Create booking after successful payment
         await createBookingFromSession(session);
@@ -79,7 +88,6 @@ async function createBookingFromSession(session: Stripe.Checkout.Session) {
       return;
     }
 
-    console.log('Session metadata:', metadata);
 
     // Fetch vehicle information
     const vehicle = await Vehicle.findById(metadata.vehicleId);
@@ -92,37 +100,22 @@ async function createBookingFromSession(session: Stripe.Checkout.Session) {
     const pickupDate = new Date(metadata.pickupDate);
     const returnDate = new Date(metadata.returnDate);
 
-    const conflictingBookings = await Booking.find({
-      vehicleId: metadata.vehicleId,
-      status: { $in: ['confirmed', 'in_progress'] },
-      $or: [
-        // New booking starts during existing booking
-        {
-          pickupDate: { $lte: pickupDate },
-          returnDate: { $gte: pickupDate },
-        },
-        // New booking ends during existing booking
-        {
-          pickupDate: { $lte: returnDate },
-          returnDate: { $gte: returnDate },
-        },
-        // New booking completely contains existing booking
-        {
-          pickupDate: { $gte: pickupDate },
-          returnDate: { $lte: returnDate },
-        },
-      ],
-    }).select('bookingReference clientInfo.firstName clientInfo.lastName pickupDate returnDate');
+    const conflictingBookings = await findConflictingBookings(
+      metadata.vehicleId,
+      vehicle.type,
+      pickupDate,
+      returnDate,
+      { select: 'bookingReference pickupDate returnDate' }
+    );
 
     // Payment already happened, so a conflict (including an admin-blocked
     // maintenance period) can't be rejected — flag it for the overbooking
     // workflow instead so ops resolves it
-    const { default: BlockedDate } = await import('@/models/BlockedDate');
-    const blockedConflict = await BlockedDate.findOne({
-      vehicleId: metadata.vehicleId,
-      startDate: { $lte: returnDate },
-      endDate: { $gte: new Date(pickupDate.getTime() - 24 * 60 * 60 * 1000) },
-    });
+    const blockedConflict = await findBlockedConflict(
+      metadata.vehicleId,
+      pickupDate,
+      returnDate
+    );
 
     const isOverbooking = conflictingBookings.length > 0 || !!blockedConflict;
 
@@ -157,14 +150,14 @@ async function createBookingFromSession(session: Stripe.Checkout.Session) {
     // Parse customer phone from metadata or session
     const fullPhoneNumber = metadata.customerPhone || session.customer_details?.phone || '';
 
-    // Extract country code and phone number
-    let countryCode = '+385';
+    // Checkout stores the country code separately; prefer it over guessing
+    // from the number (a greedy regex turned +1 212... into +121)
+    let countryCode = metadata.customerCountryCode || '+385';
     let phoneNumber = fullPhoneNumber;
-
-    // If phone starts with +, extract country code
-    if (fullPhoneNumber.startsWith('+')) {
-      // Find where country code ends (typically 1-3 digits after +)
-      const match = fullPhoneNumber.match(/^(\+\d{1,3})(.+)$/);
+    if (metadata.customerCountryCode && fullPhoneNumber.startsWith(countryCode)) {
+      phoneNumber = fullPhoneNumber.slice(countryCode.length);
+    } else if (!metadata.customerCountryCode && fullPhoneNumber.startsWith('+')) {
+      const match = fullPhoneNumber.match(/^(\+\d{1,3})(\d{6,})$/);
       if (match) {
         countryCode = match[1];
         phoneNumber = match[2];
@@ -193,8 +186,10 @@ async function createBookingFromSession(session: Stripe.Checkout.Session) {
 
       // For compatibility with old booking schema that uses clientInfo
       clientInfo: {
-        firstName: metadata.customerName?.split(' ')[0] || '',
-        lastName: metadata.customerName?.split(' ').slice(1).join(' ') || '',
+        firstName: metadata.customerFirstName || metadata.customerName?.split(' ')[0] || '',
+        lastName: metadata.customerLastName || metadata.customerName?.split(' ').slice(1).join(' ') || '',
+        company: metadata.customerCompany || '',
+        flightNumber: metadata.customerFlightNumber || '',
         // Lowercased — the booking lookup queries a lowercased email
         email: (session.customer_email || session.customer_details?.email || metadata.customerEmail || '').toLowerCase().trim(),
         phoneNumber: phoneNumber,
@@ -237,7 +232,6 @@ async function createBookingFromSession(session: Stripe.Checkout.Session) {
       overbookingStatus: isOverbooking ? 'pending' : 'none',
     };
 
-    console.log('Creating booking with data:', bookingData);
 
     const booking = new Booking(bookingData);
     await booking.save();

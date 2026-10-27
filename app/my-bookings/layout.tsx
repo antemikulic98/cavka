@@ -9,6 +9,7 @@ export const metadata: Metadata = {
     description: 'View and manage your car rental bookings. Track reservation status and download confirmations.',
     url: 'https://hit-rent.com/my-bookings',
   },
+  alternates: { canonical: '/my-bookings' },
   robots: {
     index: false, // Don't index booking management page
     follow: true,

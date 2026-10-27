@@ -52,10 +52,10 @@ export default function Footer() {
             </div>
 
             <p className='text-gray-400 leading-relaxed mb-6 text-sm'>
-              Hit Rent - Your trusted family-owned car rental and transfer service across
-              Croatia. Premium vehicles, personal service, competitive
-              prices. Proudly serving Zagreb, Split, Dubrovnik and all major Croatian
-              destinations.
+              Hit Rent - Your trusted family-owned car rental and transfer service in
+              Split, Croatia. Premium vehicles, personal service, competitive
+              prices. Proudly serving Split Airport, Split city and the Dalmatian
+              coast.
             </p>
 
             {/* Contact Info */}
@@ -76,7 +76,7 @@ export default function Footer() {
               </a>
               <div className='flex items-center text-gray-400 text-sm'>
                 <MapPin className='h-4 w-4 mr-3' />
-                <span>Zagreb, Split, Dubrovnik, Croatia</span>
+                <span>Split, Croatia</span>
               </div>
             </div>
           </div>

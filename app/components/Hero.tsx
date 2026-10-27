@@ -1046,7 +1046,7 @@ export default function Hero() {
           <div className='relative z-10 py-4 md:py-6 px-4'>
             {/* SEO H1 - Hidden but accessible for search engines */}
             <h1 className='sr-only'>
-              Hit Rent Croatia - Premium Car Rental in Zagreb, Split, and Dubrovnik
+              Hit Rent Croatia - Car Rental and Transfers in Split
             </h1>
 
             {/* Supporting tagline */}

@@ -399,7 +399,7 @@ export default function VehicleDetails({
               </span>
               <span className='flex items-center text-gray-600 px-3 py-1'>
                 <MapPin className='w-4 h-4 mr-1' />
-                {vehicle.location}
+                {[vehicle.location, ...((vehicle as any).additionalLocations || [])].join(', ')}
               </span>
               {vehicle.acrissCode && (
                 <span className='bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-sm font-medium border border-emerald-200'>

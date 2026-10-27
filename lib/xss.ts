@@ -1,74 +1,26 @@
 /**
- * XSS Protection Library
+ * XSS helpers
  *
- * SECURITY: Sanitize all user-generated content and database data before rendering
+ * React already escapes text rendered in JSX. These helpers only strip
+ * markup from strings that came from the database (vehicle names etc.)
+ * so no HTML sneaks into PDFs, emails or Stripe product names.
+ *
+ * Deliberately dependency-free: isomorphic-dompurify pulls jsdom into the
+ * server bundle, which crashed SSR of /search (ENOENT default-stylesheet.css).
  */
 
-import DOMPurify from 'isomorphic-dompurify';
-
-/**
- * Sanitize HTML content to prevent XSS attacks
- * Use this for any user-generated content or database data before rendering
- */
-export function sanitizeHTML(dirty: string): string {
-  if (!dirty || typeof dirty !== 'string') {
-    return '';
-  }
-
-  return DOMPurify.sanitize(dirty, {
-    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br'],
-    ALLOWED_ATTR: ['href', 'target', 'rel'],
-    ALLOW_DATA_ATTR: false,
-  });
-}
-
-/**
- * Sanitize plain text - removes all HTML tags
- * Use for vehicle names, descriptions, user names, etc.
- */
+/** Remove all HTML tags, keep the text content. */
 export function sanitizeText(dirty: string): string {
   if (!dirty || typeof dirty !== 'string') {
     return '';
   }
-
-  return DOMPurify.sanitize(dirty, {
-    ALLOWED_TAGS: [], // No HTML tags allowed
-    KEEP_CONTENT: true, // Keep text content
-  });
+  return dirty
+    .replace(/<[^>]*>/g, '')
+    .replace(/&lt;|&gt;/g, '')
+    .trim();
 }
 
-/**
- * Sanitize for safe URL attribute
- */
-export function sanitizeURL(url: string): string {
-  if (!url || typeof url !== 'string') {
-    return '';
-  }
-
-  const sanitized = DOMPurify.sanitize(url);
-
-  // Additional check: must start with http(s) or /
-  if (!/^(https?:\/\/|\/)/i.test(sanitized)) {
-    return '';
-  }
-
-  return sanitized;
-}
-
-/**
- * React component helper for dangerouslySetInnerHTML
- * Use: <div dangerouslySetInnerHTML={createSafeHTML(content)} />
- */
-export function createSafeHTML(dirty: string) {
-  return {
-    __html: sanitizeHTML(dirty),
-  };
-}
-
-/**
- * Escape special characters for display
- * Alternative to sanitization when you want to show the exact input
- */
+/** Escape special characters so a string can be embedded in HTML safely. */
 export function escapeHTML(text: string): string {
   if (!text || typeof text !== 'string') {
     return '';
@@ -84,4 +36,16 @@ export function escapeHTML(text: string): string {
   };
 
   return text.replace(/[&<>"'\/]/g, (match) => htmlEscapes[match]);
+}
+
+/** Only allow http(s) or site-relative URLs. */
+export function sanitizeURL(url: string): string {
+  if (!url || typeof url !== 'string') {
+    return '';
+  }
+  const trimmed = url.trim();
+  if (!/^(https?:\/\/|\/)/i.test(trimmed)) {
+    return '';
+  }
+  return trimmed;
 }

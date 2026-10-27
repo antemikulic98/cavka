@@ -62,6 +62,7 @@ interface CarFormData {
 
   // Location & Description
   location: string;
+  additionalLocations: string[];
   description: string;
 }
 
@@ -236,7 +237,8 @@ export default function AddCarModal({
     pricePerKm: 0,
     currency: 'EUR',
     trips: [],
-    location: 'Zagreb Downtown',
+    location: '',
+    additionalLocations: [],
     description: '',
   });
 
@@ -566,7 +568,8 @@ export default function AddCarModal({
           pricePerKm: 0,
           currency: 'EUR',
           trips: [],
-          location: 'Zagreb Downtown',
+          location: '',
+          additionalLocations: [],
           description: '',
         });
         setSelectedImages([]);
@@ -740,7 +743,8 @@ export default function AddCarModal({
           pricePerKm: 0,
           currency: 'EUR',
           trips: [],
-          location: 'Zagreb Downtown',
+          location: '',
+          additionalLocations: [],
           description: '',
         });
         setSelectedImages([]);
@@ -1488,6 +1492,49 @@ export default function AddCarModal({
                 searchable={true}
               />
             </div>
+
+            {formData.type !== 'transfer' && (
+              <div>
+                <label className='block text-sm font-semibold text-gray-900 mb-2'>
+                  Also available for pickup at
+                </label>
+                <p className='text-xs text-gray-500 mb-2'>
+                  The car will show up in search results for every location ticked here, in addition to its base location.
+                </p>
+                <div className='flex flex-wrap gap-2'>
+                  {locationOptions
+                    .filter((opt) => opt.value !== formData.location)
+                    .map((opt) => {
+                      const checked = formData.additionalLocations.includes(opt.value);
+                      return (
+                        <label
+                          key={opt.value}
+                          className={`cursor-pointer select-none px-3 py-1.5 rounded-full border text-sm ${
+                            checked
+                              ? 'bg-emerald-50 border-emerald-400 text-emerald-800'
+                              : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
+                          }`}
+                        >
+                          <input
+                            type='checkbox'
+                            className='sr-only'
+                            checked={checked}
+                            onChange={() =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                additionalLocations: checked
+                                  ? prev.additionalLocations.filter((l) => l !== opt.value)
+                                  : [...prev.additionalLocations, opt.value],
+                              }))
+                            }
+                          />
+                          {opt.label}
+                        </label>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
 
             <div>
               <label className='block text-sm font-semibold text-gray-900 mb-2'>

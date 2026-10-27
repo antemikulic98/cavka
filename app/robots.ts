@@ -12,15 +12,19 @@ export default function robots(): MetadataRoute.Robots {
           '/admin/',
           '/login',
           '/bookings',
-          '/vehicles/',
+          '/browse-cars',
+          '/vehicles',
+          '/vehicle-order',
           '/settings/',
           '/analytics/',
           '/overbookings/',
           '/profile/',
+          '/payment/',
+          '/my-bookings',
+          '/search',
         ],
       },
     ],
     sitemap: 'https://hit-rent.com/sitemap.xml',
   };
 }
-

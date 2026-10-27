@@ -4,6 +4,7 @@ import { connectMongoDB } from '@/lib/mongodb';
 import { getCurrentAdmin } from '@/lib/auth';
 import { csrfProtection } from '@/lib/csrf';
 import Booking from '@/models/Booking';
+import { findConflictingBookings, BLOCKING_STATUSES } from '@/lib/availability';
 
 // GET - Retrieve all bookings (admin only)
 export async function GET(request: NextRequest) {
@@ -156,6 +157,33 @@ export async function PUT(request: NextRequest) {
     }
 
     allowedUpdates.updatedAt = new Date();
+
+    // Bookings being re-activated into an occupied slot get flagged for the
+    // overbooking workflow instead of silently double-booking the car
+    if (
+      allowedUpdates.status &&
+      (BLOCKING_STATUSES as readonly string[]).includes(allowedUpdates.status)
+    ) {
+      const inactive = await Booking.find({
+        _id: { $in: bookingIds },
+        status: { $nin: [...BLOCKING_STATUSES] },
+      }).select('vehicleId vehicleType pickupDate returnDate');
+      for (const b of inactive) {
+        const conflicts = await findConflictingBookings(
+          String(b.vehicleId),
+          b.vehicleType,
+          b.pickupDate,
+          b.returnDate,
+          { excludeBookingId: String(b._id), limit: 1 }
+        );
+        if (conflicts.length > 0) {
+          await Booking.updateOne(
+            { _id: b._id },
+            { $set: { isOverbooking: true, overbookingStatus: 'pending' } }
+          );
+        }
+      }
+    }
 
     const result = await Booking.updateMany(
       { _id: { $in: bookingIds } },

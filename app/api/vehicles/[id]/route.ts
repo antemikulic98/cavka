@@ -3,6 +3,8 @@ import { connectMongoDB } from '@/lib/mongodb';
 import Vehicle from '@/models/Vehicle';
 import { getCurrentAdmin } from '@/lib/auth';
 import { csrfProtection } from '@/lib/csrf';
+import Booking from '@/models/Booking';
+import { BLOCKING_STATUSES } from '@/lib/availability';
 
 export async function GET(
   request: NextRequest,
@@ -200,6 +202,21 @@ export async function DELETE(
     const user = await getCurrentAdmin();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Never orphan live bookings — the customer still holds a confirmation
+    const openBookings = await Booking.countDocuments({
+      vehicleId: resolvedParams.id,
+      status: { $in: [...BLOCKING_STATUSES] },
+      returnDate: { $gte: new Date() },
+    });
+    if (openBookings > 0) {
+      return NextResponse.json(
+        {
+          error: `This vehicle has ${openBookings} upcoming booking${openBookings > 1 ? 's' : ''}. Cancel or move them before deleting the vehicle.`,
+        },
+        { status: 409 }
+      );
     }
 
     const vehicle = await Vehicle.findByIdAndDelete(resolvedParams.id);
